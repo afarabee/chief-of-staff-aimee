@@ -1,17 +1,50 @@
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { isToday, isPast, startOfDay } from 'date-fns';
 import { AlertTriangle, Calendar, Lightbulb, ArrowRight } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
+import { Task, Idea } from '@/types';
 import { TaskCard } from '@/components/tasks/TaskCard';
 import { IdeaCard } from '@/components/ideas/IdeaCard';
+import { TaskForm } from '@/components/tasks/TaskForm';
+import { IdeaForm } from '@/components/ideas/IdeaForm';
 import { QuickAdd } from '@/components/dashboard/QuickAdd';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const Index = () => {
   const { tasks, ideas, isLoading } = useApp();
+  const [editingTask, setEditingTask] = useState<Task | undefined>();
+  const [editingIdea, setEditingIdea] = useState<Idea | undefined>();
+  const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
+  const [isIdeaFormOpen, setIsIdeaFormOpen] = useState(false);
+
+  const handleOpenTaskForm = (task: Task) => {
+    setEditingTask(task);
+    setIsTaskFormOpen(true);
+  };
+
+  const handleCloseTaskForm = () => {
+    setEditingTask(undefined);
+    setIsTaskFormOpen(false);
+  };
+
+  const handleOpenIdeaForm = (idea: Idea) => {
+    setEditingIdea(idea);
+    setIsIdeaFormOpen(true);
+  };
+
+  const handleCloseIdeaForm = () => {
+    setEditingIdea(undefined);
+    setIsIdeaFormOpen(false);
+  };
 
   const todayTasks = useMemo(() => {
     return tasks.filter(
@@ -117,7 +150,7 @@ const Index = () => {
             ) : (
               <div className="space-y-3">
                 {overdueTasks.map((task) => (
-                  <TaskCard key={task.id} task={task} />
+                  <TaskCard key={task.id} task={task} onClick={() => handleOpenTaskForm(task)} />
                 ))}
               </div>
             )}
@@ -152,7 +185,7 @@ const Index = () => {
             ) : (
               <div className="space-y-3">
                 {todayTasks.map((task) => (
-                  <TaskCard key={task.id} task={task} />
+                  <TaskCard key={task.id} task={task} onClick={() => handleOpenTaskForm(task)} />
                 ))}
               </div>
             )}
@@ -188,12 +221,32 @@ const Index = () => {
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {inProgressIdeas.map((idea) => (
-                <IdeaCard key={idea.id} idea={idea} />
+                <IdeaCard key={idea.id} idea={idea} onClick={() => handleOpenIdeaForm(idea)} />
               ))}
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Task Edit Dialog */}
+      <Dialog open={isTaskFormOpen} onOpenChange={(open) => !open && handleCloseTaskForm()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Task</DialogTitle>
+          </DialogHeader>
+          <TaskForm task={editingTask} onClose={handleCloseTaskForm} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Idea Edit Dialog */}
+      <Dialog open={isIdeaFormOpen} onOpenChange={(open) => !open && handleCloseIdeaForm()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Idea</DialogTitle>
+          </DialogHeader>
+          <IdeaForm idea={editingIdea} onClose={handleCloseIdeaForm} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
