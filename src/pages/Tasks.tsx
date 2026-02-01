@@ -103,17 +103,17 @@ export default function Tasks() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center gap-4 mb-6">
+        <Button onClick={() => handleOpenForm()} className="gap-2">
+          <Plus className="h-4 w-4" />
+          New Task
+        </Button>
         <div>
           <h1 className="text-3xl font-bold text-foreground">Tasks</h1>
           <p className="text-muted-foreground">
             Manage and track all your tasks
           </p>
         </div>
-        <Button onClick={() => handleOpenForm()} className="gap-2">
-          <Plus className="h-4 w-4" />
-          New Task
-        </Button>
       </div>
 
       <div className="flex items-center gap-4 mb-6">

@@ -84,17 +84,17 @@ export default function Ideas() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center gap-4">
+        <Button onClick={() => handleOpenForm()} className="gap-2">
+          <Plus className="h-4 w-4" />
+          New Idea
+        </Button>
         <div>
           <h1 className="text-3xl font-bold text-foreground">Ideas</h1>
           <p className="text-muted-foreground">
             Capture and develop your ideas
           </p>
         </div>
-        <Button onClick={() => handleOpenForm()} className="gap-2">
-          <Plus className="h-4 w-4" />
-          New Idea
-        </Button>
       </div>
 
       <div className="flex items-center gap-4">
