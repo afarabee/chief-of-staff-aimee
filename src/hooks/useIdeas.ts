@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { Idea, IdeaStatus } from '@/types';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { toast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
 
 type DbIdea = Tables<'cos_ideas'>;
 
@@ -27,12 +26,11 @@ function dbIdeaToIdea(dbIdea: DbIdea): Idea {
 }
 
 // Convert app type to database format for insert
-function ideaToDbInsert(idea: Omit<Idea, 'id' | 'createdAt'>, userId: string): TablesInsert<'cos_ideas'> {
+function ideaToDbInsert(idea: Omit<Idea, 'id' | 'createdAt'>): TablesInsert<'cos_ideas'> {
   return {
     title: idea.title,
     description: idea.description || null,
     status: idea.status,
-    user_id: userId,
   };
 }
 
@@ -47,15 +45,11 @@ function ideaToDbUpdate(updates: Partial<Idea>): TablesUpdate<'cos_ideas'> {
   return dbUpdate;
 }
 
-// Fetch all ideas for current user
+// Fetch all ideas
 export function useIdeas() {
-  const { user } = useAuth();
-  
   return useQuery({
-    queryKey: ['ideas', user?.id],
+    queryKey: ['ideas'],
     queryFn: async (): Promise<Idea[]> => {
-      if (!user) return [];
-      
       const { data, error } = await supabase
         .from('cos_ideas')
         .select('*')
@@ -64,22 +58,18 @@ export function useIdeas() {
       if (error) throw error;
       return (data || []).map(dbIdeaToIdea);
     },
-    enabled: !!user,
   });
 }
 
 // Create a new idea
 export function useCreateIdea() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
   
   return useMutation({
     mutationFn: async (idea: Omit<Idea, 'id' | 'createdAt'>) => {
-      if (!user) throw new Error('Must be logged in to create ideas');
-      
       const { data, error } = await supabase
         .from('cos_ideas')
-        .insert(ideaToDbInsert(idea, user.id))
+        .insert(ideaToDbInsert(idea))
         .select()
         .single();
       
