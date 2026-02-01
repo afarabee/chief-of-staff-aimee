@@ -8,9 +8,10 @@ import { IdeaCard } from '@/components/ideas/IdeaCard';
 import { QuickAdd } from '@/components/dashboard/QuickAdd';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const Index = () => {
-  const { tasks, ideas } = useApp();
+  const { tasks, ideas, isLoading } = useApp();
 
   const todayTasks = useMemo(() => {
     return tasks.filter(
@@ -35,6 +36,40 @@ const Index = () => {
   const inProgressIdeas = useMemo(() => {
     return ideas.filter((idea) => idea.status === 'in-progress');
   }, [ideas]);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Today</h1>
+            <Skeleton className="h-5 w-48 mt-1" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card>
+            <CardHeader className="pb-3">
+              <Skeleton className="h-6 w-24" />
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <Skeleton className="h-6 w-24" />
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
