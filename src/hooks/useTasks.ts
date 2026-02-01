@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Task, TaskStatus, TaskPriority } from '@/types';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 type DbTask = Tables<'cos_tasks'>;
 
@@ -39,13 +40,14 @@ function dbTaskToTask(dbTask: DbTask): Task {
 }
 
 // Convert app type to database format for insert
-function taskToDbInsert(task: Omit<Task, 'id' | 'createdAt' | 'completedAt'>): TablesInsert<'cos_tasks'> {
+function taskToDbInsert(task: Omit<Task, 'id' | 'createdAt' | 'completedAt'>, userId: string): TablesInsert<'cos_tasks'> {
   return {
     title: task.title,
     description: task.description || null,
     due_date: task.dueDate ? task.dueDate.toISOString().split('T')[0] : null,
     status: task.status,
     priority: task.priority,
+    user_id: userId,
   };
 }
 
@@ -64,11 +66,15 @@ function taskToDbUpdate(updates: Partial<Task>): TablesUpdate<'cos_tasks'> {
   return dbUpdate;
 }
 
-// Fetch all tasks
+// Fetch all tasks for current user
 export function useTasks() {
+  const { user } = useAuth();
+  
   return useQuery({
-    queryKey: ['tasks'],
+    queryKey: ['tasks', user?.id],
     queryFn: async (): Promise<Task[]> => {
+      if (!user) return [];
+      
       const { data, error } = await supabase
         .from('cos_tasks')
         .select('*')
@@ -77,18 +83,22 @@ export function useTasks() {
       if (error) throw error;
       return (data || []).map(dbTaskToTask);
     },
+    enabled: !!user,
   });
 }
 
 // Create a new task
 export function useCreateTask() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   
   return useMutation({
     mutationFn: async (task: Omit<Task, 'id' | 'createdAt' | 'completedAt'>) => {
+      if (!user) throw new Error('Must be logged in to create tasks');
+      
       const { data, error } = await supabase
         .from('cos_tasks')
-        .insert(taskToDbInsert(task))
+        .insert(taskToDbInsert(task, user.id))
         .select()
         .single();
       
