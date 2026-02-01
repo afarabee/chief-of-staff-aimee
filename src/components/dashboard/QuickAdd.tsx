@@ -1,0 +1,64 @@
+import { useState } from 'react';
+import { Plus, CheckSquare, Lightbulb } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { TaskForm } from '@/components/tasks/TaskForm';
+import { IdeaForm } from '@/components/ideas/IdeaForm';
+
+type QuickAddType = 'task' | 'idea' | null;
+
+export function QuickAdd() {
+  const [openType, setOpenType] = useState<QuickAddType>(null);
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="lg" className="gap-2">
+            <Plus className="h-5 w-5" />
+            Quick Add
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => setOpenType('task')}>
+            <CheckSquare className="mr-2 h-4 w-4" />
+            New Task
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setOpenType('idea')}>
+            <Lightbulb className="mr-2 h-4 w-4" />
+            New Idea
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <Dialog open={openType === 'task'} onOpenChange={(open) => !open && setOpenType(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New Task</DialogTitle>
+          </DialogHeader>
+          <TaskForm onClose={() => setOpenType(null)} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={openType === 'idea'} onOpenChange={(open) => !open && setOpenType(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New Idea</DialogTitle>
+          </DialogHeader>
+          <IdeaForm onClose={() => setOpenType(null)} />
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
