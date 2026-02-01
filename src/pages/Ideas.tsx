@@ -5,6 +5,7 @@ import { Idea, IdeaStatus } from '@/types';
 import { IdeaCard } from '@/components/ideas/IdeaCard';
 import { IdeaForm } from '@/components/ideas/IdeaForm';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -20,7 +21,7 @@ import {
 } from '@/components/ui/select';
 
 export default function Ideas() {
-  const { ideas } = useApp();
+  const { ideas, isLoading } = useApp();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingIdea, setEditingIdea] = useState<Idea | undefined>();
   const [statusFilter, setStatusFilter] = useState<IdeaStatus | 'all'>('all');
@@ -61,6 +62,25 @@ export default function Ideas() {
     parked: 'Parked',
     done: 'Done',
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Ideas</h1>
+            <Skeleton className="h-5 w-40 mt-1" />
+          </div>
+          <Skeleton className="h-10 w-28" />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-32 w-full" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

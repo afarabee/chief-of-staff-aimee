@@ -6,6 +6,7 @@ import { Task, TaskStatus, TaskPriority } from '@/types';
 import { KanbanColumn } from '@/components/tasks/KanbanColumn';
 import { TaskForm } from '@/components/tasks/TaskForm';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -23,7 +24,7 @@ import {
 const statusOrder: TaskStatus[] = ['backlog', 'to-do', 'in-progress', 'blocked', 'done'];
 
 export default function Tasks() {
-  const { tasks, updateTask } = useApp();
+  const { tasks, updateTask, isLoading } = useApp();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>();
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
@@ -74,6 +75,31 @@ export default function Tasks() {
       });
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Tasks</h1>
+            <Skeleton className="h-5 w-48 mt-1" />
+          </div>
+          <Skeleton className="h-10 w-28" />
+        </div>
+        <div className="flex gap-4">
+          {statusOrder.map((status) => (
+            <div key={status} className="flex-shrink-0 w-72">
+              <Skeleton className="h-8 w-24 mb-3" />
+              <div className="space-y-3">
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-24 w-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">
