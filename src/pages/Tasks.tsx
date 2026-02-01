@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
+import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { Plus, Filter } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { Task, TaskStatus, TaskPriority } from '@/types';
-import { TaskCard } from '@/components/tasks/TaskCard';
+import { KanbanColumn } from '@/components/tasks/KanbanColumn';
 import { TaskForm } from '@/components/tasks/TaskForm';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,20 +20,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+const statusOrder: TaskStatus[] = ['backlog', 'to-do', 'in-progress', 'blocked', 'done'];
+
 export default function Tasks() {
-  const { tasks, deleteTask } = useApp();
+  const { tasks, updateTask } = useApp();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>();
-  const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
 
   const filteredTasks = useMemo(() => {
-    return tasks.filter((task) => {
-      if (statusFilter !== 'all' && task.status !== statusFilter) return false;
-      if (priorityFilter !== 'all' && task.priority !== priorityFilter) return false;
-      return true;
-    });
-  }, [tasks, statusFilter, priorityFilter]);
+    if (priorityFilter === 'all') return tasks;
+    return tasks.filter((task) => task.priority === priorityFilter);
+  }, [tasks, priorityFilter]);
 
   const handleOpenForm = (task?: Task) => {
     setEditingTask(task);
@@ -60,17 +59,25 @@ export default function Tasks() {
     return grouped;
   }, [filteredTasks]);
 
-  const statusLabels: Record<TaskStatus, string> = {
-    backlog: 'Backlog',
-    'to-do': 'To-Do',
-    'in-progress': 'In Progress',
-    blocked: 'Blocked',
-    done: 'Done',
+  const handleDragEnd = (result: DropResult) => {
+    const { destination, draggableId } = result;
+    
+    if (!destination) return;
+    
+    const newStatus = destination.droppableId as TaskStatus;
+    const task = tasks.find((t) => t.id === draggableId);
+    
+    if (task && task.status !== newStatus) {
+      updateTask(task.id, { 
+        status: newStatus,
+        completedAt: newStatus === 'done' ? new Date() : null
+      });
+    }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Tasks</h1>
           <p className="text-muted-foreground">
@@ -83,25 +90,11 @@ export default function Tasks() {
         </Button>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 mb-6">
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Filters:</span>
+          <span className="text-sm text-muted-foreground">Filter:</span>
         </div>
-        
-        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as TaskStatus | 'all')}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="backlog">Backlog</SelectItem>
-            <SelectItem value="to-do">To-Do</SelectItem>
-            <SelectItem value="in-progress">In Progress</SelectItem>
-            <SelectItem value="blocked">Blocked</SelectItem>
-            <SelectItem value="done">Done</SelectItem>
-          </SelectContent>
-        </Select>
 
         <Select value={priorityFilter} onValueChange={(v) => setPriorityFilter(v as TaskPriority | 'all')}>
           <SelectTrigger className="w-[140px]">
@@ -117,36 +110,20 @@ export default function Tasks() {
         </Select>
       </div>
 
-      {filteredTasks.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12">
-          <p className="text-muted-foreground">No tasks found</p>
-          <Button variant="link" onClick={() => handleOpenForm()}>
-            Create your first task
-          </Button>
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <div className="flex-1 overflow-x-auto pb-4">
+          <div className="flex gap-4 min-h-[calc(100vh-280px)]">
+            {statusOrder.map((status) => (
+              <KanbanColumn
+                key={status}
+                status={status}
+                tasks={tasksByStatus[status]}
+                onTaskClick={handleOpenForm}
+              />
+            ))}
+          </div>
         </div>
-      ) : (
-        <div className="space-y-8">
-          {(Object.entries(tasksByStatus) as [TaskStatus, Task[]][]).map(
-            ([status, statusTasks]) =>
-              statusTasks.length > 0 && (
-                <div key={status}>
-                  <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                    {statusLabels[status]} ({statusTasks.length})
-                  </h2>
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {statusTasks.map((task) => (
-                      <TaskCard
-                        key={task.id}
-                        task={task}
-                        onClick={() => handleOpenForm(task)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )
-          )}
-        </div>
-      )}
+      </DragDropContext>
 
       <Dialog open={isFormOpen} onOpenChange={(open) => !open && handleCloseForm()}>
         <DialogContent>
