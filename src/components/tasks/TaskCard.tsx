@@ -1,9 +1,21 @@
+import { useState } from 'react';
 import { format, isToday, isPast } from 'date-fns';
-import { Calendar, AlertCircle } from 'lucide-react';
+import { Calendar, AlertCircle, Trash2 } from 'lucide-react';
 import { Task } from '@/types';
 import { useApp } from '@/contexts/AppContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 
 interface TaskCardProps {
@@ -28,65 +40,105 @@ const statusColors: Record<string, string> = {
 };
 
 export function TaskCard({ task, onClick, showCheckbox = true }: TaskCardProps) {
-  const { toggleTaskComplete } = useApp();
+  const { toggleTaskComplete, deleteTask } = useApp();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const isComplete = task.status === 'done';
   const isOverdue = task.dueDate && isPast(task.dueDate) && !isToday(task.dueDate) && !isComplete;
 
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = () => {
+    deleteTask(task.id);
+    setShowDeleteDialog(false);
+  };
+
   return (
-    <div
-      className={cn(
-        'group flex items-start gap-3 rounded-lg border bg-card p-4 transition-colors hover:bg-accent/50',
-        isComplete && 'opacity-60',
-        onClick && 'cursor-pointer'
-      )}
-      onClick={onClick}
-    >
-      {showCheckbox && (
-        <Checkbox
-          checked={isComplete}
-          onCheckedChange={(e) => {
-            e && toggleTaskComplete(task.id);
-          }}
-          onClick={(e) => e.stopPropagation()}
-          className="mt-0.5"
-        />
-      )}
-      
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className={cn(
-            'font-medium text-foreground',
-            isComplete && 'line-through text-muted-foreground'
-          )}>
-            {task.title}
-          </h3>
-          <Badge variant="outline" className={cn('shrink-0 text-xs', priorityColors[task.priority])}>
-            {task.priority}
-          </Badge>
-        </div>
-        
-        {task.description && (
-          <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
-            {task.description}
-          </p>
+    <>
+      <div
+        className={cn(
+          'group flex items-start gap-3 rounded-lg border bg-card p-4 transition-colors hover:bg-accent/50',
+          isComplete && 'opacity-60',
+          onClick && 'cursor-pointer'
+        )}
+        onClick={onClick}
+      >
+        {showCheckbox && (
+          <Checkbox
+            checked={isComplete}
+            onCheckedChange={(e) => {
+              e && toggleTaskComplete(task.id);
+            }}
+            onClick={(e) => e.stopPropagation()}
+            className="mt-0.5"
+          />
         )}
         
-        <div className="mt-2 flex items-center gap-2 flex-wrap">
-          <Badge variant="outline" className={cn('text-xs', statusColors[task.status])}>
-            {task.status}
-          </Badge>
-          
-          {task.dueDate && (
-            <div className={cn(
-              'flex items-center gap-1 text-xs',
-              isOverdue ? 'text-destructive' : 'text-muted-foreground'
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className={cn(
+              'font-medium text-foreground',
+              isComplete && 'line-through text-muted-foreground'
             )}>
-              {isOverdue ? <AlertCircle className="h-3 w-3" /> : <Calendar className="h-3 w-3" />}
-              <span>{format(task.dueDate, 'MMM d')}</span>
+              {task.title}
+            </h3>
+            <div className="flex items-center gap-1 shrink-0">
+              <Badge variant="outline" className={cn('text-xs', priorityColors[task.priority])}>
+                {task.priority}
+              </Badge>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                onClick={handleDelete}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
             </div>
+          </div>
+          
+          {task.description && (
+            <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+              {task.description}
+            </p>
           )}
+          
+          <div className="mt-2 flex items-center gap-2 flex-wrap">
+            <Badge variant="outline" className={cn('text-xs', statusColors[task.status])}>
+              {task.status}
+            </Badge>
+            
+            {task.dueDate && (
+              <div className={cn(
+                'flex items-center gap-1 text-xs',
+                isOverdue ? 'text-destructive' : 'text-muted-foreground'
+              )}>
+                {isOverdue ? <AlertCircle className="h-3 w-3" /> : <Calendar className="h-3 w-3" />}
+                <span>{format(task.dueDate, 'MMM d')}</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Task</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{task.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
