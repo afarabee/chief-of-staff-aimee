@@ -35,6 +35,13 @@ const statusLabels: Record<string, string> = {
   done: 'Done',
 };
 
+const statusBorderColors: Record<string, string> = {
+  new: 'border-l-pink-500',
+  'in-progress': 'border-l-violet-500',
+  parked: 'border-l-slate-400',
+  done: 'border-l-emerald-500',
+};
+
 export function IdeaCard({ idea, onClick }: IdeaCardProps) {
   const { deleteIdea } = useApp();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -53,7 +60,8 @@ export function IdeaCard({ idea, onClick }: IdeaCardProps) {
     <>
       <div
         className={cn(
-          'group rounded-lg border bg-card p-4 transition-colors hover:bg-accent/50',
+          'group rounded-lg border border-l-4 bg-card p-4 shadow-sm hover:shadow-md transition-all hover:bg-accent/50',
+          statusBorderColors[idea.status],
           onClick && 'cursor-pointer'
         )}
         onClick={onClick}

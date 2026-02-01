@@ -39,6 +39,14 @@ const statusColors: Record<string, string> = {
   done: 'bg-green-500/10 text-green-600 border-green-500/20',
 };
 
+const statusBorderColors: Record<string, string> = {
+  backlog: 'border-l-slate-400',
+  'to-do': 'border-l-sky-500',
+  'in-progress': 'border-l-violet-500',
+  blocked: 'border-l-orange-500',
+  done: 'border-l-emerald-500',
+};
+
 export function TaskCard({ task, onClick, showCheckbox = true }: TaskCardProps) {
   const { toggleTaskComplete, deleteTask } = useApp();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -59,7 +67,8 @@ export function TaskCard({ task, onClick, showCheckbox = true }: TaskCardProps) 
     <>
       <div
         className={cn(
-          'group flex items-start gap-3 rounded-lg border bg-card p-4 transition-colors hover:bg-accent/50',
+          'group flex items-start gap-3 rounded-lg border border-l-4 bg-card p-4 shadow-sm hover:shadow-md transition-all hover:bg-accent/50',
+          statusBorderColors[task.status],
           isComplete && 'opacity-60',
           onClick && 'cursor-pointer'
         )}
