@@ -1,150 +1,168 @@
 
 
-# Connect Chief of Staff to Supabase
+# Bold Visual Polish for Chief of Staff
 
-This plan replaces the local mock data with real Supabase database queries, enabling persistent storage for tasks and ideas.
+This plan pushes the design further with a truly dark sidebar, stronger section colors, and polished card styling that creates a professional, intentional aesthetic.
 
 ## Overview
 
-The app will transition from in-memory state management to Supabase-backed data. All create, read, update, and delete operations will sync with the `cos_tasks` and `cos_ideas` tables.
+The changes will transform the current washed-out look into a bold, visually distinct interface with:
+- Deep slate-900 sidebar with light text
+- Strongly tinted dashboard sections with visible backgrounds
+- Status-colored Kanban column headers
+- Task/idea cards with colored left border stripes
+- Enhanced shadows and visual depth
 
-## Database Mapping
+## 1. Dark Sidebar Theme
 
-The existing Supabase tables map well to our app types:
+Update CSS variables in `src/index.css` to create a truly dark sidebar:
 
+| Variable | Current | New |
+|----------|---------|-----|
+| `--sidebar-background` | Light gray `0 0% 98%` | Deep slate `222 47% 11%` (#1e293b) |
+| `--sidebar-foreground` | Dark text | Light text `210 40% 98%` |
+| `--sidebar-border` | Light | Dark slate `217 33% 17%` |
+| `--sidebar-accent` | Light | Slate hover `217 33% 20%` |
+| `--sidebar-accent-foreground` | Dark | Light `210 40% 98%` |
+
+Keep the pink highlight on active items for the Orchid theme accent.
+
+## 2. Today Dashboard Section Colors
+
+Update `src/pages/Index.tsx` to wrap each section card with a visible background tint:
+
+| Section | Background | Border Accent |
+|---------|------------|---------------|
+| Overdue | `bg-red-100 dark:bg-red-950/30` | `border-red-200` |
+| Due Today | `bg-sky-100 dark:bg-sky-950/30` | `border-sky-200` |
+| Ideas in Progress | `bg-amber-100 dark:bg-amber-950/30` | `border-amber-200` |
+
+Add `shadow-md` to all section cards and increase spacing with `gap-8`.
+
+## 3. Kanban Column Styling
+
+Update `src/components/tasks/KanbanColumn.tsx` with bold column header colors:
+
+| Status | Header Background | Header Text |
+|--------|------------------|-------------|
+| Backlog | `bg-slate-200 dark:bg-slate-700` | Slate text |
+| To-Do | `bg-sky-200 dark:bg-sky-800` | Sky text |
+| In Progress | `bg-violet-200 dark:bg-violet-800` | Violet text |
+| Blocked | `bg-orange-200 dark:bg-orange-800` | Orange text |
+| Done | `bg-emerald-200 dark:bg-emerald-800` | Emerald text |
+
+Add a subtle matching tint to column bodies.
+
+## 4. Status-Colored Card Borders
+
+Add a 4px left border stripe to cards based on status:
+
+**TaskCard.tsx** - Left border color by task status:
 ```text
-+------------------+     +------------------+
-|   cos_tasks      |     |   cos_ideas      |
-+------------------+     +------------------+
-| id (uuid)        |     | id (uuid)        |
-| title (text)     |     | title (text)     |
-| description      |     | description      |
-| due_date (date)  |     | status (text)    |
-| status (text)    |     | created_at       |
-| priority (text)  |     | updated_at       |
-| created_at       |     +------------------+
-| updated_at       |
-+------------------+
+backlog     -> border-l-slate-400
+to-do       -> border-l-sky-500
+in-progress -> border-l-violet-500
+blocked     -> border-l-orange-500
+done        -> border-l-emerald-500
 ```
 
-**Status value mapping needed:**
-- App uses: `backlog`, `to-do`, `in-progress`, `blocked`, `done`
-- Database defaults: `To-Do`, `Medium`
-
-The code will handle case-insensitive matching and normalize values.
-
-## Implementation Steps
-
-### 1. Enable RLS on cos_tasks and cos_ideas
-
-The database linter shows these tables don't have Row Level Security enabled. For now, we'll enable RLS with permissive policies (anyone can read/write) since there's no authentication. This can be tightened later when you add user accounts.
-
-**SQL Migration:**
-```sql
-ALTER TABLE cos_tasks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE cos_ideas ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Allow all access to cos_tasks" ON cos_tasks FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all access to cos_ideas" ON cos_ideas FOR ALL USING (true) WITH CHECK (true);
+**IdeaCard.tsx** - Left border color by idea status:
+```text
+new         -> border-l-pink-500 (primary Orchid)
+in-progress -> border-l-violet-500
+parked      -> border-l-slate-400
+done        -> border-l-emerald-500
 ```
 
-### 2. Create Custom React Query Hooks
+Apply `border-l-4` class to both card types.
 
-Create a new hooks file that provides data fetching and mutations using TanStack Query (already installed):
+## 5. Enhanced Card Shadows
 
-**New file: `src/hooks/useTasks.ts`**
-- `useTasks()` - Fetches all tasks from `cos_tasks`
-- `useCreateTask()` - Inserts a new task
-- `useUpdateTask()` - Updates an existing task
-- `useDeleteTask()` - Deletes a task
+Update card styling for more depth:
+- Base cards: `shadow-md hover:shadow-lg transition-shadow`
+- Dashboard section cards: `shadow-md`
+- Kanban dragging state: Keep existing `shadow-lg`
 
-**New file: `src/hooks/useIdeas.ts`**
-- `useIdeas()` - Fetches all ideas from `cos_ideas`
-- `useCreateIdea()` - Inserts a new idea
-- `useUpdateIdea()` - Updates an existing idea
-- `useDeleteIdea()` - Deletes an idea
+## Files to Modify
 
-Each hook will:
-- Transform database snake_case to app camelCase
-- Handle loading and error states
-- Invalidate queries after mutations for instant UI updates
-- Show toast notifications on success/error
-
-### 3. Update App Context
-
-Refactor `AppContext.tsx` to:
-- Remove mock data import
-- Use the new React Query hooks for all operations
-- Keep the same API surface so existing components continue to work
-- Add `isLoading` and `error` states for UI feedback
-
-### 4. Update Components
-
-**TaskForm.tsx & IdeaForm.tsx:**
-- Update to call the mutation hooks
-- Show loading state while saving
-- Handle errors with toast messages
-
-**TaskCard.tsx & IdeaCard.tsx:**
-- Update delete functionality to use mutation hooks
-- Show loading indicators during operations
-
-**Pages (Index, Tasks, Ideas):**
-- Add loading skeletons while data fetches
-- Handle empty database state gracefully
-
-### 5. Data Type Alignment
-
-Create helper functions to convert between app types and database types:
-
-```typescript
-// Convert database record to app type
-function dbTaskToTask(dbTask: Tables<'cos_tasks'>): Task
-
-// Convert app type to database format
-function taskToDbTask(task: Partial<Task>): TablesInsert<'cos_tasks'>
-```
+| File | Changes |
+|------|---------|
+| `src/index.css` | Update sidebar CSS variables for dark theme |
+| `src/components/layout/AppLayout.tsx` | Increase content padding to `p-8` |
+| `src/pages/Index.tsx` | Add section background colors, shadows, increase spacing |
+| `src/components/tasks/TaskCard.tsx` | Add status-colored left border, shadow |
+| `src/components/ideas/IdeaCard.tsx` | Add status-colored left border, shadow |
+| `src/components/tasks/KanbanColumn.tsx` | Update header colors to bold status tints |
+| `src/components/ui/card.tsx` | Update default shadow to `shadow-md` |
 
 ## Technical Details
 
-### Query Keys Structure
-```typescript
-queryKeys = {
-  tasks: ['tasks'],
-  ideas: ['ideas']
-}
+### Sidebar CSS Variables (Light Mode)
+
+```css
+--sidebar-background: 222 47% 11%;
+--sidebar-foreground: 210 40% 98%;
+--sidebar-primary: 333 71% 50%;
+--sidebar-primary-foreground: 327 73% 97%;
+--sidebar-accent: 217 33% 20%;
+--sidebar-accent-foreground: 210 40% 98%;
+--sidebar-border: 217 33% 17%;
 ```
 
-### Error Handling
-- All mutations wrapped in try/catch
-- Toast notifications for user feedback
-- Console logging for debugging
+### Status Border Classes
 
-### Loading States
-- Skeleton UI while fetching initial data
-- Button disabled states during mutations
-- Optimistic updates where appropriate
+TaskCard will include:
+```typescript
+const statusBorderColors: Record<string, string> = {
+  backlog: 'border-l-slate-400',
+  'to-do': 'border-l-sky-500',
+  'in-progress': 'border-l-violet-500',
+  blocked: 'border-l-orange-500',
+  done: 'border-l-emerald-500',
+};
+```
 
-## Files to Create/Modify
+Applied as `border-l-4 ${statusBorderColors[task.status]}` on the card container.
 
-| File | Action |
-|------|--------|
-| `src/hooks/useTasks.ts` | Create |
-| `src/hooks/useIdeas.ts` | Create |
-| `src/contexts/AppContext.tsx` | Modify |
-| `src/components/tasks/TaskForm.tsx` | Modify |
-| `src/components/tasks/TaskCard.tsx` | Modify |
-| `src/components/ideas/IdeaForm.tsx` | Modify |
-| `src/components/ideas/IdeaCard.tsx` | Modify |
-| `src/pages/Index.tsx` | Modify (add loading states) |
-| `src/pages/Tasks.tsx` | Modify (add loading states) |
-| `src/pages/Ideas.tsx` | Modify (add loading states) |
-| `src/data/mockData.ts` | Can be removed |
+### Kanban Column Config
 
-## Security Note
+```typescript
+const statusConfig: Record<TaskStatus, { label: string; headerBg: string; bodyBg: string }> = {
+  backlog: { 
+    label: 'Backlog', 
+    headerBg: 'bg-slate-200 dark:bg-slate-700', 
+    bodyBg: 'bg-slate-50 dark:bg-slate-800/30' 
+  },
+  'to-do': { 
+    label: 'To-Do', 
+    headerBg: 'bg-sky-200 dark:bg-sky-800', 
+    bodyBg: 'bg-sky-50 dark:bg-sky-900/20' 
+  },
+  'in-progress': { 
+    label: 'In Progress', 
+    headerBg: 'bg-violet-200 dark:bg-violet-800', 
+    bodyBg: 'bg-violet-50 dark:bg-violet-900/20' 
+  },
+  blocked: { 
+    label: 'Blocked', 
+    headerBg: 'bg-orange-200 dark:bg-orange-800', 
+    bodyBg: 'bg-orange-50 dark:bg-orange-900/20' 
+  },
+  done: { 
+    label: 'Done', 
+    headerBg: 'bg-emerald-200 dark:bg-emerald-800', 
+    bodyBg: 'bg-emerald-50 dark:bg-emerald-900/20' 
+  },
+};
+```
 
-The current implementation uses open RLS policies (`USING (true)`). This is fine for development and single-user scenarios. When you're ready to add authentication:
-1. Add user_id columns to both tables
-2. Update RLS policies to restrict access to authenticated users' own data
-3. Connect Supabase Auth
+## Visual Result
+
+After these changes:
+- Sidebar will be deep slate with white text and pink active highlights
+- Dashboard sections will have clearly visible color-coded backgrounds
+- Kanban columns will have bold, status-meaningful header colors
+- Every task/idea card will have a colored left stripe indicating status
+- Overall increased contrast between sidebar and content area
+- Professional, polished appearance that feels intentional
 
