@@ -9,12 +9,12 @@ interface KanbanColumnProps {
   onTaskClick: (task: Task) => void;
 }
 
-const statusConfig: Record<TaskStatus, { label: string; color: string }> = {
-  backlog: { label: 'Backlog', color: 'bg-muted' },
-  'to-do': { label: 'To-Do', color: 'bg-primary/10' },
-  'in-progress': { label: 'In Progress', color: 'bg-blue-500/10' },
-  blocked: { label: 'Blocked', color: 'bg-destructive/10' },
-  done: { label: 'Done', color: 'bg-green-500/10' },
+const statusConfig: Record<TaskStatus, { label: string; headerBg: string; bodyBg: string }> = {
+  backlog: { label: 'Backlog', headerBg: 'bg-slate-200 dark:bg-slate-700', bodyBg: 'bg-slate-50 dark:bg-slate-800/30' },
+  'to-do': { label: 'To-Do', headerBg: 'bg-sky-200 dark:bg-sky-800', bodyBg: 'bg-sky-50 dark:bg-sky-900/20' },
+  'in-progress': { label: 'In Progress', headerBg: 'bg-violet-200 dark:bg-violet-800', bodyBg: 'bg-violet-50 dark:bg-violet-900/20' },
+  blocked: { label: 'Blocked', headerBg: 'bg-orange-200 dark:bg-orange-800', bodyBg: 'bg-orange-50 dark:bg-orange-900/20' },
+  done: { label: 'Done', headerBg: 'bg-emerald-200 dark:bg-emerald-800', bodyBg: 'bg-emerald-50 dark:bg-emerald-900/20' },
 };
 
 export function KanbanColumn({ status, tasks, onTaskClick }: KanbanColumnProps) {
@@ -22,9 +22,9 @@ export function KanbanColumn({ status, tasks, onTaskClick }: KanbanColumnProps) 
 
   return (
     <div className="flex flex-col min-w-[280px] w-[280px] shrink-0">
-      <div className={cn('flex items-center gap-2 px-3 py-2 rounded-t-lg', config.color)}>
+      <div className={cn('flex items-center gap-2 px-3 py-2.5 rounded-t-lg', config.headerBg)}>
         <h3 className="text-sm font-semibold text-foreground">{config.label}</h3>
-        <span className="text-xs text-muted-foreground bg-background/50 px-1.5 py-0.5 rounded">
+        <span className="text-xs text-muted-foreground bg-background/80 px-1.5 py-0.5 rounded-full font-medium">
           {tasks.length}
         </span>
       </div>
@@ -36,7 +36,7 @@ export function KanbanColumn({ status, tasks, onTaskClick }: KanbanColumnProps) 
             {...provided.droppableProps}
             className={cn(
               'flex-1 p-2 space-y-2 rounded-b-lg border border-t-0 min-h-[200px] transition-colors',
-              snapshot.isDraggingOver ? 'bg-accent/50' : 'bg-muted/30'
+              snapshot.isDraggingOver ? 'bg-accent/50' : config.bodyBg
             )}
           >
             {tasks.map((task, index) => (

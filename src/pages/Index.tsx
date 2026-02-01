@@ -88,9 +88,9 @@ const Index = () => {
         <QuickAdd />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-8 lg:grid-cols-2">
         {/* Overdue Tasks */}
-        <Card className="border-destructive/20">
+        <Card className="border-red-200 bg-red-50 dark:bg-red-950/30 shadow-md">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -125,7 +125,7 @@ const Index = () => {
         </Card>
 
         {/* Tasks Due Today */}
-        <Card>
+        <Card className="border-sky-200 bg-sky-50 dark:bg-sky-950/30 shadow-md">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -161,7 +161,7 @@ const Index = () => {
       </div>
 
       {/* In-Progress Ideas */}
-      <Card>
+      <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/30 shadow-md">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

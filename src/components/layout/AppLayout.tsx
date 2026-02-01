@@ -15,7 +15,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           <header className="flex h-14 items-center gap-4 border-b px-6">
             <SidebarTrigger className="-ml-2" />
           </header>
-          <div className="p-6">{children}</div>
+          <div className="p-8">{children}</div>
         </main>
       </div>
     </SidebarProvider>
