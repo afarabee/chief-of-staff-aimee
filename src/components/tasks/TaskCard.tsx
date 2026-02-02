@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format, isToday, isPast } from 'date-fns';
 import { Calendar, AlertCircle, Trash2 } from 'lucide-react';
 import { Task } from '@/types';
@@ -49,6 +50,7 @@ const statusBorderColors: Record<string, string> = {
 };
 
 export function TaskCard({ task, onClick, showCheckbox = true }: TaskCardProps) {
+  const navigate = useNavigate();
   const { toggleTaskComplete, deleteTask } = useApp();
   const { data: categories = [] } = useCategories();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -56,6 +58,13 @@ export function TaskCard({ task, onClick, showCheckbox = true }: TaskCardProps) 
   const isOverdue = task.dueDate && isPast(task.dueDate) && !isToday(task.dueDate) && !isComplete;
 
   const category = task.categoryId ? categories.find(c => c.id === task.categoryId) : null;
+
+  const handleCategoryClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (category) {
+      navigate(`/category/${category.id}`);
+    }
+  };
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -124,7 +133,11 @@ export function TaskCard({ task, onClick, showCheckbox = true }: TaskCardProps) 
             </Badge>
             
             {category && (
-              <Badge variant="secondary" className="text-xs">
+              <Badge 
+                variant="secondary" 
+                className="text-xs cursor-pointer hover:bg-secondary/80"
+                onClick={handleCategoryClick}
+              >
                 {category.icon && <span className="mr-1">{category.icon}</span>}
                 {category.name}
               </Badge>

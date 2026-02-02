@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { Idea } from '@/types';
 import { useApp } from '@/contexts/AppContext';
@@ -44,11 +45,19 @@ const statusBorderColors: Record<string, string> = {
 };
 
 export function IdeaCard({ idea, onClick }: IdeaCardProps) {
+  const navigate = useNavigate();
   const { deleteIdea } = useApp();
   const { data: categories = [] } = useCategories();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const category = idea.categoryId ? categories.find(c => c.id === idea.categoryId) : null;
+
+  const handleCategoryClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (category) {
+      navigate(`/category/${category.id}`);
+    }
+  };
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -95,7 +104,11 @@ export function IdeaCard({ idea, onClick }: IdeaCardProps) {
 
         {category && (
           <div className="mt-2">
-            <Badge variant="secondary" className="text-xs">
+            <Badge 
+              variant="secondary" 
+              className="text-xs cursor-pointer hover:bg-secondary/80"
+              onClick={handleCategoryClick}
+            >
               {category.icon && <span className="mr-1">{category.icon}</span>}
               {category.name}
             </Badge>
