@@ -177,11 +177,18 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">No category</SelectItem>
-              {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((cat) => (
-                <SelectItem key={cat.id} value={cat.id}>
-                  {cat.name}
-                </SelectItem>
-              ))}
+              {[...categories]
+                .sort((a, b) => {
+                  // Extract text after emoji for sorting
+                  const textA = a.name.replace(/^\p{Emoji_Presentation}\s*/u, '').toLowerCase();
+                  const textB = b.name.replace(/^\p{Emoji_Presentation}\s*/u, '').toLowerCase();
+                  return textA.localeCompare(textB);
+                })
+                .map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
         </div>
