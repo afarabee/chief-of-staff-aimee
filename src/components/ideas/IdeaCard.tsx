@@ -96,6 +96,7 @@ export function IdeaCard({ idea, onClick }: IdeaCardProps) {
         {category && (
           <div className="mt-2">
             <Badge variant="secondary" className="text-xs">
+              {category.icon && <span className="mr-1">{category.icon}</span>}
               {category.name}
             </Badge>
           </div>

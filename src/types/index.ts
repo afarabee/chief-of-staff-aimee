@@ -5,6 +5,7 @@ export type IdeaStatus = 'new' | 'in-progress' | 'parked' | 'done';
 export interface Category {
   id: string;
   name: string;
+  icon: string | null;
   createdAt: Date;
 }
 

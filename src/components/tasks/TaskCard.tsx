@@ -125,6 +125,7 @@ export function TaskCard({ task, onClick, showCheckbox = true }: TaskCardProps) 
             
             {category && (
               <Badge variant="secondary" className="text-xs">
+                {category.icon && <span className="mr-1">{category.icon}</span>}
                 {category.name}
               </Badge>
             )}

@@ -31,17 +31,20 @@ export default function Categories() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [categoryName, setCategoryName] = useState('');
+  const [categoryIcon, setCategoryIcon] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<Category | null>(null);
 
   const handleOpenCreate = () => {
     setEditingCategory(null);
     setCategoryName('');
+    setCategoryIcon('');
     setIsFormOpen(true);
   };
 
   const handleOpenEdit = (category: Category) => {
     setEditingCategory(category);
     setCategoryName(category.name);
+    setCategoryIcon(category.icon || '');
     setIsFormOpen(true);
   };
 
@@ -50,12 +53,13 @@ export default function Categories() {
     if (!categoryName.trim()) return;
 
     if (editingCategory) {
-      updateCategory.mutate({ id: editingCategory.id, name: categoryName.trim() });
+      updateCategory.mutate({ id: editingCategory.id, name: categoryName.trim(), icon: categoryIcon.trim() || null });
     } else {
-      createCategory.mutate(categoryName.trim());
+      createCategory.mutate({ name: categoryName.trim(), icon: categoryIcon.trim() || null });
     }
     setIsFormOpen(false);
     setCategoryName('');
+    setCategoryIcon('');
     setEditingCategory(null);
   };
 
@@ -109,7 +113,10 @@ export default function Categories() {
                   key={category.id}
                   className="flex items-center justify-between rounded-lg border bg-card p-3 hover:bg-accent/50 transition-colors"
                 >
-                  <span className="font-medium text-foreground">{category.name}</span>
+                  <span className="font-medium text-foreground">
+                    {category.icon && <span className="mr-2">{category.icon}</span>}
+                    {category.name}
+                  </span>
                   <div className="flex items-center gap-1">
                     <Button
                       variant="ghost"
@@ -142,12 +149,22 @@ export default function Categories() {
             <DialogTitle>{editingCategory ? 'Edit Category' : 'New Category'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              value={categoryName}
-              onChange={(e) => setCategoryName(e.target.value)}
-              placeholder="Category name (e.g., 🏠 Home)"
-              autoFocus
-            />
+            <div className="flex gap-2">
+              <Input
+                value={categoryIcon}
+                onChange={(e) => setCategoryIcon(e.target.value)}
+                placeholder="🏠"
+                className="w-16 text-center text-lg"
+                maxLength={2}
+              />
+              <Input
+                value={categoryName}
+                onChange={(e) => setCategoryName(e.target.value)}
+                placeholder="Category name (e.g., Home)"
+                autoFocus
+                className="flex-1"
+              />
+            </div>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>
                 Cancel

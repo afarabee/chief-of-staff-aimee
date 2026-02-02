@@ -6,6 +6,7 @@ import { toast } from '@/hooks/use-toast';
 type DbCategory = {
   id: string;
   name: string;
+  icon: string | null;
   created_at: string | null;
 };
 
@@ -14,6 +15,7 @@ function dbCategoryToCategory(dbCategory: DbCategory): Category {
   return {
     id: dbCategory.id,
     name: dbCategory.name,
+    icon: dbCategory.icon,
     createdAt: new Date(dbCategory.created_at || Date.now()),
   };
 }
@@ -39,10 +41,10 @@ export function useCreateCategory() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (name: string) => {
+    mutationFn: async ({ name, icon }: { name: string; icon?: string | null }) => {
       const { data, error } = await supabase
         .from('cos_categories')
-        .insert({ name })
+        .insert({ name, icon: icon || null })
         .select()
         .single();
       
@@ -69,10 +71,10 @@ export function useUpdateCategory() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+    mutationFn: async ({ id, name, icon }: { id: string; name: string; icon?: string | null }) => {
       const { data, error } = await supabase
         .from('cos_categories')
-        .update({ name })
+        .update({ name, icon: icon ?? null })
         .eq('id', id)
         .select()
         .single();
