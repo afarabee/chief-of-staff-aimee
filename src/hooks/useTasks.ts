@@ -31,6 +31,7 @@ function dbTaskToTask(dbTask: DbTask): Task {
     dueDate: dbTask.due_date ? new Date(dbTask.due_date) : null,
     status: normalizeStatus(dbTask.status),
     priority: normalizePriority(dbTask.priority),
+    categoryId: dbTask.category_id || null,
     createdAt: new Date(dbTask.created_at || Date.now()),
     completedAt: dbTask.status?.toLowerCase() === 'done' && dbTask.updated_at 
       ? new Date(dbTask.updated_at) 
@@ -46,6 +47,7 @@ function taskToDbInsert(task: Omit<Task, 'id' | 'createdAt' | 'completedAt'>): T
     due_date: task.dueDate ? task.dueDate.toISOString().split('T')[0] : null,
     status: task.status,
     priority: task.priority,
+    category_id: task.categoryId || null,
   };
 }
 
@@ -60,6 +62,7 @@ function taskToDbUpdate(updates: Partial<Task>): TablesUpdate<'cos_tasks'> {
   }
   if (updates.status !== undefined) dbUpdate.status = updates.status;
   if (updates.priority !== undefined) dbUpdate.priority = updates.priority;
+  if (updates.categoryId !== undefined) dbUpdate.category_id = updates.categoryId || null;
   
   return dbUpdate;
 }

@@ -21,6 +21,7 @@ function dbIdeaToIdea(dbIdea: DbIdea): Idea {
     title: dbIdea.title,
     description: dbIdea.description || '',
     status: normalizeStatus(dbIdea.status),
+    categoryId: dbIdea.category_id || null,
     createdAt: new Date(dbIdea.created_at || Date.now()),
   };
 }
@@ -31,6 +32,7 @@ function ideaToDbInsert(idea: Omit<Idea, 'id' | 'createdAt'>): TablesInsert<'cos
     title: idea.title,
     description: idea.description || null,
     status: idea.status,
+    category_id: idea.categoryId || null,
   };
 }
 
@@ -41,6 +43,7 @@ function ideaToDbUpdate(updates: Partial<Idea>): TablesUpdate<'cos_ideas'> {
   if (updates.title !== undefined) dbUpdate.title = updates.title;
   if (updates.description !== undefined) dbUpdate.description = updates.description || null;
   if (updates.status !== undefined) dbUpdate.status = updates.status;
+  if (updates.categoryId !== undefined) dbUpdate.category_id = updates.categoryId || null;
   
   return dbUpdate;
 }

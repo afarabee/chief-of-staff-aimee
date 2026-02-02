@@ -3,6 +3,7 @@ import { format, isToday, isPast } from 'date-fns';
 import { Calendar, AlertCircle, Trash2 } from 'lucide-react';
 import { Task } from '@/types';
 import { useApp } from '@/contexts/AppContext';
+import { useCategories } from '@/hooks/useCategories';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -49,9 +50,12 @@ const statusBorderColors: Record<string, string> = {
 
 export function TaskCard({ task, onClick, showCheckbox = true }: TaskCardProps) {
   const { toggleTaskComplete, deleteTask } = useApp();
+  const { data: categories = [] } = useCategories();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const isComplete = task.status === 'done';
   const isOverdue = task.dueDate && isPast(task.dueDate) && !isToday(task.dueDate) && !isComplete;
+
+  const category = task.categoryId ? categories.find(c => c.id === task.categoryId) : null;
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -118,6 +122,12 @@ export function TaskCard({ task, onClick, showCheckbox = true }: TaskCardProps) 
             <Badge variant="outline" className={cn('text-xs', statusColors[task.status])}>
               {task.status}
             </Badge>
+            
+            {category && (
+              <Badge variant="secondary" className="text-xs">
+                {category.name}
+              </Badge>
+            )}
             
             {task.dueDate && (
               <div className={cn(

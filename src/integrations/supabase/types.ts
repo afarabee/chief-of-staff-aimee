@@ -79,8 +79,27 @@ export type Database = {
         }
         Relationships: []
       }
+      cos_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       cos_ideas: {
         Row: {
+          category_id: string | null
           created_at: string | null
           description: string | null
           id: string
@@ -90,6 +109,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          category_id?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -99,6 +119,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          category_id?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -107,10 +128,19 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cos_ideas_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "cos_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cos_tasks: {
         Row: {
+          category_id: string | null
           created_at: string | null
           description: string | null
           due_date: string | null
@@ -122,6 +152,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          category_id?: string | null
           created_at?: string | null
           description?: string | null
           due_date?: string | null
@@ -133,6 +164,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          category_id?: string | null
           created_at?: string | null
           description?: string | null
           due_date?: string | null
@@ -143,7 +175,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cos_tasks_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "cos_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       inventory: {
         Row: {

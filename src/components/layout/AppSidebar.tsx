@@ -1,4 +1,4 @@
-import { Calendar, CheckSquare, Lightbulb, LayoutDashboard } from 'lucide-react';
+import { Calendar, CheckSquare, Lightbulb, LayoutDashboard, Tags } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import {
   Sidebar,
@@ -17,6 +17,7 @@ const navItems = [
   { title: 'Today', url: '/', icon: LayoutDashboard },
   { title: 'Tasks', url: '/tasks', icon: CheckSquare },
   { title: 'Ideas', url: '/ideas', icon: Lightbulb },
+  { title: 'Categories', url: '/categories', icon: Tags },
 ];
 
 export function AppSidebar() {

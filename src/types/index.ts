@@ -2,6 +2,12 @@ export type TaskStatus = 'backlog' | 'to-do' | 'in-progress' | 'blocked' | 'done
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 export type IdeaStatus = 'new' | 'in-progress' | 'parked' | 'done';
 
+export interface Category {
+  id: string;
+  name: string;
+  createdAt: Date;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -9,6 +15,8 @@ export interface Task {
   dueDate: Date | null;
   status: TaskStatus;
   priority: TaskPriority;
+  categoryId: string | null;
+  categoryName?: string;
   createdAt: Date;
   completedAt: Date | null;
 }
@@ -18,5 +26,7 @@ export interface Idea {
   title: string;
   description: string;
   status: IdeaStatus;
+  categoryId: string | null;
+  categoryName?: string;
   createdAt: Date;
 }
