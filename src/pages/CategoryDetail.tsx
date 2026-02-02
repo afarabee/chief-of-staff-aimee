@@ -31,12 +31,12 @@ export default function CategoryDetail() {
   const category = categories.find((c) => c.id === categoryId);
 
   const categoryTasks = useMemo(
-    () => tasks.filter((t) => t.categoryId === categoryId && t.status !== 'done'),
+    () => tasks.filter((t) => t.categoryId === categoryId),
     [tasks, categoryId]
   );
 
   const categoryIdeas = useMemo(
-    () => ideas.filter((i) => i.categoryId === categoryId && i.status !== 'done'),
+    () => ideas.filter((i) => i.categoryId === categoryId),
     [ideas, categoryId]
   );
 
