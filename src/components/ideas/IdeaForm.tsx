@@ -114,6 +114,7 @@ export function IdeaForm({ idea, onClose }: IdeaFormProps) {
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map((cat) => (
                   <SelectItem key={cat.id} value={cat.id}>
+                    {cat.icon && <span className="mr-1">{cat.icon}</span>}
                     {cat.name}
                   </SelectItem>
                 ))}
