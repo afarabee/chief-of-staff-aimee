@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Pencil, Trash2, Tags } from 'lucide-react';
 import { Category } from '@/types';
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from '@/hooks/useCategories';
@@ -23,6 +24,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 export default function Categories() {
+  const navigate = useNavigate();
   const { data: categories = [], isLoading } = useCategories();
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory();
@@ -111,7 +113,8 @@ export default function Categories() {
               {categories.map((category) => (
                 <div
                   key={category.id}
-                  className="flex items-center justify-between rounded-lg border bg-card p-3 hover:bg-accent/50 transition-colors"
+                  className="flex items-center justify-between rounded-lg border bg-card p-3 hover:bg-accent/50 transition-colors cursor-pointer"
+                  onClick={() => navigate(`/category/${category.id}`)}
                 >
                   <span className="font-medium text-foreground">
                     {category.icon && <span className="mr-2">{category.icon}</span>}
@@ -122,7 +125,10 @@ export default function Categories() {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                      onClick={() => handleOpenEdit(category)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenEdit(category);
+                      }}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -130,7 +136,10 @@ export default function Categories() {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                      onClick={() => setDeleteConfirm(category)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteConfirm(category);
+                      }}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
