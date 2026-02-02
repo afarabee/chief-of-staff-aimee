@@ -177,7 +177,7 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">No category</SelectItem>
-              {categories.map((cat) => (
+              {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((cat) => (
                 <SelectItem key={cat.id} value={cat.id}>
                   {cat.name}
                 </SelectItem>
