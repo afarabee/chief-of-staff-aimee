@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Idea, IdeaStatus } from '@/types';
 import { useApp } from '@/contexts/AppContext';
+import { useCategories } from '@/hooks/useCategories';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,9 +28,11 @@ const statusOptions: { value: IdeaStatus; label: string }[] = [
 
 export function IdeaForm({ idea, onClose }: IdeaFormProps) {
   const { addIdea, updateIdea } = useApp();
+  const { data: categories = [] } = useCategories();
   const [title, setTitle] = useState(idea?.title || '');
   const [description, setDescription] = useState(idea?.description || '');
   const [status, setStatus] = useState<IdeaStatus>(idea?.status || 'new');
+  const [categoryId, setCategoryId] = useState<string | null>(idea?.categoryId || null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,12 +44,14 @@ export function IdeaForm({ idea, onClose }: IdeaFormProps) {
         title,
         description,
         status,
+        categoryId,
       });
     } else {
       addIdea({
         title,
         description,
         status,
+        categoryId,
       });
     }
     
@@ -77,20 +82,42 @@ export function IdeaForm({ idea, onClose }: IdeaFormProps) {
         />
       </div>
 
-      <div className="space-y-2">
-        <Label>Status</Label>
-        <Select value={status} onValueChange={(v) => setStatus(v as IdeaStatus)}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {statusOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Status</Label>
+          <Select value={status} onValueChange={(v) => setStatus(v as IdeaStatus)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {statusOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Category</Label>
+          <Select 
+            value={categoryId || 'none'} 
+            onValueChange={(v) => setCategoryId(v === 'none' ? null : v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">No category</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  {cat.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="flex justify-end gap-2 pt-4">

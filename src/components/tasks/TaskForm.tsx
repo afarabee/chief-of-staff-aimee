@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority } from '@/types';
 import { useApp } from '@/contexts/AppContext';
+import { useCategories } from '@/hooks/useCategories';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -44,11 +45,13 @@ const priorityOptions: { value: TaskPriority; label: string }[] = [
 
 export function TaskForm({ task, onClose }: TaskFormProps) {
   const { addTask, updateTask } = useApp();
+  const { data: categories = [] } = useCategories();
   const [title, setTitle] = useState(task?.title || '');
   const [description, setDescription] = useState(task?.description || '');
   const [dueDate, setDueDate] = useState<Date | undefined>(task?.dueDate || undefined);
   const [status, setStatus] = useState<TaskStatus>(task?.status || 'to-do');
   const [priority, setPriority] = useState<TaskPriority>(task?.priority || 'medium');
+  const [categoryId, setCategoryId] = useState<string | null>(task?.categoryId || null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +65,7 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
         dueDate: dueDate || null,
         status,
         priority,
+        categoryId,
       });
     } else {
       addTask({
@@ -70,6 +74,7 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
         dueDate: dueDate || null,
         status,
         priority,
+        categoryId,
       });
     }
     
@@ -144,20 +149,42 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label>Status</Label>
-        <Select value={status} onValueChange={(v) => setStatus(v as TaskStatus)}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {statusOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Status</Label>
+          <Select value={status} onValueChange={(v) => setStatus(v as TaskStatus)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {statusOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Category</Label>
+          <Select 
+            value={categoryId || 'none'} 
+            onValueChange={(v) => setCategoryId(v === 'none' ? null : v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">No category</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  {cat.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="flex justify-end gap-2 pt-4">

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Idea } from '@/types';
 import { useApp } from '@/contexts/AppContext';
+import { useCategories } from '@/hooks/useCategories';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -44,7 +45,10 @@ const statusBorderColors: Record<string, string> = {
 
 export function IdeaCard({ idea, onClick }: IdeaCardProps) {
   const { deleteIdea } = useApp();
+  const { data: categories = [] } = useCategories();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  const category = idea.categoryId ? categories.find(c => c.id === idea.categoryId) : null;
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -87,6 +91,14 @@ export function IdeaCard({ idea, onClick }: IdeaCardProps) {
           <p className="mt-2 text-sm text-muted-foreground line-clamp-3">
             {idea.description}
           </p>
+        )}
+
+        {category && (
+          <div className="mt-2">
+            <Badge variant="secondary" className="text-xs">
+              {category.name}
+            </Badge>
+          </div>
         )}
       </div>
 
