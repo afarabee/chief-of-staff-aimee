@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { isToday, isPast, startOfDay } from 'date-fns';
-import { AlertTriangle, Calendar, Lightbulb, ArrowRight } from 'lucide-react';
+import { isToday, isPast, startOfDay, isFuture, compareAsc } from 'date-fns';
+import { AlertTriangle, Calendar, Lightbulb, ArrowRight, Clock } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { Task, Idea } from '@/types';
 import { TaskCard } from '@/components/tasks/TaskCard';
@@ -69,6 +69,36 @@ const Index = () => {
   const inProgressIdeas = useMemo(() => {
     return ideas.filter((idea) => idea.status === 'in-progress');
   }, [ideas]);
+
+  const comingUpTasks = useMemo(() => {
+    const statusPriority: Record<string, number> = {
+      'blocked': 0,
+      'in-progress': 1,
+      'to-do': 2,
+      'backlog': 3,
+    };
+
+    // Exclude done tasks, today tasks, and overdue tasks
+    const eligibleTasks = tasks.filter(
+      (task) =>
+        task.status !== 'done' &&
+        !(task.dueDate && isToday(task.dueDate)) &&
+        !(task.dueDate && isPast(task.dueDate) && !isToday(task.dueDate))
+    );
+
+    // Tasks with future due dates, sorted by date
+    const futureDatedTasks = eligibleTasks
+      .filter((task) => task.dueDate && isFuture(task.dueDate))
+      .sort((a, b) => compareAsc(a.dueDate!, b.dueDate!));
+
+    // Tasks without due dates, sorted by status priority
+    const undatedTasks = eligibleTasks
+      .filter((task) => !task.dueDate)
+      .sort((a, b) => (statusPriority[a.status] ?? 99) - (statusPriority[b.status] ?? 99));
+
+    // Combine: dated first, then undated by status
+    return [...futureDatedTasks, ...undatedTasks].slice(0, 3);
+  }, [tasks]);
 
   if (isLoading) {
     return (
@@ -192,6 +222,41 @@ const Index = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Coming Up */}
+      <Card className="border-muted bg-muted/30 shadow-md">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-muted-foreground" />
+              <CardTitle className="text-lg">Coming Up</CardTitle>
+              {comingUpTasks.length > 0 && (
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                  {comingUpTasks.length}
+                </span>
+              )}
+            </div>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/tasks" className="gap-1">
+                View all <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {comingUpTasks.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">
+              No upcoming tasks. Add some tasks to get started!
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {comingUpTasks.map((task) => (
+                <TaskCard key={task.id} task={task} onClick={() => handleOpenTaskForm(task)} />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* In-Progress Ideas */}
       <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/30 shadow-md">
