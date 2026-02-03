@@ -106,7 +106,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!task) return;
 
     const statusMap: Record<TaskStatus, IdeaStatus> = {
-      'backlog': 'parked',
+      'backlog': 'new',
       'to-do': 'new',
       'in-progress': 'in-progress',
       'blocked': 'parked',
