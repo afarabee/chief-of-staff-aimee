@@ -22,13 +22,19 @@ function normalizePriority(dbPriority: string | null): TaskPriority {
   return validPriorities.includes(lower as TaskPriority) ? (lower as TaskPriority) : 'medium';
 }
 
+// Parse date string as local date (not UTC) to avoid timezone issues
+function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
 // Convert database record to app type
 function dbTaskToTask(dbTask: DbTask): Task {
   return {
     id: dbTask.id,
     title: dbTask.title,
     description: dbTask.description || '',
-    dueDate: dbTask.due_date ? new Date(dbTask.due_date) : null,
+    dueDate: dbTask.due_date ? parseLocalDate(dbTask.due_date) : null,
     status: normalizeStatus(dbTask.status),
     priority: normalizePriority(dbTask.priority),
     categoryId: dbTask.category_id || null,
@@ -36,7 +42,7 @@ function dbTaskToTask(dbTask: DbTask): Task {
     completedAt: dbTask.status?.toLowerCase() === 'done' && dbTask.updated_at 
       ? new Date(dbTask.updated_at) 
       : null,
-    imageUrl: (dbTask as DbTask & { image_url?: string | null }).image_url || null,
+    imageUrl: dbTask.image_url || null,
   };
 }
 
