@@ -21,6 +21,7 @@ export const mockTasks: Task[] = [
     categoryId: null,
     createdAt: twoDaysAgo,
     completedAt: null,
+    imageUrl: null,
   },
   {
     id: '2',
@@ -32,6 +33,7 @@ export const mockTasks: Task[] = [
     categoryId: null,
     createdAt: twoDaysAgo,
     completedAt: null,
+    imageUrl: null,
   },
   {
     id: '3',
@@ -43,6 +45,7 @@ export const mockTasks: Task[] = [
     categoryId: null,
     createdAt: twoDaysAgo,
     completedAt: null,
+    imageUrl: null,
   },
   {
     id: '4',
@@ -54,6 +57,7 @@ export const mockTasks: Task[] = [
     categoryId: null,
     createdAt: twoDaysAgo,
     completedAt: null,
+    imageUrl: null,
   },
   {
     id: '5',
@@ -65,6 +69,7 @@ export const mockTasks: Task[] = [
     categoryId: null,
     createdAt: today,
     completedAt: null,
+    imageUrl: null,
   },
   {
     id: '6',
@@ -76,6 +81,7 @@ export const mockTasks: Task[] = [
     categoryId: null,
     createdAt: today,
     completedAt: null,
+    imageUrl: null,
   },
 ];
 
@@ -87,6 +93,7 @@ export const mockIdeas: Idea[] = [
     status: 'in-progress',
     categoryId: null,
     createdAt: twoDaysAgo,
+    imageUrl: null,
   },
   {
     id: '2',
@@ -95,6 +102,7 @@ export const mockIdeas: Idea[] = [
     status: 'in-progress',
     categoryId: null,
     createdAt: yesterday,
+    imageUrl: null,
   },
   {
     id: '3',
@@ -103,6 +111,7 @@ export const mockIdeas: Idea[] = [
     status: 'new',
     categoryId: null,
     createdAt: today,
+    imageUrl: null,
   },
   {
     id: '4',
@@ -111,6 +120,7 @@ export const mockIdeas: Idea[] = [
     status: 'parked',
     categoryId: null,
     createdAt: twoDaysAgo,
+    imageUrl: null,
   },
   {
     id: '5',
@@ -119,5 +129,6 @@ export const mockIdeas: Idea[] = [
     status: 'new',
     categoryId: null,
     createdAt: today,
+    imageUrl: null,
   },
 ];

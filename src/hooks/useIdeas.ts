@@ -23,27 +23,30 @@ function dbIdeaToIdea(dbIdea: DbIdea): Idea {
     status: normalizeStatus(dbIdea.status),
     categoryId: dbIdea.category_id || null,
     createdAt: new Date(dbIdea.created_at || Date.now()),
+    imageUrl: (dbIdea as DbIdea & { image_url?: string | null }).image_url || null,
   };
 }
 
 // Convert app type to database format for insert
-function ideaToDbInsert(idea: Omit<Idea, 'id' | 'createdAt'>): TablesInsert<'cos_ideas'> {
+function ideaToDbInsert(idea: Omit<Idea, 'id' | 'createdAt'>): TablesInsert<'cos_ideas'> & { image_url?: string | null } {
   return {
     title: idea.title,
     description: idea.description || null,
     status: idea.status,
     category_id: idea.categoryId || null,
+    image_url: idea.imageUrl || null,
   };
 }
 
 // Convert partial idea to database format for update
-function ideaToDbUpdate(updates: Partial<Idea>): TablesUpdate<'cos_ideas'> {
-  const dbUpdate: TablesUpdate<'cos_ideas'> = {};
+function ideaToDbUpdate(updates: Partial<Idea>): TablesUpdate<'cos_ideas'> & { image_url?: string | null } {
+  const dbUpdate: TablesUpdate<'cos_ideas'> & { image_url?: string | null } = {};
   
   if (updates.title !== undefined) dbUpdate.title = updates.title;
   if (updates.description !== undefined) dbUpdate.description = updates.description || null;
   if (updates.status !== undefined) dbUpdate.status = updates.status;
   if (updates.categoryId !== undefined) dbUpdate.category_id = updates.categoryId || null;
+  if (updates.imageUrl !== undefined) dbUpdate.image_url = updates.imageUrl || null;
   
   return dbUpdate;
 }

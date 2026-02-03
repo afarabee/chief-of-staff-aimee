@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, isToday, isPast } from 'date-fns';
-import { Calendar, AlertCircle, Trash2 } from 'lucide-react';
+import { Calendar, AlertCircle, Trash2, ImageIcon } from 'lucide-react';
 import { Task } from '@/types';
 import { useApp } from '@/contexts/AppContext';
 import { useCategories } from '@/hooks/useCategories';
@@ -125,6 +125,16 @@ export function TaskCard({ task, onClick, showCheckbox = true }: TaskCardProps) 
             <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
               {task.description}
             </p>
+          )}
+
+          {task.imageUrl && (
+            <div className="mt-2 relative rounded overflow-hidden w-16 h-16 border border-border">
+              <img
+                src={task.imageUrl}
+                alt="Task attachment"
+                className="w-full h-full object-cover"
+              />
+            </div>
           )}
           
           <div className="mt-2 flex items-center gap-2 flex-wrap">

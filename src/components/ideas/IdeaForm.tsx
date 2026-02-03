@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { ImageUpload } from '@/components/ui/image-upload';
 import {
   Select,
   SelectContent,
@@ -45,6 +46,7 @@ export function IdeaForm({ idea, onClose }: IdeaFormProps) {
   const [description, setDescription] = useState(idea?.description || '');
   const [status, setStatus] = useState<IdeaStatus>(idea?.status || 'new');
   const [categoryId, setCategoryId] = useState<string | null>(idea?.categoryId || null);
+  const [imageUrl, setImageUrl] = useState<string | null>(idea?.imageUrl || null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +59,7 @@ export function IdeaForm({ idea, onClose }: IdeaFormProps) {
         description,
         status,
         categoryId,
+        imageUrl,
       });
     } else {
       addIdea({
@@ -64,6 +67,7 @@ export function IdeaForm({ idea, onClose }: IdeaFormProps) {
         description,
         status,
         categoryId,
+        imageUrl,
       });
     }
     
@@ -92,6 +96,11 @@ export function IdeaForm({ idea, onClose }: IdeaFormProps) {
           placeholder="Describe your idea..."
           rows={4}
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Attachment</Label>
+        <ImageUpload value={imageUrl} onChange={setImageUrl} />
       </div>
 
       <div className="grid grid-cols-2 gap-4">

@@ -36,11 +36,12 @@ function dbTaskToTask(dbTask: DbTask): Task {
     completedAt: dbTask.status?.toLowerCase() === 'done' && dbTask.updated_at 
       ? new Date(dbTask.updated_at) 
       : null,
+    imageUrl: (dbTask as DbTask & { image_url?: string | null }).image_url || null,
   };
 }
 
 // Convert app type to database format for insert
-function taskToDbInsert(task: Omit<Task, 'id' | 'createdAt' | 'completedAt'>): TablesInsert<'cos_tasks'> {
+function taskToDbInsert(task: Omit<Task, 'id' | 'createdAt' | 'completedAt'>): TablesInsert<'cos_tasks'> & { image_url?: string | null } {
   return {
     title: task.title,
     description: task.description || null,
@@ -48,12 +49,13 @@ function taskToDbInsert(task: Omit<Task, 'id' | 'createdAt' | 'completedAt'>): T
     status: task.status,
     priority: task.priority,
     category_id: task.categoryId || null,
+    image_url: task.imageUrl || null,
   };
 }
 
 // Convert partial task to database format for update
-function taskToDbUpdate(updates: Partial<Task>): TablesUpdate<'cos_tasks'> {
-  const dbUpdate: TablesUpdate<'cos_tasks'> = {};
+function taskToDbUpdate(updates: Partial<Task>): TablesUpdate<'cos_tasks'> & { image_url?: string | null } {
+  const dbUpdate: TablesUpdate<'cos_tasks'> & { image_url?: string | null } = {};
   
   if (updates.title !== undefined) dbUpdate.title = updates.title;
   if (updates.description !== undefined) dbUpdate.description = updates.description || null;
@@ -63,6 +65,7 @@ function taskToDbUpdate(updates: Partial<Task>): TablesUpdate<'cos_tasks'> {
   if (updates.status !== undefined) dbUpdate.status = updates.status;
   if (updates.priority !== undefined) dbUpdate.priority = updates.priority;
   if (updates.categoryId !== undefined) dbUpdate.category_id = updates.categoryId || null;
+  if (updates.imageUrl !== undefined) dbUpdate.image_url = updates.imageUrl || null;
   
   return dbUpdate;
 }
