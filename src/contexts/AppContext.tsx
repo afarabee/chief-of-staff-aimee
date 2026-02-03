@@ -1,5 +1,5 @@
 import React, { createContext, useContext, ReactNode } from 'react';
-import { Task, Idea } from '@/types';
+import { Task, Idea, TaskStatus, IdeaStatus } from '@/types';
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from '@/hooks/useTasks';
 import { useIdeas, useCreateIdea, useUpdateIdea, useDeleteIdea } from '@/hooks/useIdeas';
 
@@ -14,6 +14,8 @@ interface AppContextType {
   addIdea: (idea: Omit<Idea, 'id' | 'createdAt'>) => void;
   updateIdea: (id: string, updates: Partial<Idea>) => void;
   deleteIdea: (id: string) => void;
+  convertIdeaToTask: (ideaId: string) => void;
+  convertTaskToIdea: (taskId: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -70,6 +72,51 @@ export function AppProvider({ children }: { children: ReactNode }) {
     deleteIdeaMutation.mutate(id);
   };
 
+  const convertIdeaToTask = (ideaId: string) => {
+    const idea = ideas.find((i) => i.id === ideaId);
+    if (!idea) return;
+
+    const statusMap: Record<IdeaStatus, TaskStatus> = {
+      'new': 'to-do',
+      'in-progress': 'in-progress',
+      'parked': 'backlog',
+      'done': 'done',
+    };
+
+    createTaskMutation.mutate({
+      title: idea.title,
+      description: idea.description,
+      categoryId: idea.categoryId,
+      status: statusMap[idea.status],
+      priority: 'medium',
+      dueDate: null,
+    });
+
+    deleteIdeaMutation.mutate(ideaId);
+  };
+
+  const convertTaskToIdea = (taskId: string) => {
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    const statusMap: Record<TaskStatus, IdeaStatus> = {
+      'backlog': 'parked',
+      'to-do': 'new',
+      'in-progress': 'in-progress',
+      'blocked': 'parked',
+      'done': 'done',
+    };
+
+    createIdeaMutation.mutate({
+      title: task.title,
+      description: task.description,
+      categoryId: task.categoryId,
+      status: statusMap[task.status],
+    });
+
+    deleteTaskMutation.mutate(taskId);
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -83,6 +130,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         addIdea,
         updateIdea,
         deleteIdea,
+        convertIdeaToTask,
+        convertTaskToIdea,
       }}
     >
       {children}

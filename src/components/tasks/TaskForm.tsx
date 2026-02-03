@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Lightbulb } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority } from '@/types';
 import { useApp } from '@/contexts/AppContext';
 import { useCategories } from '@/hooks/useCategories';
@@ -44,7 +44,7 @@ const priorityOptions: { value: TaskPriority; label: string }[] = [
 ];
 
 export function TaskForm({ task, onClose }: TaskFormProps) {
-  const { addTask, updateTask } = useApp();
+  const { addTask, updateTask, convertTaskToIdea } = useApp();
   const { data: categories = [] } = useCategories();
   const [title, setTitle] = useState(task?.title || '');
   const [description, setDescription] = useState(task?.description || '');
@@ -190,13 +190,29 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
         </div>
       </div>
 
-      <div className="flex justify-end gap-2 pt-4">
-        <Button type="button" variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={!title.trim()}>
-          {task ? 'Update' : 'Create'} Task
-        </Button>
+      <div className="flex justify-between pt-4">
+        {task && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              convertTaskToIdea(task.id);
+              onClose();
+            }}
+            className="gap-2"
+          >
+            <Lightbulb className="h-4 w-4" />
+            Convert to Idea
+          </Button>
+        )}
+        <div className="flex gap-2 ml-auto">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={!title.trim()}>
+            {task ? 'Update' : 'Create'} Task
+          </Button>
+        </div>
       </div>
     </form>
   );

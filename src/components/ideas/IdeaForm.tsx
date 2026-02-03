@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CheckSquare } from 'lucide-react';
 import { Idea, IdeaStatus } from '@/types';
 import { useApp } from '@/contexts/AppContext';
 import { useCategories } from '@/hooks/useCategories';
@@ -27,7 +28,7 @@ const statusOptions: { value: IdeaStatus; label: string }[] = [
 ];
 
 export function IdeaForm({ idea, onClose }: IdeaFormProps) {
-  const { addIdea, updateIdea } = useApp();
+  const { addIdea, updateIdea, convertIdeaToTask } = useApp();
   const { data: categories = [] } = useCategories();
   const [title, setTitle] = useState(idea?.title || '');
   const [description, setDescription] = useState(idea?.description || '');
@@ -123,13 +124,29 @@ export function IdeaForm({ idea, onClose }: IdeaFormProps) {
         </div>
       </div>
 
-      <div className="flex justify-end gap-2 pt-4">
-        <Button type="button" variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={!title.trim()}>
-          {idea ? 'Update' : 'Create'} Idea
-        </Button>
+      <div className="flex justify-between pt-4">
+        {idea && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              convertIdeaToTask(idea.id);
+              onClose();
+            }}
+            className="gap-2"
+          >
+            <CheckSquare className="h-4 w-4" />
+            Convert to Task
+          </Button>
+        )}
+        <div className="flex gap-2 ml-auto">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={!title.trim()}>
+            {idea ? 'Update' : 'Create'} Idea
+          </Button>
+        </div>
       </div>
     </form>
   );
