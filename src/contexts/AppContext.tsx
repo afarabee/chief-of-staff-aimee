@@ -91,6 +91,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       status: statusMap[idea.status],
       priority: 'medium',
       dueDate: null,
+      imageUrl: idea.imageUrl,
     });
 
     deleteIdeaMutation.mutate(ideaId);
@@ -118,6 +119,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       description: task.description,
       categoryId: task.categoryId,
       status: statusMap[task.status],
+      imageUrl: task.imageUrl,
     });
 
     deleteTaskMutation.mutate(taskId);

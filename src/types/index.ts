@@ -20,6 +20,7 @@ export interface Task {
   categoryName?: string;
   createdAt: Date;
   completedAt: Date | null;
+  imageUrl: string | null;
 }
 
 export interface Idea {
@@ -30,4 +31,5 @@ export interface Idea {
   categoryId: string | null;
   categoryName?: string;
   createdAt: Date;
+  imageUrl: string | null;
 }

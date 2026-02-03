@@ -102,6 +102,16 @@ export function IdeaCard({ idea, onClick }: IdeaCardProps) {
           </p>
         )}
 
+        {idea.imageUrl && (
+          <div className="mt-2 relative rounded overflow-hidden w-16 h-16 border border-border">
+            <img
+              src={idea.imageUrl}
+              alt="Idea attachment"
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
+
         {category && (
           <div className="mt-2">
             <Badge 

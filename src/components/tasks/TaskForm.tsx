@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { ImageUpload } from '@/components/ui/image-upload';
 import {
   Select,
   SelectContent,
@@ -63,6 +64,7 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
   const [status, setStatus] = useState<TaskStatus>(task?.status || 'to-do');
   const [priority, setPriority] = useState<TaskPriority>(task?.priority || 'medium');
   const [categoryId, setCategoryId] = useState<string | null>(task?.categoryId || null);
+  const [imageUrl, setImageUrl] = useState<string | null>(task?.imageUrl || null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,6 +79,7 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
         status,
         priority,
         categoryId,
+        imageUrl,
       });
     } else {
       addTask({
@@ -86,6 +89,7 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
         status,
         priority,
         categoryId,
+        imageUrl,
       });
     }
     
@@ -114,6 +118,11 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
           placeholder="Add a description..."
           rows={3}
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Attachment</Label>
+        <ImageUpload value={imageUrl} onChange={setImageUrl} />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
