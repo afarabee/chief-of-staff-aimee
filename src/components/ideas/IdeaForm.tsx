@@ -14,6 +14,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface IdeaFormProps {
   idea?: Idea;
@@ -126,18 +137,33 @@ export function IdeaForm({ idea, onClose }: IdeaFormProps) {
 
       <div className="flex justify-between pt-4">
         {idea && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              convertIdeaToTask(idea.id);
-              onClose();
-            }}
-            className="gap-2"
-          >
-            <CheckSquare className="h-4 w-4" />
-            Convert to Task
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button type="button" variant="outline" className="gap-2">
+                <CheckSquare className="h-4 w-4" />
+                Convert to Task
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Convert to Task?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will convert "{idea.title}" from an idea to a task. The idea will be removed and a new task will be created with the same details.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    convertIdeaToTask(idea.id);
+                    onClose();
+                  }}
+                >
+                  Convert
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         )}
         <div className="flex gap-2 ml-auto">
           <Button type="button" variant="outline" onClick={onClose}>

@@ -21,6 +21,17 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 
 interface TaskFormProps {
@@ -192,18 +203,33 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
 
       <div className="flex justify-between pt-4">
         {task && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              convertTaskToIdea(task.id);
-              onClose();
-            }}
-            className="gap-2"
-          >
-            <Lightbulb className="h-4 w-4" />
-            Convert to Idea
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button type="button" variant="outline" className="gap-2">
+                <Lightbulb className="h-4 w-4" />
+                Convert to Idea
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Convert to Idea?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will convert "{task.title}" from a task to an idea. The task will be removed and a new idea will be created with the same details.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    convertTaskToIdea(task.id);
+                    onClose();
+                  }}
+                >
+                  Convert
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         )}
         <div className="flex gap-2 ml-auto">
           <Button type="button" variant="outline" onClick={onClose}>
