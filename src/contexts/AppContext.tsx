@@ -2,6 +2,7 @@ import React, { createContext, useContext, ReactNode } from 'react';
 import { Task, Idea, TaskStatus, IdeaStatus } from '@/types';
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from '@/hooks/useTasks';
 import { useIdeas, useCreateIdea, useUpdateIdea, useDeleteIdea } from '@/hooks/useIdeas';
+import { toast } from '@/hooks/use-toast';
 
 interface AppContextType {
   tasks: Task[];
@@ -93,6 +94,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
 
     deleteIdeaMutation.mutate(ideaId);
+
+    toast({
+      title: 'Idea converted to task',
+      description: `"${idea.title}" is now a task.`,
+    });
   };
 
   const convertTaskToIdea = (taskId: string) => {
@@ -115,6 +121,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
 
     deleteTaskMutation.mutate(taskId);
+
+    toast({
+      title: 'Task converted to idea',
+      description: `"${task.title}" is now an idea.`,
+    });
   };
 
   return (
