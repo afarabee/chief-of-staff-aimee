@@ -11,6 +11,7 @@ import { IdeaForm } from '@/components/ideas/IdeaForm';
 import { QuickAdd } from '@/components/dashboard/QuickAdd';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
@@ -20,11 +21,26 @@ import {
 } from '@/components/ui/dialog';
 
 const Index = () => {
-  const { tasks, ideas, isLoading } = useApp();
+  const { tasks, ideas, isLoading, addIdea } = useApp();
   const [editingTask, setEditingTask] = useState<Task | undefined>();
   const [editingIdea, setEditingIdea] = useState<Idea | undefined>();
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [isIdeaFormOpen, setIsIdeaFormOpen] = useState(false);
+  const [captureText, setCaptureText] = useState('');
+
+  const handleQuickCapture = () => {
+    if (!captureText.trim()) return;
+    
+    addIdea({
+      title: captureText.trim(),
+      description: '',
+      status: 'new',
+      categoryId: null,
+      imageUrl: null,
+    });
+    
+    setCaptureText('');
+  };
 
   const handleOpenTaskForm = (task: Task) => {
     setEditingTask(task);
@@ -149,6 +165,19 @@ const Index = () => {
             })}
           </p>
         </div>
+      </div>
+
+      <div className="flex gap-2">
+        <Input
+          placeholder="Capture a thought..."
+          value={captureText}
+          onChange={(e) => setCaptureText(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleQuickCapture()}
+          className="flex-1"
+        />
+        <Button onClick={handleQuickCapture} disabled={!captureText.trim()}>
+          Save
+        </Button>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-2">
