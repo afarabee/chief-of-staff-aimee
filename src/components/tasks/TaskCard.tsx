@@ -49,6 +49,13 @@ const statusBorderColors: Record<string, string> = {
   done: 'border-l-emerald-500',
 };
 
+const priorityBackgrounds: Record<string, string> = {
+  urgent: 'bg-red-50 dark:bg-red-950/30',
+  high: 'bg-pink-50 dark:bg-pink-950/30',
+  medium: '',
+  low: '',
+};
+
 export function TaskCard({ task, onClick, showCheckbox = true }: TaskCardProps) {
   const navigate = useNavigate();
   const { toggleTaskComplete, deleteTask } = useApp();
@@ -80,7 +87,10 @@ export function TaskCard({ task, onClick, showCheckbox = true }: TaskCardProps) 
     <>
       <div
         className={cn(
-          'group flex items-start gap-3 rounded-lg border border-l-4 bg-card p-4 shadow-sm hover:shadow-md transition-all hover:bg-accent/50',
+          'group flex items-start gap-3 rounded-lg border border-l-4 p-4 shadow-sm hover:shadow-md transition-all',
+          priorityBackgrounds[task.priority] || 'bg-card',
+          !priorityBackgrounds[task.priority] && 'hover:bg-accent/50',
+          priorityBackgrounds[task.priority] && 'hover:brightness-95',
           statusBorderColors[task.status],
           isComplete && 'opacity-60',
           onClick && 'cursor-pointer'
