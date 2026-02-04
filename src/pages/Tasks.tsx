@@ -57,6 +57,21 @@ export default function Tasks() {
       grouped[task.status].push(task);
     });
     
+    // Sort each column: tasks with due dates first (ascending), then tasks without due dates
+    Object.keys(grouped).forEach((status) => {
+      grouped[status as TaskStatus].sort((a, b) => {
+        // Tasks with due dates come before tasks without
+        if (a.dueDate && !b.dueDate) return -1;
+        if (!a.dueDate && b.dueDate) return 1;
+        // Both have due dates: sort ascending (earliest/overdue first)
+        if (a.dueDate && b.dueDate) {
+          return a.dueDate.getTime() - b.dueDate.getTime();
+        }
+        // Neither has due date: maintain original order
+        return 0;
+      });
+    });
+    
     return grouped;
   }, [filteredTasks]);
 
