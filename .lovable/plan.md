@@ -1,59 +1,69 @@
 
-# Plan: Add Priority-Based Background Colors to Task Cards
+
+# Plan: Sort Kanban Tasks by Due Date
 
 ## Overview
-Add pink background hue to High priority tasks and red background hue to Urgent priority tasks so they visually stand out from Medium and Low priority tasks on the Kanban board and elsewhere.
+Update the task sorting in each Kanban column so tasks are ordered by due date, with overdue/earlier due dates at the top and tasks without a due date at the bottom.
+
+## Sorting Logic
+1. **Tasks with due dates** appear before tasks without due dates
+2. **Among tasks with due dates**, sort by due date ascending (earliest/most overdue first)
+   - Example order: Jan 1 (overdue) → Feb 1 (overdue) → Feb 10 (future)
+3. **Tasks without due dates** appear at the bottom
 
 ## Implementation
 
 ### File to Modify
-**`src/components/tasks/TaskCard.tsx`**
+**`src/pages/Tasks.tsx`**
 
 ### Changes
 
-1. **Add a new priority background color map**
-   Create a new constant that maps priority levels to card background colors:
-   - `urgent`: Red hue (`bg-red-50 dark:bg-red-950/30`)
-   - `high`: Pink hue (`bg-pink-50 dark:bg-pink-950/30`)
-   - `medium`: Default card background (no extra class)
-   - `low`: Default card background (no extra class)
-
-2. **Apply the background color to the card**
-   Update the card's `className` to include the priority-based background color, replacing the static `bg-card` when a priority background is defined.
-
-### Code Changes
+Update the `tasksByStatus` memo (around lines 47-61) to add a sorting step after grouping:
 
 ```tsx
-// Add new constant after statusBorderColors (around line 50)
-const priorityBackgrounds: Record<string, string> = {
-  urgent: 'bg-red-50 dark:bg-red-950/30',
-  high: 'bg-pink-50 dark:bg-pink-950/30',
-  medium: '',
-  low: '',
-};
-
-// Update the card div className (line 82-87)
-<div
-  className={cn(
-    'group flex items-start gap-3 rounded-lg border border-l-4 p-4 shadow-sm hover:shadow-md transition-all',
-    priorityBackgrounds[task.priority] || 'bg-card',
-    !priorityBackgrounds[task.priority] && 'hover:bg-accent/50',
-    priorityBackgrounds[task.priority] && 'hover:brightness-95',
-    statusBorderColors[task.status],
-    isComplete && 'opacity-60',
-    onClick && 'cursor-pointer'
-  )}
-  onClick={onClick}
->
+const tasksByStatus = useMemo(() => {
+  const grouped: Record<TaskStatus, Task[]> = {
+    backlog: [],
+    'to-do': [],
+    'in-progress': [],
+    blocked: [],
+    done: [],
+  };
+  
+  filteredTasks.forEach((task) => {
+    grouped[task.status].push(task);
+  });
+  
+  // Sort each column: tasks with due dates first (ascending), then tasks without due dates
+  Object.keys(grouped).forEach((status) => {
+    grouped[status as TaskStatus].sort((a, b) => {
+      // Tasks with due dates come before tasks without
+      if (a.dueDate && !b.dueDate) return -1;
+      if (!a.dueDate && b.dueDate) return 1;
+      // Both have due dates: sort ascending (earliest/overdue first)
+      if (a.dueDate && b.dueDate) {
+        return a.dueDate.getTime() - b.dueDate.getTime();
+      }
+      // Neither has due date: maintain original order
+      return 0;
+    });
+  });
+  
+  return grouped;
+}, [filteredTasks]);
 ```
 
-## Visual Result
+## Example Result
+For a column with these tasks (today = Feb 4):
+| Task | Due Date | Position |
+|------|----------|----------|
+| Fix bug | Jan 15 (overdue) | 1st |
+| Review PR | Feb 1 (overdue) | 2nd |
+| Plan sprint | Feb 10 (future) | 3rd |
+| Research | No date | 4th |
 
-| Priority | Background |
-|----------|------------|
-| Urgent | Subtle red background |
-| High | Subtle pink background |
-| Medium | Default card background |
-| Low | Default card background |
+## Summary
+| File | Change |
+|------|--------|
+| `src/pages/Tasks.tsx` | Add due date sorting logic to `tasksByStatus` memo |
 
-Both colors will have dark mode variants to ensure good visibility in both themes.
