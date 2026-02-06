@@ -1,69 +1,47 @@
 
 
-# Plan: Sort Kanban Tasks by Due Date
+# Plan: Quick Search Modal (Command Palette Style)
 
 ## Overview
-Update the task sorting in each Kanban column so tasks are ordered by due date, with overdue/earlier due dates at the top and tasks without a due date at the bottom.
+Instead of navigating to a separate search page, a search modal pops up over whatever page you're on. You type your query, pick scope (Tasks / Ideas / Both), and see results inline. Clicking a result could expand/edit it. The scope defaults to "Both".
 
-## Sorting Logic
-1. **Tasks with due dates** appear before tasks without due dates
-2. **Among tasks with due dates**, sort by due date ascending (earliest/most overdue first)
-   - Example order: Jan 1 (overdue) → Feb 1 (overdue) → Feb 10 (future)
-3. **Tasks without due dates** appear at the bottom
+## How It Works
+- A **Search icon button** in the app header bar (next to the sidebar trigger) opens the modal
+- **Keyboard shortcut**: Cmd+K (Mac) / Ctrl+K (Windows) opens it from anywhere
+- The modal uses the existing `CommandDialog` component (already installed via `cmdk`)
+- Scope toggle at the top: Tasks | Ideas | Both (default: **Both**)
+- Results grouped by type, showing title and description preview
+- Clicking a result navigates to the relevant page (/tasks or /ideas)
+- Modal closes on selection or Escape
 
-## Implementation
+## Files to Create
 
-### File to Modify
-**`src/pages/Tasks.tsx`**
+### `src/components/search/SearchModal.tsx`
+- Uses `CommandDialog`, `CommandInput`, `CommandList`, `CommandGroup`, `CommandItem`, `CommandEmpty`
+- Accepts `open` and `onOpenChange` props
+- Scope toggle using `ToggleGroup` (Tasks / Ideas / Both), defaulting to "Both"
+- Pulls data from `useApp()` context
+- Filters tasks and ideas by title/description (case-insensitive)
+- Groups results into "Tasks" and "Ideas" `CommandGroup` sections
+- Each result shows an icon (CheckSquare for tasks, Lightbulb for ideas), title, and truncated description
+- On item select, navigates to `/tasks` or `/ideas` and closes the modal
 
-### Changes
+## Files to Modify
 
-Update the `tasksByStatus` memo (around lines 47-61) to add a sorting step after grouping:
+### `src/components/layout/AppLayout.tsx`
+- Add search state (`open` / `setOpen`)
+- Add a Search icon button in the header (next to `SidebarTrigger`)
+- Register a global `Cmd+K` / `Ctrl+K` keyboard listener to toggle the modal
+- Render `SearchModal` component
 
-```tsx
-const tasksByStatus = useMemo(() => {
-  const grouped: Record<TaskStatus, Task[]> = {
-    backlog: [],
-    'to-do': [],
-    'in-progress': [],
-    blocked: [],
-    done: [],
-  };
-  
-  filteredTasks.forEach((task) => {
-    grouped[task.status].push(task);
-  });
-  
-  // Sort each column: tasks with due dates first (ascending), then tasks without due dates
-  Object.keys(grouped).forEach((status) => {
-    grouped[status as TaskStatus].sort((a, b) => {
-      // Tasks with due dates come before tasks without
-      if (a.dueDate && !b.dueDate) return -1;
-      if (!a.dueDate && b.dueDate) return 1;
-      // Both have due dates: sort ascending (earliest/overdue first)
-      if (a.dueDate && b.dueDate) {
-        return a.dueDate.getTime() - b.dueDate.getTime();
-      }
-      // Neither has due date: maintain original order
-      return 0;
-    });
-  });
-  
-  return grouped;
-}, [filteredTasks]);
-```
+## Technical Notes
 
-## Example Result
-For a column with these tasks (today = Feb 4):
-| Task | Due Date | Position |
-|------|----------|----------|
-| Fix bug | Jan 15 (overdue) | 1st |
-| Review PR | Feb 1 (overdue) | 2nd |
-| Plan sprint | Feb 10 (future) | 3rd |
-| Research | No date | 4th |
-
-## Summary
-| File | Change |
-|------|--------|
-| `src/pages/Tasks.tsx` | Add due date sorting logic to `tasksByStatus` memo |
+| Detail | Value |
+|--------|-------|
+| Library | `cmdk` (already installed) via `CommandDialog` |
+| Scope default | Both |
+| Keyboard shortcut | Cmd+K / Ctrl+K |
+| Search fields | `title` and `description` |
+| Navigation on select | Uses `react-router-dom` `useNavigate` |
+| No new route needed | Modal overlays current page |
 
