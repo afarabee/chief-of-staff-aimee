@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { Plus, Pencil, Trash2, Tags } from 'lucide-react';
 import { Category } from '@/types';
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from '@/hooks/useCategories';
@@ -24,6 +25,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 export default function Categories() {
+  usePageTitle('Categories');
   const navigate = useNavigate();
   const { data: categories = [], isLoading } = useCategories();
   const createCategory = useCreateCategory();

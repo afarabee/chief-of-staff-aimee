@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { isToday, isPast, startOfDay, isFuture, compareAsc } from 'date-fns';
 import { AlertTriangle, Calendar, Lightbulb, ArrowRight, Clock } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { Task, Idea } from '@/types';
 import { TaskCard } from '@/components/tasks/TaskCard';
 import { IdeaCard } from '@/components/ideas/IdeaCard';
@@ -21,6 +22,7 @@ import {
 } from '@/components/ui/dialog';
 
 const Index = () => {
+  usePageTitle('Dashboard');
   const { tasks, ideas, isLoading, addIdea } = useApp();
   const [editingTask, setEditingTask] = useState<Task | undefined>();
   const [editingIdea, setEditingIdea] = useState<Idea | undefined>();
