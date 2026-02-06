@@ -55,6 +55,9 @@ export function InlineSearch() {
     return [...matchedTasks, ...matchedIdeas];
   }, [query, tasks, ideas, lowerQuery]);
 
+  const buildPath = (item: ResultItem) =>
+    `${item.path}?edit=${item.id}`;
+
   // Reset selected index when results change
   useEffect(() => {
     setSelectedIndex(0);
@@ -81,7 +84,7 @@ export function InlineSearch() {
       case 'Enter':
         e.preventDefault();
         if (results[selectedIndex]) {
-          handleSelect(results[selectedIndex].path);
+          handleSelect(buildPath(results[selectedIndex]));
         }
         break;
       case 'Escape':
@@ -127,7 +130,7 @@ export function InlineSearch() {
                 return (
                   <button
                     key={task.id}
-                    onClick={() => handleSelect(task.path)}
+                    onClick={() => handleSelect(buildPath(task))}
                     className={`flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-left text-sm ${
                       selectedIndex === globalIdx
                         ? 'bg-accent text-accent-foreground'
@@ -154,7 +157,7 @@ export function InlineSearch() {
                 return (
                   <button
                     key={idea.id}
-                    onClick={() => handleSelect(idea.path)}
+                    onClick={() => handleSelect(buildPath(idea))}
                     className={`flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-left text-sm ${
                       selectedIndex === globalIdx
                         ? 'bg-accent text-accent-foreground'

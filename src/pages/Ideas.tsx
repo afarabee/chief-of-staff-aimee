@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Plus, Filter } from 'lucide-react';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useApp } from '@/contexts/AppContext';
@@ -24,9 +25,24 @@ import {
 export default function Ideas() {
   usePageTitle('Ideas');
   const { ideas, isLoading } = useApp();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingIdea, setEditingIdea] = useState<Idea | undefined>();
   const [statusFilter, setStatusFilter] = useState<IdeaStatus | 'all'>('all');
+
+  // Auto-open edit dialog from search param
+  useEffect(() => {
+    const editId = searchParams.get('edit');
+    if (editId && !isLoading && ideas.length > 0) {
+      const idea = ideas.find((i) => i.id === editId);
+      if (idea) {
+        setEditingIdea(idea);
+        setIsFormOpen(true);
+      }
+      searchParams.delete('edit');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, ideas, isLoading]);
 
   const filteredIdeas = useMemo(() => {
     if (statusFilter === 'all') return ideas;

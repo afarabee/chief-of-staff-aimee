@@ -55,7 +55,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
               <CommandItem
                 key={task.id}
                 value={`task-${task.title}-${task.description}`}
-                onSelect={() => handleSelect('/tasks')}
+                onSelect={() => handleSelect(`/tasks?edit=${task.id}`)}
               >
                 <CheckSquare className="mr-2 h-4 w-4 text-muted-foreground" />
                 <div className="flex flex-col overflow-hidden">
@@ -76,7 +76,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
               <CommandItem
                 key={idea.id}
                 value={`idea-${idea.title}-${idea.description}`}
-                onSelect={() => handleSelect('/ideas')}
+                onSelect={() => handleSelect(`/ideas?edit=${idea.id}`)}
               >
                 <Lightbulb className="mr-2 h-4 w-4 text-muted-foreground" />
                 <div className="flex flex-col overflow-hidden">
