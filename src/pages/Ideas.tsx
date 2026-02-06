@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Plus, Filter } from 'lucide-react';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { useApp } from '@/contexts/AppContext';
 import { Idea, IdeaStatus } from '@/types';
 import { IdeaCard } from '@/components/ideas/IdeaCard';
@@ -21,6 +22,7 @@ import {
 } from '@/components/ui/select';
 
 export default function Ideas() {
+  usePageTitle('Ideas');
   const { ideas, isLoading } = useApp();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingIdea, setEditingIdea] = useState<Idea | undefined>();

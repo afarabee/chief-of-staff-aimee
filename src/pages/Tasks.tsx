@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { Plus, Filter } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { Task, TaskStatus, TaskPriority } from '@/types';
@@ -24,6 +25,7 @@ import {
 const statusOrder: TaskStatus[] = ['backlog', 'to-do', 'in-progress', 'blocked', 'done'];
 
 export default function Tasks() {
+  usePageTitle('Tasks');
   const { tasks, updateTask, isLoading } = useApp();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>();

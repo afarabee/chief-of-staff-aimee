@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { ArrowLeft, CheckSquare, Lightbulb } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useCategories } from '@/hooks/useCategories';
@@ -29,6 +30,7 @@ export default function CategoryDetail() {
   const [isIdeaFormOpen, setIsIdeaFormOpen] = useState(false);
 
   const category = categories.find((c) => c.id === categoryId);
+  usePageTitle(category?.name);
 
   const categoryTasks = useMemo(
     () => tasks.filter((t) => t.categoryId === categoryId),
