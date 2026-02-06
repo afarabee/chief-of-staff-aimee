@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckSquare, Lightbulb } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
@@ -17,12 +17,18 @@ type SearchScope = 'tasks' | 'ideas' | 'both';
 interface SearchModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialQuery?: string;
 }
 
-export function SearchModal({ open, onOpenChange }: SearchModalProps) {
+export function SearchModal({ open, onOpenChange, initialQuery = '' }: SearchModalProps) {
   const [scope, setScope] = useState<SearchScope>('both');
+  const [query, setQuery] = useState(initialQuery);
   const { tasks, ideas } = useApp();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (open) setQuery(initialQuery);
+  }, [open, initialQuery]);
 
   const handleSelect = (path: string) => {
     navigate(path);
@@ -46,7 +52,7 @@ export function SearchModal({ open, onOpenChange }: SearchModalProps) {
           <ToggleGroupItem value="both">Both</ToggleGroupItem>
         </ToggleGroup>
       </div>
-      <CommandInput placeholder="Search by title or description…" />
+      <CommandInput placeholder="Search by title or description…" value={query} onValueChange={setQuery} />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         {filteredTasks.length > 0 && (
