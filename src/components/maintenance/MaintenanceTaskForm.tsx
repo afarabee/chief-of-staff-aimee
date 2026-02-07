@@ -23,7 +23,7 @@ import {
 import { useAssets } from '@/hooks/useAssets';
 import { useProviders } from '@/hooks/useProviders';
 import { useCreateMaintenanceTask, useUpdateMaintenanceTask } from '@/hooks/useMaintenanceTasks';
-import { RECURRENCE_OPTIONS } from '@/types/maintenance';
+import { RECURRENCE_OPTIONS, RECURRENCE_UNITS, isPresetRecurrence } from '@/types/maintenance';
 import type { MaintenanceTask } from '@/types/maintenance';
 
 interface MaintenanceTaskFormProps {
@@ -40,7 +40,25 @@ export function MaintenanceTaskForm({ task, lockedAssetId, onClose }: Maintenanc
   const [dueDate, setDueDate] = useState<Date | undefined>(
     task?.nextDueDate ? new Date(task.nextDueDate + 'T00:00:00') : isEdit ? undefined : new Date()
   );
-  const [recurrence, setRecurrence] = useState(task?.recurrenceRule ?? '');
+  const existingRule = task?.recurrenceRule ?? '';
+  const isCustom = existingRule && !isPresetRecurrence(existingRule);
+  const [recurrenceSelect, setRecurrenceSelect] = useState(isCustom ? 'custom' : existingRule);
+  const [customAmount, setCustomAmount] = useState(() => {
+    if (isCustom) {
+      const match = existingRule.match(/^(\d+)/);
+      return match ? match[1] : '1';
+    }
+    return '1';
+  });
+  const [customUnit, setCustomUnit] = useState(() => {
+    if (isCustom) {
+      const match = existingRule.match(/([dmy])$/);
+      return match ? match[1] : 'd';
+    }
+    return 'd';
+  });
+
+  const recurrence = recurrenceSelect === 'custom' ? `${customAmount}${customUnit}` : recurrenceSelect;
   const [status, setStatus] = useState(task?.status ?? 'pending');
   const [cost, setCost] = useState(task?.cost?.toString() ?? '');
   const [completedDate, setCompletedDate] = useState<Date | undefined>(
@@ -134,7 +152,7 @@ export function MaintenanceTaskForm({ task, lockedAssetId, onClose }: Maintenanc
 
       <div className="space-y-2">
         <Label>Recurrence</Label>
-        <Select value={recurrence} onValueChange={setRecurrence}>
+        <Select value={recurrenceSelect} onValueChange={setRecurrenceSelect}>
           <SelectTrigger>
             <SelectValue placeholder="None" />
           </SelectTrigger>
@@ -146,6 +164,28 @@ export function MaintenanceTaskForm({ task, lockedAssetId, onClose }: Maintenanc
             ))}
           </SelectContent>
         </Select>
+        {recurrenceSelect === 'custom' && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Every</span>
+            <Input
+              type="number"
+              min="1"
+              className="w-20"
+              value={customAmount}
+              onChange={(e) => setCustomAmount(e.target.value)}
+            />
+            <Select value={customUnit} onValueChange={setCustomUnit}>
+              <SelectTrigger className="w-28">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {RECURRENCE_UNITS.map((u) => (
+                  <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">
