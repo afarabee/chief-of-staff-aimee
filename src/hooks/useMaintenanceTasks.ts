@@ -32,8 +32,8 @@ const ALL_KEYS = [['maintenance-tasks'], ['kanban-maintenance']];
 
 function invalidateAll(qc: ReturnType<typeof useQueryClient>) {
   ALL_KEYS.forEach((k) => qc.invalidateQueries({ queryKey: k }));
-  // Also invalidate any per-asset keys
   qc.invalidateQueries({ queryKey: ['tasks', 'asset'] });
+  qc.invalidateQueries({ queryKey: ['tasks', 'provider'] });
 }
 
 export function useMaintenanceTasks() {
@@ -59,6 +59,22 @@ export function useAssetMaintenanceTasks(assetId: string | undefined) {
         .from('tasks')
         .select(SELECT)
         .eq('asset_id', assetId!)
+        .order('next_due_date', { ascending: true, nullsFirst: false });
+      if (error) throw error;
+      return (data ?? []).map(mapRow);
+    },
+  });
+}
+
+export function useProviderMaintenanceTasks(providerId: string | undefined) {
+  return useQuery({
+    queryKey: ['tasks', 'provider', providerId],
+    enabled: !!providerId,
+    queryFn: async (): Promise<MaintenanceTask[]> => {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select(SELECT)
+        .eq('provider_id', providerId!)
         .order('next_due_date', { ascending: true, nullsFirst: false });
       if (error) throw error;
       return (data ?? []).map(mapRow);

@@ -29,14 +29,15 @@ import type { MaintenanceTask } from '@/types/maintenance';
 interface MaintenanceTaskFormProps {
   task?: MaintenanceTask;
   lockedAssetId?: string;
+  lockedProviderId?: string;
   onClose: () => void;
 }
 
-export function MaintenanceTaskForm({ task, lockedAssetId, onClose }: MaintenanceTaskFormProps) {
+export function MaintenanceTaskForm({ task, lockedAssetId, lockedProviderId, onClose }: MaintenanceTaskFormProps) {
   const isEdit = !!task;
   const [name, setName] = useState(task?.name ?? '');
   const [assetId, setAssetId] = useState<string>(lockedAssetId ?? task?.assetId ?? '');
-  const [providerId, setProviderId] = useState<string>(task?.providerId ?? '');
+  const [providerId, setProviderId] = useState<string>(lockedProviderId ?? task?.providerId ?? '');
   const [dueDate, setDueDate] = useState<Date | undefined>(
     task?.nextDueDate ? new Date(task.nextDueDate + 'T00:00:00') : isEdit ? undefined : new Date()
   );
@@ -120,7 +121,7 @@ export function MaintenanceTaskForm({ task, lockedAssetId, onClose }: Maintenanc
 
       <div className="space-y-2">
         <Label>Service Provider</Label>
-        <Select value={providerId} onValueChange={setProviderId}>
+        <Select value={providerId} onValueChange={setProviderId} disabled={!!lockedProviderId}>
           <SelectTrigger>
             <SelectValue placeholder="Select a provider" />
           </SelectTrigger>
