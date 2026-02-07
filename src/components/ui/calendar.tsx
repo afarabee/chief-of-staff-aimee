@@ -1,11 +1,46 @@
 import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { DayPicker } from "react-day-picker";
+import { DayPicker, CaptionProps, useNavigation } from "react-day-picker";
+import { setMonth, setYear } from "date-fns";
 
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>;
+
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+function CustomCaption({ displayMonth }: CaptionProps) {
+  const { goToMonth } = useNavigation();
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 21 }, (_, i) => currentYear - 10 + i);
+
+  return (
+    <div className="flex justify-center items-center gap-1">
+      <select
+        value={displayMonth.getMonth()}
+        onChange={(e) => goToMonth(setMonth(displayMonth, parseInt(e.target.value)))}
+        className="text-sm font-medium bg-background border border-input rounded-md px-1.5 py-1 focus:outline-none focus:ring-2 focus:ring-ring"
+      >
+        {MONTHS.map((m, i) => (
+          <option key={m} value={i}>{m}</option>
+        ))}
+      </select>
+      <select
+        value={displayMonth.getFullYear()}
+        onChange={(e) => goToMonth(setYear(displayMonth, parseInt(e.target.value)))}
+        className="text-sm font-medium bg-background border border-input rounded-md px-1.5 py-1 focus:outline-none focus:ring-2 focus:ring-ring"
+      >
+        {years.map((y) => (
+          <option key={y} value={y}>{y}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
 
 function Calendar({ className, classNames, showOutsideDays = true, ...props }: CalendarProps) {
   return (
@@ -42,6 +77,7 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
         ...classNames,
       }}
       components={{
+        Caption: CustomCaption,
         IconLeft: ({ ..._props }) => <ChevronLeft className="h-4 w-4" />,
         IconRight: ({ ..._props }) => <ChevronRight className="h-4 w-4" />,
       }}
