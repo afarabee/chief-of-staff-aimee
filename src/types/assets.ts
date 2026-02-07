@@ -10,6 +10,7 @@ export interface Asset {
   notes: string | null;
   createdAt: string | null;
   updatedAt: string | null;
+  showOnKanban: boolean;
 }
 
 export interface AssetCategory {

@@ -7,8 +7,12 @@ import { useApp } from '@/contexts/AppContext';
 import { Task, TaskStatus, TaskPriority } from '@/types';
 import { KanbanColumn } from '@/components/tasks/KanbanColumn';
 import { TaskForm } from '@/components/tasks/TaskForm';
+import { MaintenanceTaskForm } from '@/components/maintenance/MaintenanceTaskForm';
+import { useKanbanMaintenanceTasks } from '@/hooks/useMaintenanceTasks';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -16,12 +20,19 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import type { MaintenanceTask } from '@/types/maintenance';
 
 const statusOrder: TaskStatus[] = ['backlog', 'to-do', 'in-progress', 'blocked', 'done'];
 
@@ -32,6 +43,11 @@ export default function Tasks() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>();
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
+  const [showMaintenance, setShowMaintenance] = useState(true);
+  const [editingMaintenanceTask, setEditingMaintenanceTask] = useState<MaintenanceTask | undefined>();
+  const [isMaintenanceFormOpen, setIsMaintenanceFormOpen] = useState(false);
+
+  const { data: maintenanceTasks = [] } = useKanbanMaintenanceTasks();
 
   // Auto-open edit dialog from search param
   useEffect(() => {
@@ -92,6 +108,18 @@ export default function Tasks() {
     
     return grouped;
   }, [filteredTasks]);
+
+  // Map maintenance tasks to kanban columns
+  const maintenanceByStatus = useMemo(() => {
+    if (!showMaintenance) return {} as Record<TaskStatus, MaintenanceTask[]>;
+    const mapped: Partial<Record<TaskStatus, MaintenanceTask[]>> = {};
+    maintenanceTasks.forEach((t) => {
+      const col: TaskStatus = t.status === 'needs_attention' ? 'blocked' : 'to-do';
+      if (!mapped[col]) mapped[col] = [];
+      mapped[col]!.push(t);
+    });
+    return mapped;
+  }, [maintenanceTasks, showMaintenance]);
 
   const handleDragEnd = (result: DropResult) => {
     const { destination, draggableId } = result;
@@ -167,6 +195,11 @@ export default function Tasks() {
             <SelectItem value="low">Low</SelectItem>
           </SelectContent>
         </Select>
+
+        <div className="flex items-center gap-2 ml-auto">
+          <Switch id="show-maintenance" checked={showMaintenance} onCheckedChange={setShowMaintenance} />
+          <Label htmlFor="show-maintenance" className="text-sm text-muted-foreground">Maintenance</Label>
+        </div>
       </div>
 
       <DragDropContext onDragEnd={handleDragEnd}>
@@ -178,6 +211,8 @@ export default function Tasks() {
                 status={status}
                 tasks={tasksByStatus[status]}
                 onTaskClick={handleOpenForm}
+                maintenanceTasks={maintenanceByStatus[status] ?? []}
+                onMaintenanceTaskClick={(t) => { setEditingMaintenanceTask(t); setIsMaintenanceFormOpen(true); }}
               />
             ))}
           </div>
@@ -192,6 +227,15 @@ export default function Tasks() {
           <TaskForm task={editingTask} onClose={handleCloseForm} />
         </DialogContent>
       </Dialog>
+
+      <Sheet open={isMaintenanceFormOpen} onOpenChange={setIsMaintenanceFormOpen}>
+        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Edit Maintenance Task</SheetTitle>
+          </SheetHeader>
+          <MaintenanceTaskForm task={editingMaintenanceTask} onClose={() => setIsMaintenanceFormOpen(false)} />
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
