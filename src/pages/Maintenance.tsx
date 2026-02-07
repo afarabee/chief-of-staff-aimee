@@ -1,0 +1,161 @@
+import { useState, useMemo } from 'react';
+import { parseISO, isPast, isToday, addDays, isBefore } from 'date-fns';
+import { ClipboardCheck, Plus, ChevronDown } from 'lucide-react';
+import { usePageTitle } from '@/hooks/usePageTitle';
+import { useMaintenanceTasks, useCompleteMaintenanceTask } from '@/hooks/useMaintenanceTasks';
+import { MaintenanceTaskCard } from '@/components/maintenance/MaintenanceTaskCard';
+import { MaintenanceTaskForm } from '@/components/maintenance/MaintenanceTaskForm';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { cn } from '@/lib/utils';
+import type { MaintenanceTask } from '@/types/maintenance';
+
+interface SectionProps {
+  title: string;
+  count: number;
+  accentClass: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}
+
+function Section({ title, count, accentClass, defaultOpen = true, children }: SectionProps) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger className="flex items-center gap-2 w-full group">
+        <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', !open && '-rotate-90')} />
+        <h2 className={cn('text-sm font-semibold uppercase tracking-wide', accentClass)}>{title}</h2>
+        <Badge variant="secondary" className="text-xs">{count}</Badge>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="mt-2 space-y-2">
+        {children}
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+export default function Maintenance() {
+  usePageTitle('Maintenance');
+  const { data: tasks = [], isLoading } = useMaintenanceTasks();
+  const completeTask = useCompleteMaintenanceTask();
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<MaintenanceTask | undefined>();
+
+  const today = new Date();
+  const thirtyDaysOut = addDays(today, 30);
+
+  const { overdue, attention, upcoming, completed } = useMemo(() => {
+    const overdue: MaintenanceTask[] = [];
+    const attention: MaintenanceTask[] = [];
+    const upcoming: MaintenanceTask[] = [];
+    const completed: MaintenanceTask[] = [];
+
+    tasks.forEach((t) => {
+      if (t.status === 'completed') {
+        completed.push(t);
+      } else if (t.status === 'needs_attention') {
+        attention.push(t);
+      } else if (t.status === 'pending' && t.nextDueDate) {
+        const d = parseISO(t.nextDueDate);
+        if (isPast(d) && !isToday(d)) {
+          overdue.push(t);
+        } else if (isBefore(d, thirtyDaysOut) || isToday(d)) {
+          upcoming.push(t);
+        } else {
+          upcoming.push(t); // future tasks still go in upcoming
+        }
+      } else if (t.status === 'pending') {
+        upcoming.push(t); // no due date
+      }
+    });
+
+    // Sort overdue: most overdue first (earliest date first)
+    overdue.sort((a, b) => (a.nextDueDate ?? '').localeCompare(b.nextDueDate ?? ''));
+    // attention: by due date asc
+    attention.sort((a, b) => (a.nextDueDate ?? '9').localeCompare(b.nextDueDate ?? '9'));
+    // upcoming: by due date asc
+    upcoming.sort((a, b) => (a.nextDueDate ?? '9').localeCompare(b.nextDueDate ?? '9'));
+    // completed: by date_completed desc
+    completed.sort((a, b) => (b.dateCompleted ?? '').localeCompare(a.dateCompleted ?? ''));
+
+    return { overdue, attention, upcoming, completed: completed.slice(0, 20) };
+  }, [tasks]);
+
+  const openAdd = () => { setEditingTask(undefined); setIsFormOpen(true); };
+  const openEdit = (t: MaintenanceTask) => { setEditingTask(t); setIsFormOpen(true); };
+  const closeForm = () => setIsFormOpen(false);
+
+  const isEmpty = tasks.length === 0 && !isLoading;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-foreground">Maintenance</h1>
+        <Button onClick={openAdd}>
+          <Plus className="h-4 w-4" />
+          Add Task
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <p className="text-muted-foreground">Loading…</p>
+      ) : isEmpty ? (
+        <div className="flex flex-col items-center gap-4 py-16 text-center">
+          <ClipboardCheck className="h-12 w-12 text-muted-foreground" />
+          <p className="text-muted-foreground">No maintenance tasks yet. Add a task or generate a maintenance plan from an asset.</p>
+          <Button onClick={openAdd}>
+            <Plus className="h-4 w-4" />
+            Add Task
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {overdue.length > 0 && (
+            <Section title="Overdue" count={overdue.length} accentClass="text-destructive">
+              {overdue.map((t) => (
+                <MaintenanceTaskCard key={t.id} task={t} variant="overdue" onComplete={() => completeTask.mutate(t)} onClick={() => openEdit(t)} />
+              ))}
+            </Section>
+          )}
+
+          {attention.length > 0 && (
+            <Section title="Needs Attention" count={attention.length} accentClass="text-amber-500">
+              {attention.map((t) => (
+                <MaintenanceTaskCard key={t.id} task={t} variant="attention" onComplete={() => completeTask.mutate(t)} onClick={() => openEdit(t)} />
+              ))}
+            </Section>
+          )}
+
+          <Section title="Upcoming" count={upcoming.length} accentClass="text-blue-500">
+            {upcoming.length === 0 ? (
+              <p className="text-sm text-muted-foreground pl-6">No upcoming tasks</p>
+            ) : (
+              upcoming.map((t) => (
+                <MaintenanceTaskCard key={t.id} task={t} variant="upcoming" onComplete={() => completeTask.mutate(t)} onClick={() => openEdit(t)} />
+              ))
+            )}
+          </Section>
+
+          {completed.length > 0 && (
+            <Section title="Completed" count={completed.length} accentClass="text-emerald-500" defaultOpen={false}>
+              {completed.map((t) => (
+                <MaintenanceTaskCard key={t.id} task={t} variant="completed" onClick={() => openEdit(t)} />
+              ))}
+            </Section>
+          )}
+        </div>
+      )}
+
+      <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{editingTask ? 'Edit Task' : 'Add Maintenance Task'}</SheetTitle>
+          </SheetHeader>
+          <MaintenanceTaskForm task={editingTask} onClose={closeForm} />
+        </SheetContent>
+      </Sheet>
+    </div>
+  );
+}

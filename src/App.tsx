@@ -12,6 +12,7 @@ import Categories from "./pages/Categories";
 import CategoryDetail from "./pages/CategoryDetail";
 import Assets from "./pages/Assets";
 import Providers from "./pages/Providers";
+import Maintenance from "./pages/Maintenance";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -39,6 +40,7 @@ const App = () => (
               <Route path="/category/:categoryId" element={<CategoryDetail />} />
               <Route path="/assets" element={<Assets />} />
               <Route path="/providers" element={<Providers />} />
+              <Route path="/maintenance" element={<Maintenance />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

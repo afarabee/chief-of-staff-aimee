@@ -17,6 +17,7 @@ function mapRow(row: any): Asset {
     notes: row.notes,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    showOnKanban: row.show_on_kanban ?? false,
   };
 }
 
@@ -68,7 +69,7 @@ export function useCreateAsset() {
 export function useUpdateAsset() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; name?: string; category_id?: string | null; description?: string | null; purchase_date?: string | null; notes?: string | null }) => {
+    mutationFn: async ({ id, ...updates }: { id: string; name?: string; category_id?: string | null; description?: string | null; purchase_date?: string | null; notes?: string | null; show_on_kanban?: boolean }) => {
       const { error } = await supabase.from('assets').update(updates).eq('id', id);
       if (error) throw error;
     },

@@ -23,6 +23,7 @@ export type Database = {
           name: string
           notes: string | null
           purchase_date: string | null
+          show_on_kanban: boolean | null
           updated_at: string | null
         }
         Insert: {
@@ -33,6 +34,7 @@ export type Database = {
           name: string
           notes?: string | null
           purchase_date?: string | null
+          show_on_kanban?: boolean | null
           updated_at?: string | null
         }
         Update: {
@@ -43,6 +45,7 @@ export type Database = {
           name?: string
           notes?: string | null
           purchase_date?: string | null
+          show_on_kanban?: boolean | null
           updated_at?: string | null
         }
         Relationships: [
