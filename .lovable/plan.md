@@ -1,23 +1,38 @@
 
 
-# Plan: Improve Date Picker with Month/Year Dropdowns
+# Plan: Show Maintenance Tasks on Provider Detail
 
-## Problem
-The current calendar only has left/right arrows to navigate month by month, making it tedious to pick dates far in the past or future.
-
-## Solution
-Enhance the shared `Calendar` component to replace the plain month/year label with **dropdown selects for month and year**. This way, you can jump directly to any month/year combination. Since all date pickers in the app use this one component, every form benefits automatically.
+## Overview
+Add a "Maintenance Tasks" section to the Provider detail view, displaying all tasks linked to that provider regardless of status.
 
 ## Changes
 
-### 1. `src/components/ui/calendar.tsx`
-Replace the default caption (which just shows "February 2026" as text) with a custom `Caption` component that renders two native `<select>` dropdowns side by side -- one for month (January-December) and one for year (ranging from 10 years in the past to 10 years in the future). When a dropdown value changes, it calls `goToMonth()` from react-day-picker to navigate the calendar instantly.
+### 1. `src/hooks/useMaintenanceTasks.ts`
+Add a new hook `useProviderMaintenanceTasks(providerId)`:
+- Query key: `['tasks', 'provider', providerId]`
+- Fetches from `tasks` table with `.eq('provider_id', providerId)`, using the same SELECT join and `mapRow` helper
+- Enabled only when `providerId` is defined
+- Add this query key to the `invalidateAll` function so task mutations refresh the provider view
 
-This is a single-file change. No other files need to be modified since `AssetForm`, `TaskForm`, and `MaintenanceTaskForm` all import from `@/components/ui/calendar`.
+### 2. `src/pages/Providers.tsx`
+In the detail view section (after the notes block, around line 162), add:
+- Import `useProviderMaintenanceTasks` and `useCompleteMaintenanceTask` hooks
+- Import `MaintenanceTaskCard` component and `MaintenanceTaskForm` (Sheet)
+- A "Maintenance Tasks" heading with a count badge
+- List all tasks returned by the hook, rendered as `MaintenanceTaskCard` components
+  - Pending/overdue/needs_attention tasks show the complete button
+  - Completed tasks show with strikethrough styling
+- Each card is clickable to open the task in the edit form (MaintenanceTaskForm Sheet)
+- If no tasks, show muted text: "No maintenance tasks for this provider"
+- An "Add Task" button below the list that opens MaintenanceTaskForm (no locked asset, but could pre-select the provider if the form supports it)
+
+### 3. `src/components/maintenance/MaintenanceTaskForm.tsx`
+Add an optional `lockedProviderId` prop (same pattern as `lockedAssetId`):
+- When set, pre-fills the provider select and disables it
+- This allows adding a task directly from the provider detail with the provider pre-selected
 
 ## Technical Notes
+- Reuses existing `MaintenanceTaskCard` component with its variant logic (overdue, attention, upcoming, completed)
+- Task variant is determined the same way as on the Maintenance page: check status and compare `nextDueDate` to today
+- Query invalidation ensures the list refreshes after completing, editing, or deleting a task
 
-- Uses react-day-picker's built-in `useNavigation()` hook and custom `components.Caption` prop to override the header
-- The year range (current year minus 10 to plus 10) covers reasonable past purchase dates and future maintenance schedules
-- The dropdowns are styled to match the existing shadcn theme (border, rounded corners, text size)
-- The left/right arrow navigation buttons are preserved alongside the dropdowns for quick single-month steps
