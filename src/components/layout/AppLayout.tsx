@@ -5,6 +5,7 @@ import { AppSidebar } from './AppSidebar';
 import { Button } from '@/components/ui/button';
 import { SearchModal } from '@/components/search/SearchModal';
 import { InlineSearch } from '@/components/search/InlineSearch';
+import { AIChatBot } from '@/components/chat/AIChatBot';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -45,6 +46,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </main>
       </div>
       <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
+      <AIChatBot />
     </SidebarProvider>
   );
 }
