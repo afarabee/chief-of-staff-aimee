@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
-import { useAssets } from '@/hooks/useAssets';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
@@ -19,6 +19,8 @@ interface ChatContext {
   cos_ideas: any[];
   maintenance_tasks: any[];
   providers: any[];
+  categories: any[];
+  cos_categories: any[];
 }
 
 function truncate(str: string | null | undefined, len: number): string {
@@ -27,25 +29,29 @@ function truncate(str: string | null | undefined, len: number): string {
 }
 
 async function fetchChatContext(): Promise<ChatContext> {
-  const [assetsRes, tasksRes, ideasRes, maintenanceRes, providersRes] = await Promise.all([
+  const [assetsRes, tasksRes, ideasRes, maintenanceRes, providersRes, categoriesRes, cosCategoriesRes] = await Promise.all([
     supabase.from('assets').select('*, categories(name)').order('name'),
     supabase.from('cos_tasks').select('*, cos_categories(name)').order('created_at', { ascending: false }),
     supabase.from('cos_ideas').select('*').order('created_at', { ascending: false }),
     supabase.from('tasks').select('*, assets(name), service_providers(name)').order('next_due_date', { ascending: true }),
     supabase.from('service_providers').select('*, categories(name)').order('name'),
+    supabase.from('categories').select('id, name, icon').order('name'),
+    supabase.from('cos_categories').select('id, name').order('name'),
   ]);
 
   const assets = (assetsRes.data ?? []).map((a: any) => ({
+    id: a.id,
     name: a.name,
     categoryName: a.categories?.name,
     description: truncate(a.description, 100),
     purchaseDate: a.purchase_date,
   }));
 
-  const allTasks = (tasksRes.data ?? []);
+  const allTasks = tasksRes.data ?? [];
   const activeTasks = allTasks.filter((t: any) => t.status !== 'Done');
   const doneTasks = allTasks.filter((t: any) => t.status === 'Done').slice(0, 10);
   const cos_tasks = [...activeTasks, ...doneTasks].map((t: any) => ({
+    id: t.id,
     title: t.title,
     status: t.status,
     priority: t.priority,
@@ -54,19 +60,21 @@ async function fetchChatContext(): Promise<ChatContext> {
     description: truncate(t.description, 100),
   }));
 
-  const allIdeas = (ideasRes.data ?? []);
+  const allIdeas = ideasRes.data ?? [];
   const activeIdeas = allIdeas.filter((i: any) => i.status !== 'Done');
   const doneIdeas = allIdeas.filter((i: any) => i.status === 'Done').slice(0, 10);
   const cos_ideas = [...activeIdeas, ...doneIdeas].map((i: any) => ({
+    id: i.id,
     title: i.title,
     status: i.status,
     description: truncate(i.description, 100),
   }));
 
-  const allMaint = (maintenanceRes.data ?? []);
+  const allMaint = maintenanceRes.data ?? [];
   const activeMaint = allMaint.filter((t: any) => t.status !== 'completed');
   const completedMaint = allMaint.filter((t: any) => t.status === 'completed').slice(0, 10);
   const maintenance_tasks = [...activeMaint, ...completedMaint].map((t: any) => ({
+    id: t.id,
     name: t.name,
     status: t.status,
     nextDueDate: t.next_due_date,
@@ -76,13 +84,25 @@ async function fetchChatContext(): Promise<ChatContext> {
   }));
 
   const providers = (providersRes.data ?? []).map((p: any) => ({
+    id: p.id,
     name: p.name,
     categoryName: p.categories?.name,
     phone: p.phone,
     email: p.email,
   }));
 
-  return { assets, cos_tasks, cos_ideas, maintenance_tasks, providers };
+  const categories = (categoriesRes.data ?? []).map((c: any) => ({
+    id: c.id,
+    name: c.name,
+    icon: c.icon,
+  }));
+
+  const cos_categories = (cosCategoriesRes.data ?? []).map((c: any) => ({
+    id: c.id,
+    name: c.name,
+  }));
+
+  return { assets, cos_tasks, cos_ideas, maintenance_tasks, providers, categories, cos_categories };
 }
 
 function renderMarkdown(text: string) {
@@ -100,7 +120,7 @@ function renderMarkdown(text: string) {
 
 const WELCOME_MESSAGE: Message = {
   role: 'assistant',
-  content: "Hi! I'm your Chief of Staff assistant. I know about your assets, tasks, ideas, maintenance schedules, and service providers. Ask me anything!",
+  content: "Hi! I'm your Chief of Staff assistant. I can answer questions about your assets, tasks, ideas, maintenance schedules, and providers — and I can also create or update records for you. Just ask!",
 };
 
 export function AIChatBot() {
@@ -112,8 +132,8 @@ export function AIChatBot() {
   const isMobile = useIsMobile();
   const contextRef = useRef<ChatContext | null>(null);
   const contextFetchedRef = useRef(false);
+  const queryClient = useQueryClient();
 
-  // Fetch full context when panel opens
   useEffect(() => {
     if (open && !contextFetchedRef.current) {
       contextFetchedRef.current = true;
@@ -159,6 +179,17 @@ export function AIChatBot() {
 
       const reply = data?.reply || data?.error || 'Sorry, something went wrong.';
       setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
+
+      // If the AI mutated data, refresh context and invalidate queries
+      if (data?.mutated) {
+        contextRef.current = await fetchChatContext();
+        queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        queryClient.invalidateQueries({ queryKey: ['ideas'] });
+        queryClient.invalidateQueries({ queryKey: ['assets'] });
+        queryClient.invalidateQueries({ queryKey: ['providers'] });
+        queryClient.invalidateQueries({ queryKey: ['maintenance-tasks'] });
+        queryClient.invalidateQueries({ queryKey: ['categories'] });
+      }
     } catch (e) {
       console.error('Chat error:', e);
       setMessages((prev) => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' }]);
@@ -176,7 +207,6 @@ export function AIChatBot() {
 
   const clearChat = () => {
     setMessages([WELCOME_MESSAGE]);
-    // Re-fetch context on next open
     contextFetchedRef.current = false;
     contextRef.current = null;
   };
