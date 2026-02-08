@@ -369,6 +369,7 @@ Today's date is ${today}.
 ${dataSections}
 
 When answering:
+- NEVER include UUIDs, database IDs, or internal identifiers in your responses. Only show human-readable information like titles, names, dates, statuses, and priorities. IDs are for internal use only.
 - Reference specific items by name when relevant
 - If asked about tasks, distinguish between Kanban tasks (personal/ad-hoc) and maintenance tasks (asset-related)
 - For task counts or summaries, give accurate numbers based on the data
