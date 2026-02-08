@@ -1,51 +1,71 @@
 
 
-# Plan: Floating AI Chatbot (Gemini-Powered)
+# Plan: Add Function Calling to AI Chatbot
 
 ## Overview
-Add a floating AI assistant that helps with home maintenance, asset care, and life management. It knows about the user's assets from the database and maintains conversation context within the session.
-
-## Prerequisites
-The `GEMINI_API_KEY` secret is already configured in Supabase, so no additional setup is needed.
+Upgrade the chat Edge Function to use Gemini's function calling feature, allowing the AI to create and update records (tasks, ideas, maintenance tasks, assets, providers) directly from natural language commands.
 
 ## Changes
 
-### 1. Edge Function: `supabase/functions/chat/index.ts`
-- Accepts POST with `{ message, assets, history }`
-- Builds a system prompt listing the user's assets (name, category, description, purchase date)
-- Calls Gemini 2.0 Flash API using the stored secret
-- Returns `{ reply }` or `{ error }` on failure
-- Includes CORS headers and OPTIONS handler
-- Good logging for debugging
+### 1. Edge Function (`supabase/functions/chat/index.ts`) -- Major rewrite
 
-### 2. Update `supabase/config.toml`
-- Add `[functions.chat]` with `verify_jwt = false` (single-user app, no auth needed)
+**Add Supabase client initialization:**
+- Import `createClient` from `@supabase/supabase-js` (Deno CDN)
+- Initialize with `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from env
 
-### 3. New Component: `src/components/chat/AIChatBot.tsx`
-The main floating chat component containing all chat logic:
+**Add Gemini tool declarations:**
+- Define 8 function declarations: `create_task`, `update_task`, `create_idea`, `update_idea`, `create_maintenance_task`, `update_maintenance_task`, `create_asset`, `create_provider`
+- Each with typed parameters matching the database schema
+- Pass as `tools` array in the Gemini API request
 
-- **Floating button**: Fixed bottom-right (24px inset), 56px circle, primary background, MessageCircle icon (toggles to X when open), shadow, hover scale animation
-- **Chat panel**: 380px wide, 500px tall, positioned above the button. On mobile (< 640px), goes full-screen. Uses Card, Button, ScrollArea from shadcn/ui
-- **Header**: "AI Assistant" title, Clear button, close X button
-- **Message area**: Chat bubbles (user = right/primary, AI = left/muted), markdown rendering for AI responses, auto-scroll, typing indicator (animated dots), welcome message on first open
-- **Input area**: Text input + send button (SendHorizontal icon), Enter to send, Shift+Enter for newline, disabled while loading
+**Add function execution handlers:**
+- A `executeFunctionCall(name, args, supabaseClient)` function that routes to the correct table operation
+- `create_task`: INSERT into `cos_tasks` (defaults: status=backlog, priority=low)
+- `update_task`: UPDATE `cos_tasks` by id
+- `create_idea`: INSERT into `cos_ideas` (default: status=new)
+- `update_idea`: UPDATE `cos_ideas` by id
+- `create_maintenance_task`: INSERT into `tasks` (default: status=pending)
+- `update_maintenance_task`: UPDATE `tasks` by id; if status=completed, auto-set date_completed to today
+- `create_asset`: INSERT into `assets`
+- `create_provider`: INSERT into `service_providers`
+- Each returns `{ success, record }` or `{ success: false, error }`
 
-### 4. State and Data Flow
-- Messages stored in React state (session only, not persisted)
-- Assets fetched once via `useAssets()` hook when panel opens
-- Last 10 messages sent as history with each request
-- Chat API called via `supabase.functions.invoke('chat', { body })` -- not a TanStack query, just async state management
-- z-index set high enough to float above all content (z-50 or higher)
+**Handle the function-calling loop:**
+- After initial Gemini call, check if response contains `functionCall` in parts
+- If yes: execute the DB operation, then send a follow-up request to Gemini with the function result so it generates a natural confirmation message
+- If no: return text response as before
+- Return `{ reply, mutated: true/false }` so the frontend knows to refresh
 
-### 5. Update `src/components/layout/AppLayout.tsx`
-- Import and render `<AIChatBot />` at the end of the layout, so it appears on every page
+**Update context section builders:**
+- Include `id` fields in all data sections (assets, tasks, ideas, maintenance, providers) so the AI can reference them for updates
+- Add a categories section with IDs so the AI can assign categories when creating assets/providers
 
-### 6. Markdown Rendering
-- AI responses will be rendered using a simple approach: parse bold, lists, and code blocks using basic HTML/regex or a lightweight inline renderer, to avoid adding a new dependency
+**Update system prompt:**
+- Add instructions about creating/updating records via function calls
+- Include default category ID for tasks/ideas
+- Tell the AI to confirm actions and ask for clarification when ambiguous
+
+### 2. Frontend (`src/components/chat/AIChatBot.tsx`)
+
+**Update `fetchChatContext`:**
+- Include `id` in all mapped objects (assets, tasks, ideas, maintenance tasks, providers)
+- Fetch `categories` table (id, name, icon) and add to context
+- Fetch `cos_categories` table (id, name) and add to context as `cos_categories`
+
+**Update `ChatContext` interface:**
+- Add `categories` and `cos_categories` arrays
+
+**Handle mutations in `sendMessage`:**
+- After receiving response, check `data.mutated` flag
+- If true: re-fetch context (`contextRef.current = await fetchChatContext()`) and invalidate TanStack Query caches using `queryClient.invalidateQueries` for keys: `tasks`, `ideas`, `assets`, `providers`, `maintenance-tasks`, `categories`
+- Import `useQueryClient` from TanStack Query for cache invalidation
+
+### 3. No database or config changes needed
+- RLS policies already allow all access (single-user app)
+- Edge function config unchanged
 
 ## Technical Notes
-- The component is self-contained and does not interfere with existing app functionality
-- No database changes required -- assets are read-only from the existing `assets` table
-- No new dependencies needed -- uses existing shadcn/ui components, lucide icons, and the Supabase client
-- The edge function is public (no JWT) since this is a single-user personal tool
-
+- The Gemini function-calling loop may involve 2 API calls per mutation request (initial call returning functionCall, then follow-up with result for natural language confirmation)
+- The Edge Function uses the service role key to bypass RLS for writes, ensuring reliability
+- Error handling: if a DB operation fails, the error message is sent back to Gemini as the function result so it can explain the failure naturally
+- Context refresh after mutations ensures follow-up questions reflect the latest state
