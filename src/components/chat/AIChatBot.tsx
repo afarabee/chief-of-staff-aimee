@@ -129,6 +129,7 @@ export function AIChatBot() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const isMobile = useIsMobile();
   const contextRef = useRef<ChatContext | null>(null);
   const contextFetchedRef = useRef(false);
@@ -145,7 +146,10 @@ export function AIChatBot() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, loading]);
+    if (open && !loading) {
+      setTimeout(() => inputRef.current?.focus(), 60);
+    }
+  }, [messages, loading, open]);
 
   const sendMessage = async () => {
     const text = input.trim();
@@ -253,7 +257,8 @@ export function AIChatBot() {
           </CardContent>
 
           <CardFooter className="p-3 border-t gap-2">
-            <Textarea
+             <Textarea
+              ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
