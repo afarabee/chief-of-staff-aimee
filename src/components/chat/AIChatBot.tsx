@@ -128,7 +128,7 @@ export function AIChatBot() {
   const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const contextRef = useRef<ChatContext | null>(null);
   const contextFetchedRef = useRef(false);
@@ -143,17 +143,9 @@ export function AIChatBot() {
     }
   }, [open]);
 
-  const scrollToBottom = useCallback(() => {
-    setTimeout(() => {
-      if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      }
-    }, 50);
-  }, []);
-
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, loading, scrollToBottom]);
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading]);
 
   const sendMessage = async () => {
     const text = input.trim();
@@ -233,7 +225,7 @@ export function AIChatBot() {
 
           <CardContent className="flex-1 p-0 overflow-hidden">
             <ScrollArea className="h-full">
-              <div ref={scrollRef} className="p-4 space-y-3 h-full overflow-y-auto">
+              <div className="p-4 space-y-3">
                 {messages.map((msg, i) => (
                   <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div
@@ -255,6 +247,7 @@ export function AIChatBot() {
                     </div>
                   </div>
                 )}
+                <div ref={bottomRef} />
               </div>
             </ScrollArea>
           </CardContent>
