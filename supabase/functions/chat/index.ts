@@ -6,6 +6,65 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function buildAssetSection(assets: any[]): string {
+  if (!assets?.length) return "";
+  const lines = assets.map((a) => {
+    const parts = [`- ${a.name}`];
+    if (a.categoryName) parts.push(`(${a.categoryName})`);
+    if (a.description) parts.push(`— ${a.description}`);
+    if (a.purchaseDate) parts.push(`[Purchased: ${a.purchaseDate}]`);
+    return parts.join(" ");
+  });
+  return `\nASSETS (things the user owns):\n${lines.join("\n")}`;
+}
+
+function buildTaskSection(tasks: any[]): string {
+  if (!tasks?.length) return "";
+  const lines = tasks.map((t) => {
+    const parts = [`- ${t.title} [Status: ${t.status || "Unknown"}, Priority: ${t.priority || "Medium"}]`];
+    if (t.dueDate) parts.push(`Due: ${t.dueDate}`);
+    if (t.categoryName) parts.push(`Category: ${t.categoryName}`);
+    if (t.description) parts.push(`— ${t.description}`);
+    return parts.join(" ");
+  });
+  return `\nKANBAN TASKS (ad-hoc/personal tasks):\n${lines.join("\n")}`;
+}
+
+function buildIdeaSection(ideas: any[]): string {
+  if (!ideas?.length) return "";
+  const lines = ideas.map((i) => {
+    const parts = [`- ${i.title} [Status: ${i.status || "New"}]`];
+    if (i.description) parts.push(`— ${i.description}`);
+    return parts.join(" ");
+  });
+  return `\nIDEAS:\n${lines.join("\n")}`;
+}
+
+function buildMaintenanceSection(tasks: any[]): string {
+  if (!tasks?.length) return "";
+  const lines = tasks.map((t) => {
+    const parts = [`- ${t.name} [Status: ${t.status || "pending"}]`];
+    if (t.assetName) parts.push(`Asset: ${t.assetName}`);
+    if (t.nextDueDate) parts.push(`Due: ${t.nextDueDate}`);
+    if (t.recurrenceRule) parts.push(`Recurrence: ${t.recurrenceRule}`);
+    if (t.providerName) parts.push(`Provider: ${t.providerName}`);
+    return parts.join(" ");
+  });
+  return `\nMAINTENANCE TASKS (asset-related recurring/scheduled tasks):\n${lines.join("\n")}`;
+}
+
+function buildProviderSection(providers: any[]): string {
+  if (!providers?.length) return "";
+  const lines = providers.map((p) => {
+    const parts = [`- ${p.name}`];
+    if (p.categoryName) parts.push(`(${p.categoryName})`);
+    if (p.phone) parts.push(`Phone: ${p.phone}`);
+    if (p.email) parts.push(`Email: ${p.email}`);
+    return parts.join(" ");
+  });
+  return `\nSERVICE PROVIDERS:\n${lines.join("\n")}`;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -21,8 +80,14 @@ serve(async (req) => {
       });
     }
 
-    const { message, assets, history } = await req.json();
-    console.log("Chat request received. Message length:", message?.length, "Assets:", assets?.length, "History:", history?.length);
+    const body = await req.json();
+    const message = body.message;
+    const history = body.history || [];
+    // Support both old { assets } and new { context } format
+    const context = body.context || {};
+    const assets = context.assets || body.assets || [];
+
+    console.log("Chat request. Message length:", message?.length, "Context keys:", Object.keys(context));
 
     if (!message) {
       return new Response(JSON.stringify({ error: "Message is required" }), {
@@ -31,34 +96,33 @@ serve(async (req) => {
       });
     }
 
-    // Build system prompt with asset context
-    let assetContext = "";
-    if (assets && assets.length > 0) {
-      assetContext = "\n\nThe user owns the following assets:\n" +
-        assets.map((a: any) => {
-          const parts = [`- ${a.name}`];
-          if (a.categoryName) parts.push(`(Category: ${a.categoryName})`);
-          if (a.description) parts.push(`— ${a.description}`);
-          if (a.purchaseDate) parts.push(`[Purchased: ${a.purchaseDate}]`);
-          return parts.join(" ");
-        }).join("\n");
-    }
+    const dataSections = [
+      buildAssetSection(assets),
+      buildTaskSection(context.cos_tasks),
+      buildIdeaSection(context.cos_ideas),
+      buildMaintenanceSection(context.maintenance_tasks),
+      buildProviderSection(context.providers),
+    ].filter(Boolean).join("\n");
 
-    const systemPrompt = `You are a helpful personal assistant for home and asset maintenance. You give practical, specific advice about maintaining properties, vehicles, boats, appliances, and other assets.${assetContext}
+    const today = new Date().toISOString().split("T")[0];
 
-When answering questions:
-- Be specific and practical
-- Reference the user's actual assets when relevant
-- Suggest maintenance schedules when appropriate
-- If asked about an asset you know about, tailor your answer to that specific make/model/type
-- Keep answers concise but thorough
-- If you don't know something specific, say so rather than guessing`;
+    const systemPrompt = `You are a personal Chief of Staff assistant. You have full knowledge of the user's tasks, ideas, assets, maintenance schedules, and service providers. Use this information to give specific, helpful answers.
+
+Today's date is ${today}.
+${dataSections}
+
+When answering:
+- Reference specific items by name when relevant
+- If asked about tasks, distinguish between Kanban tasks (personal/ad-hoc) and maintenance tasks (asset-related)
+- For task counts or summaries, give accurate numbers based on the data
+- For overdue items, compare due dates against today's date (${today})
+- If asked to find something, search across all data types
+- Be concise but thorough
+- If something isn't in the data, say so`;
 
     // Build Gemini conversation contents
     const contents: any[] = [];
-
-    // Add history
-    if (history && history.length > 0) {
+    if (history?.length > 0) {
       for (const msg of history) {
         contents.push({
           role: msg.role === "assistant" ? "model" : "user",
@@ -66,8 +130,6 @@ When answering questions:
         });
       }
     }
-
-    // Add current user message
     contents.push({ role: "user", parts: [{ text: message }] });
 
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
