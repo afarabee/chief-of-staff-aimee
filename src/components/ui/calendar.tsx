@@ -1,7 +1,7 @@
 import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DayPicker, CaptionProps, useNavigation } from "react-day-picker";
-import { setMonth, setYear } from "date-fns";
+import { setMonth, setYear, addMonths, subMonths } from "date-fns";
 
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
@@ -20,6 +20,16 @@ function CustomCaption({ displayMonth }: CaptionProps) {
 
   return (
     <div className="flex justify-center items-center gap-1">
+      <button
+        type="button"
+        onClick={() => goToMonth(subMonths(displayMonth, 1))}
+        className={cn(
+          buttonVariants({ variant: "outline" }),
+          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
+        )}
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </button>
       <select
         value={displayMonth.getMonth()}
         onChange={(e) => goToMonth(setMonth(displayMonth, parseInt(e.target.value)))}
@@ -38,6 +48,16 @@ function CustomCaption({ displayMonth }: CaptionProps) {
           <option key={y} value={y}>{y}</option>
         ))}
       </select>
+      <button
+        type="button"
+        onClick={() => goToMonth(addMonths(displayMonth, 1))}
+        className={cn(
+          buttonVariants({ variant: "outline" }),
+          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
+        )}
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
     </div>
   );
 }
