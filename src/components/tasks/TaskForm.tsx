@@ -141,12 +141,13 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
                 {dueDate ? format(dueDate, 'PPP') : 'Pick a date'}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
+            <PopoverContent className="w-auto p-0" align="start" side="bottom" avoidCollisions={false}>
               <Calendar
                 mode="single"
                 selected={dueDate}
                 onSelect={setDueDate}
                 initialFocus
+                className="p-3 pointer-events-auto"
               />
             </PopoverContent>
           </Popover>
