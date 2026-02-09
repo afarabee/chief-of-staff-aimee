@@ -114,7 +114,11 @@ export default function Tasks() {
     if (!showMaintenance) return {} as Record<TaskStatus, MaintenanceTask[]>;
     const mapped: Partial<Record<TaskStatus, MaintenanceTask[]>> = {};
     maintenanceTasks.forEach((t) => {
-      const col: TaskStatus = t.status === 'needs_attention' ? 'blocked' : 'to-do';
+      let col: TaskStatus;
+      if (t.status === 'needs_attention') col = 'blocked';
+      else if (t.status === 'in_progress') col = 'in-progress';
+      else if (t.status === 'completed') col = 'done';
+      else col = 'to-do';
       if (!mapped[col]) mapped[col] = [];
       mapped[col]!.push(t);
     });
