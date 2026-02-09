@@ -59,6 +59,7 @@ export function WeeklyView({ currentDate, items, onEmptyDayClick, onEditItem }: 
                   <TaskPopover key={item.id} item={item} onEdit={onEditItem}>
                     <button
                       type="button"
+                      onClick={(e) => e.stopPropagation()}
                       className={cn(
                         'w-full text-left rounded-md border border-border p-1.5 hover:bg-accent/50 transition-colors',
                         completed && 'opacity-60',
@@ -86,15 +87,13 @@ export function WeeklyView({ currentDate, items, onEmptyDayClick, onEditItem }: 
                 );
               })}
 
-              {dayItems.length === 0 && (
-                <button
-                  type="button"
-                  onClick={() => onEmptyDayClick(day)}
-                  className="flex-1 flex items-center justify-center text-[10px] text-muted-foreground hover:text-foreground hover:bg-accent/30 rounded transition-colors"
-                >
-                  + Add
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => onEmptyDayClick(day)}
+                className="flex items-center justify-center text-[10px] text-muted-foreground hover:text-foreground hover:bg-accent/30 rounded transition-colors py-1"
+              >
+                + Add
+              </button>
             </div>
           </div>
         );

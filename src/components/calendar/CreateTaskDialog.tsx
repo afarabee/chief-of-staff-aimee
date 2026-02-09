@@ -1,3 +1,4 @@
+import { format } from 'date-fns';
 import { CheckSquare, ClipboardCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,14 +13,17 @@ interface CreateTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSelectType: (type: 'kanban' | 'maintenance') => void;
+  date?: Date | null;
 }
 
-export function CreateTaskDialog({ open, onOpenChange, onSelectType }: CreateTaskDialogProps) {
+export function CreateTaskDialog({ open, onOpenChange, onSelectType, date }: CreateTaskDialogProps) {
+  const title = date ? `New Task for ${format(date, 'MMM d, yyyy')}` : 'New Task';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>What type of task?</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
           <DialogDescription>Choose which type of task to create.</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3 pt-2">
