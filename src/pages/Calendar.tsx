@@ -119,6 +119,7 @@ export default function CalendarPage() {
           <span className="h-2.5 w-2.5 rounded-full bg-orange-500" />
           Maintenance Tasks
         </span>
+        <span className="hidden sm:inline text-muted-foreground">Double-click a day to add a task</span>
         <div className="flex items-center gap-2 ml-auto">
           <Switch id="show-completed" checked={showCompleted} onCheckedChange={setShowCompleted} />
           <Label htmlFor="show-completed" className="text-xs cursor-pointer">Show completed</Label>

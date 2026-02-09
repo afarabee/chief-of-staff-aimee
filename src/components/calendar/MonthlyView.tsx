@@ -57,6 +57,7 @@ export function MonthlyView({ currentDate, items, onDayClick, onEmptyDayClick, o
           return (
             <div
               key={key}
+              onDoubleClick={() => onEmptyDayClick(day)}
               className={cn(
                 'min-h-[5rem] sm:min-h-[6rem] border-b border-r border-border p-1 transition-colors',
                 !inMonth && 'bg-muted/30',
@@ -83,6 +84,7 @@ export function MonthlyView({ currentDate, items, onDayClick, onEmptyDayClick, o
                     <TaskPopover key={item.id} item={item} onEdit={onEditItem}>
                       <button
                         type="button"
+                        onClick={(e) => e.stopPropagation()}
                         className={cn(
                           'h-2 w-2 rounded-full',
                           completed ? 'bg-gray-300' : item.type === 'kanban' ? 'bg-primary' : 'bg-orange-500',
@@ -123,15 +125,6 @@ export function MonthlyView({ currentDate, items, onDayClick, onEmptyDayClick, o
                     className="text-[10px] text-muted-foreground hover:text-foreground text-left px-1"
                   >
                     +{overflow} more
-                  </button>
-                )}
-                {dayItems.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); onEmptyDayClick(day); }}
-                    className="text-[10px] text-muted-foreground hover:text-foreground text-left px-1 hover:bg-accent/30 rounded"
-                  >
-                    + Add
                   </button>
                 )}
               </div>

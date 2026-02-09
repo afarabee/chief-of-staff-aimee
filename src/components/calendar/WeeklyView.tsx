@@ -39,6 +39,7 @@ export function WeeklyView({ currentDate, items, onEmptyDayClick, onEditItem }: 
         return (
           <div
             key={key}
+            onDoubleClick={() => onEmptyDayClick(day)}
             className={cn(
               'bg-card min-h-[8rem] p-2 flex flex-col gap-1.5',
               today && 'bg-primary/5',
@@ -86,14 +87,6 @@ export function WeeklyView({ currentDate, items, onEmptyDayClick, onEditItem }: 
                   </TaskPopover>
                 );
               })}
-
-              <button
-                type="button"
-                onClick={() => onEmptyDayClick(day)}
-                className="flex items-center justify-center text-[10px] text-muted-foreground hover:text-foreground hover:bg-accent/30 rounded transition-colors py-1"
-              >
-                + Add
-              </button>
             </div>
           </div>
         );
