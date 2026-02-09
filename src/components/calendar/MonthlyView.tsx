@@ -101,6 +101,7 @@ export function MonthlyView({ currentDate, items, onDayClick, onEmptyDayClick, o
                     <TaskPopover key={item.id} item={item} onEdit={onEditItem}>
                       <button
                         type="button"
+                        onClick={(e) => e.stopPropagation()}
                         className={cn(
                           'w-full truncate rounded px-1 py-0.5 text-left text-[10px] leading-tight',
                           completed
@@ -118,10 +119,19 @@ export function MonthlyView({ currentDate, items, onDayClick, onEmptyDayClick, o
                 {overflow > 0 && (
                   <button
                     type="button"
-                    onClick={() => onDayClick(day)}
+                    onClick={(e) => { e.stopPropagation(); onDayClick(day); }}
                     className="text-[10px] text-muted-foreground hover:text-foreground text-left px-1"
                   >
                     +{overflow} more
+                  </button>
+                )}
+                {dayItems.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onEmptyDayClick(day); }}
+                    className="text-[10px] text-muted-foreground hover:text-foreground text-left px-1 hover:bg-accent/30 rounded"
+                  >
+                    + Add
                   </button>
                 )}
               </div>

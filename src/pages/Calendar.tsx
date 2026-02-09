@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfWeek, endOfWeek } from 'date-fns';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -32,6 +32,7 @@ export default function CalendarPage() {
   // Create dialog state
   const [createDate, setCreateDate] = useState<Date | null>(null);
   const [createType, setCreateType] = useState<'kanban' | 'maintenance' | null>(null);
+  const [showCreateNoDate, setShowCreateNoDate] = useState(false);
 
   // Edit dialog state
   const [editItem, setEditItem] = useState<CalendarItem | null>(null);
@@ -75,6 +76,7 @@ export default function CalendarPage() {
   const closeCreate = () => {
     setCreateDate(null);
     setCreateType(null);
+    setShowCreateNoDate(false);
   };
 
   const closeEdit = () => {
@@ -120,6 +122,9 @@ export default function CalendarPage() {
         <div className="flex items-center gap-2 ml-auto">
           <Switch id="show-completed" checked={showCompleted} onCheckedChange={setShowCompleted} />
           <Label htmlFor="show-completed" className="text-xs cursor-pointer">Show completed</Label>
+          <Button variant="outline" size="icon" className="h-7 w-7 ml-1" onClick={() => setShowCreateNoDate(true)}>
+            <Plus className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
@@ -158,9 +163,10 @@ export default function CalendarPage() {
 
       {/* Create Task Dialog - type selector */}
       <CreateTaskDialog
-        open={!!createDate && !createType}
+        open={(!!createDate || showCreateNoDate) && !createType}
         onOpenChange={(open) => { if (!open) closeCreate(); }}
         onSelectType={handleSelectCreateType}
+        date={createDate}
       />
 
       {/* Create Kanban Task */}
