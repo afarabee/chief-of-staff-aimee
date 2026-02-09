@@ -1,5 +1,5 @@
 import { format, parseISO } from 'date-fns';
-import { CalendarItem } from '@/hooks/useCalendarTasks';
+import { CalendarItem, isItemCompleted } from '@/hooks/useCalendarTasks';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +17,8 @@ interface TaskPopoverProps {
 }
 
 export function TaskPopover({ item, onEdit, children, open, onOpenChange }: TaskPopoverProps) {
+  const completed = isItemCompleted(item);
+
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
@@ -24,7 +26,10 @@ export function TaskPopover({ item, onEdit, children, open, onOpenChange }: Task
         <div className="space-y-1">
           <h4 className="font-semibold text-sm leading-tight">{item.title}</h4>
           <div className="flex flex-wrap gap-1.5">
-            <Badge variant={item.type === 'kanban' ? 'default' : 'secondary'} className={item.type === 'maintenance' ? 'bg-orange-500 text-white hover:bg-orange-600' : ''}>
+            <Badge
+              variant={item.type === 'kanban' ? 'default' : 'secondary'}
+              className={completed ? 'bg-gray-300 text-gray-500' : item.type === 'maintenance' ? 'bg-orange-500 text-white hover:bg-orange-600' : ''}
+            >
               {item.type === 'kanban' ? 'Kanban Task' : 'Maintenance Task'}
             </Badge>
             <Badge variant="outline" className="capitalize">{item.status.replace(/_/g, ' ')}</Badge>

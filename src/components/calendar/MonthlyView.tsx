@@ -3,7 +3,7 @@ import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   eachDayOfInterval, format, isSameMonth, isSameDay, isToday,
 } from 'date-fns';
-import { CalendarItem } from '@/hooks/useCalendarTasks';
+import { CalendarItem, isItemCompleted } from '@/hooks/useCalendarTasks';
 import { TaskPopover } from './TaskPopover';
 import { cn } from '@/lib/utils';
 
@@ -77,34 +77,44 @@ export function MonthlyView({ currentDate, items, onDayClick, onEmptyDayClick, o
 
               {/* Mobile: dots only */}
               <div className="flex gap-0.5 flex-wrap sm:hidden">
-                {dayItems.map((item) => (
-                  <TaskPopover key={item.id} item={item} onEdit={onEditItem}>
-                    <button
-                      type="button"
-                      className={cn(
-                        'h-2 w-2 rounded-full',
-                        item.type === 'kanban' ? 'bg-primary' : 'bg-orange-500',
-                      )}
-                    />
-                  </TaskPopover>
-                ))}
+                {dayItems.map((item) => {
+                  const completed = isItemCompleted(item);
+                  return (
+                    <TaskPopover key={item.id} item={item} onEdit={onEditItem}>
+                      <button
+                        type="button"
+                        className={cn(
+                          'h-2 w-2 rounded-full',
+                          completed ? 'bg-gray-300' : item.type === 'kanban' ? 'bg-primary' : 'bg-orange-500',
+                        )}
+                      />
+                    </TaskPopover>
+                  );
+                })}
               </div>
 
               {/* Desktop: pills */}
               <div className="hidden sm:flex flex-col gap-0.5">
-                {dayItems.slice(0, maxShow).map((item) => (
-                  <TaskPopover key={item.id} item={item} onEdit={onEditItem}>
-                    <button
-                      type="button"
-                      className={cn(
-                        'w-full truncate rounded px-1 py-0.5 text-left text-[10px] leading-tight text-white',
-                        item.type === 'kanban' ? 'bg-primary hover:bg-primary/90' : 'bg-orange-500 hover:bg-orange-600',
-                      )}
-                    >
-                      {item.title.length > 20 ? item.title.slice(0, 20) + '…' : item.title}
-                    </button>
-                  </TaskPopover>
-                ))}
+                {dayItems.slice(0, maxShow).map((item) => {
+                  const completed = isItemCompleted(item);
+                  return (
+                    <TaskPopover key={item.id} item={item} onEdit={onEditItem}>
+                      <button
+                        type="button"
+                        className={cn(
+                          'w-full truncate rounded px-1 py-0.5 text-left text-[10px] leading-tight',
+                          completed
+                            ? 'bg-gray-300 text-gray-500'
+                            : item.type === 'kanban'
+                              ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                              : 'bg-orange-500 text-white hover:bg-orange-600',
+                        )}
+                      >
+                        {item.title.length > 20 ? item.title.slice(0, 20) + '…' : item.title}
+                      </button>
+                    </TaskPopover>
+                  );
+                })}
                 {overflow > 0 && (
                   <button
                     type="button"

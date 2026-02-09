@@ -15,6 +15,11 @@ export type CalendarItem = {
   recurrenceRule?: string;
 };
 
+export function isItemCompleted(item: CalendarItem): boolean {
+  return (item.type === 'kanban' && item.status === 'done') ||
+    (item.type === 'maintenance' && item.status === 'completed');
+}
+
 export function useCalendarKanbanTasks() {
   return useQuery({
     queryKey: ['calendar-kanban-tasks'],

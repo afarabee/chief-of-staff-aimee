@@ -1,10 +1,12 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfWeek, endOfWeek } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useCalendarTasks, CalendarItem } from '@/hooks/useCalendarTasks';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { useCalendarTasks, CalendarItem, isItemCompleted } from '@/hooks/useCalendarTasks';
 import { MonthlyView } from '@/components/calendar/MonthlyView';
 import { WeeklyView } from '@/components/calendar/WeeklyView';
 import { DailyView } from '@/components/calendar/DailyView';
@@ -20,6 +22,12 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<ViewMode>('monthly');
   const { items, isLoading } = useCalendarTasks();
+  const [showCompleted, setShowCompleted] = useState(true);
+
+  const filteredItems = useMemo(() => {
+    if (showCompleted) return items;
+    return items.filter((item) => !isItemCompleted(item));
+  }, [items, showCompleted]);
 
   // Create dialog state
   const [createDate, setCreateDate] = useState<Date | null>(null);
@@ -99,8 +107,8 @@ export default function CalendarPage() {
         </Button>
       </div>
 
-      {/* Legend */}
-      <div className="flex gap-4 text-xs text-muted-foreground">
+      {/* Legend & Toggle */}
+      <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
         <span className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-primary" />
           Kanban Tasks
@@ -109,6 +117,10 @@ export default function CalendarPage() {
           <span className="h-2.5 w-2.5 rounded-full bg-orange-500" />
           Maintenance Tasks
         </span>
+        <div className="flex items-center gap-2 ml-auto">
+          <Switch id="show-completed" checked={showCompleted} onCheckedChange={setShowCompleted} />
+          <Label htmlFor="show-completed" className="text-xs cursor-pointer">Show completed</Label>
+        </div>
       </div>
 
       {/* Calendar Views */}
@@ -119,7 +131,7 @@ export default function CalendarPage() {
           {view === 'monthly' && (
             <MonthlyView
               currentDate={currentDate}
-              items={items}
+              items={filteredItems}
               onDayClick={handleDayClick}
               onEmptyDayClick={handleEmptyDayClick}
               onEditItem={handleEditItem}
@@ -128,7 +140,7 @@ export default function CalendarPage() {
           {view === 'weekly' && (
             <WeeklyView
               currentDate={currentDate}
-              items={items}
+              items={filteredItems}
               onEmptyDayClick={handleEmptyDayClick}
               onEditItem={handleEditItem}
             />
@@ -136,7 +148,7 @@ export default function CalendarPage() {
           {view === 'daily' && (
             <DailyView
               currentDate={currentDate}
-              items={items}
+              items={filteredItems}
               onAddTask={handleEmptyDayClick}
               onEditItem={handleEditItem}
             />

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { format } from 'date-fns';
-import { CalendarItem } from '@/hooks/useCalendarTasks';
+import { CalendarItem, isItemCompleted } from '@/hooks/useCalendarTasks';
+import { cn } from '@/lib/utils';
 import { TaskPopover } from './TaskPopover';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -47,11 +48,13 @@ export function DailyView({ currentDate, items, onAddTask, onEditItem }: DailyVi
             Kanban Tasks
           </h3>
           <div className="space-y-2">
-            {kanbanItems.map((item) => (
-              <TaskPopover key={item.id} item={item} onEdit={onEditItem}>
-                <button type="button" className="w-full text-left rounded-lg border border-border bg-card p-3 hover:shadow-sm transition-shadow">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="font-medium text-sm">{item.title}</p>
+            {kanbanItems.map((item) => {
+              const completed = isItemCompleted(item);
+              return (
+                <TaskPopover key={item.id} item={item} onEdit={onEditItem}>
+                  <button type="button" className={cn("w-full text-left rounded-lg border border-border bg-card p-3 hover:shadow-sm transition-shadow", completed && "opacity-60")}>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className={cn("font-medium text-sm", completed && "line-through")}>{item.title}</p>
                     <div className="flex gap-1 shrink-0">
                       <Badge variant="outline" className="capitalize text-xs">{item.status.replace(/-/g, ' ')}</Badge>
                       {item.priority && <Badge variant="outline" className="capitalize text-xs">{item.priority}</Badge>}
@@ -60,9 +63,10 @@ export function DailyView({ currentDate, items, onAddTask, onEditItem }: DailyVi
                   {item.description && (
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.description}</p>
                   )}
-                </button>
-              </TaskPopover>
-            ))}
+                  </button>
+                </TaskPopover>
+              );
+            })}
           </div>
         </section>
       )}
@@ -74,11 +78,13 @@ export function DailyView({ currentDate, items, onAddTask, onEditItem }: DailyVi
             Maintenance Tasks
           </h3>
           <div className="space-y-2">
-            {maintenanceItems.map((item) => (
-              <TaskPopover key={item.id} item={item} onEdit={onEditItem}>
-                <button type="button" className="w-full text-left rounded-lg border border-border bg-card p-3 hover:shadow-sm transition-shadow">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="font-medium text-sm">{item.title}</p>
+            {maintenanceItems.map((item) => {
+              const completed = isItemCompleted(item);
+              return (
+                <TaskPopover key={item.id} item={item} onEdit={onEditItem}>
+                  <button type="button" className={cn("w-full text-left rounded-lg border border-border bg-card p-3 hover:shadow-sm transition-shadow", completed && "opacity-60")}>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className={cn("font-medium text-sm", completed && "line-through")}>{item.title}</p>
                     <Badge variant="outline" className="capitalize text-xs">{item.status.replace(/_/g, ' ')}</Badge>
                   </div>
                   <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-xs text-muted-foreground">
@@ -86,9 +92,10 @@ export function DailyView({ currentDate, items, onAddTask, onEditItem }: DailyVi
                     {item.providerName && <span>Provider: {item.providerName}</span>}
                     {item.recurrenceRule && <span>Recurrence: {item.recurrenceRule}</span>}
                   </div>
-                </button>
-              </TaskPopover>
-            ))}
+                  </button>
+                </TaskPopover>
+              );
+            })}
           </div>
         </section>
       )}
