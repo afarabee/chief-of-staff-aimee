@@ -8,7 +8,7 @@ import { MaintenanceTaskForm } from '@/components/maintenance/MaintenanceTaskFor
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import type { MaintenanceTask } from '@/types/maintenance';
 
@@ -148,14 +148,14 @@ export default function Maintenance() {
         </div>
       )}
 
-      <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>{editingTask ? 'Edit Task' : 'Add Maintenance Task'}</SheetTitle>
-          </SheetHeader>
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingTask ? 'Edit Task' : 'Add Maintenance Task'}</DialogTitle>
+          </DialogHeader>
           <MaintenanceTaskForm task={editingTask} onClose={closeForm} />
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

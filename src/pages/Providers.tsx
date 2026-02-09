@@ -13,11 +13,11 @@ import { MaintenanceTaskForm } from '@/components/maintenance/MaintenanceTaskFor
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -212,27 +212,27 @@ export default function Providers() {
           )}
         </div>
 
-        <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
-            <SheetHeader>
-              <SheetTitle>{editingProvider ? 'Edit Provider' : 'Add Provider'}</SheetTitle>
-            </SheetHeader>
+        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+          <DialogContent className="max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{editingProvider ? 'Edit Provider' : 'Add Provider'}</DialogTitle>
+            </DialogHeader>
             <ProviderForm provider={editingProvider} onClose={closeForm} />
-          </SheetContent>
-        </Sheet>
+          </DialogContent>
+        </Dialog>
 
-        <Sheet open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
-          <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
-            <SheetHeader>
-              <SheetTitle>{editingTask ? 'Edit Task' : 'Add Task'}</SheetTitle>
-            </SheetHeader>
+        <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
+          <DialogContent className="max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{editingTask ? 'Edit Task' : 'Add Task'}</DialogTitle>
+            </DialogHeader>
             <MaintenanceTaskForm
               task={editingTask}
               lockedProviderId={fresh.id}
               onClose={() => setIsTaskFormOpen(false)}
             />
-          </SheetContent>
-        </Sheet>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
@@ -280,14 +280,14 @@ export default function Providers() {
         ))
       )}
 
-      <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>{editingProvider ? 'Edit Provider' : 'Add Provider'}</SheetTitle>
-          </SheetHeader>
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingProvider ? 'Edit Provider' : 'Add Provider'}</DialogTitle>
+          </DialogHeader>
           <ProviderForm provider={editingProvider} onClose={closeForm} />
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
