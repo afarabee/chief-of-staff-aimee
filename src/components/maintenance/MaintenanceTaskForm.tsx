@@ -197,7 +197,9 @@ export function MaintenanceTaskForm({ task, lockedAssetId, lockedProviderId, onC
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="in_progress">In Progress</SelectItem>
             <SelectItem value="needs_attention">Needs Attention</SelectItem>
+            <SelectItem value="overdue">Overdue</SelectItem>
             <SelectItem value="completed">Completed</SelectItem>
           </SelectContent>
         </Select>

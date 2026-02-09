@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { parseISO, isPast, isToday, addDays, isBefore } from 'date-fns';
+import { parseISO, isPast, isToday } from 'date-fns';
 import { ClipboardCheck, Plus, ChevronDown } from 'lucide-react';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useMaintenanceTasks, useCompleteMaintenanceTask } from '@/hooks/useMaintenanceTasks';
@@ -43,12 +43,11 @@ export default function Maintenance() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<MaintenanceTask | undefined>();
 
-  const today = new Date();
-  const thirtyDaysOut = addDays(today, 30);
 
-  const { overdue, attention, upcoming, completed } = useMemo(() => {
+  const { overdue, attention, inProgress, upcoming, completed } = useMemo(() => {
     const overdue: MaintenanceTask[] = [];
     const attention: MaintenanceTask[] = [];
+    const inProgress: MaintenanceTask[] = [];
     const upcoming: MaintenanceTask[] = [];
     const completed: MaintenanceTask[] = [];
 
@@ -57,14 +56,16 @@ export default function Maintenance() {
         completed.push(t);
       } else if (t.status === 'needs_attention') {
         attention.push(t);
+      } else if (t.status === 'in_progress') {
+        inProgress.push(t);
+      } else if (t.status === 'overdue') {
+        overdue.push(t);
       } else if (t.status === 'pending' && t.nextDueDate) {
         const d = parseISO(t.nextDueDate);
         if (isPast(d) && !isToday(d)) {
           overdue.push(t);
-        } else if (isBefore(d, thirtyDaysOut) || isToday(d)) {
-          upcoming.push(t);
         } else {
-          upcoming.push(t); // future tasks still go in upcoming
+          upcoming.push(t);
         }
       } else if (t.status === 'pending') {
         upcoming.push(t); // no due date
@@ -75,12 +76,14 @@ export default function Maintenance() {
     overdue.sort((a, b) => (a.nextDueDate ?? '').localeCompare(b.nextDueDate ?? ''));
     // attention: by due date asc
     attention.sort((a, b) => (a.nextDueDate ?? '9').localeCompare(b.nextDueDate ?? '9'));
+    // in progress: by due date asc
+    inProgress.sort((a, b) => (a.nextDueDate ?? '9').localeCompare(b.nextDueDate ?? '9'));
     // upcoming: by due date asc
     upcoming.sort((a, b) => (a.nextDueDate ?? '9').localeCompare(b.nextDueDate ?? '9'));
     // completed: by date_completed desc
     completed.sort((a, b) => (b.dateCompleted ?? '').localeCompare(a.dateCompleted ?? ''));
 
-    return { overdue, attention, upcoming, completed: completed.slice(0, 20) };
+    return { overdue, attention, inProgress, upcoming, completed: completed.slice(0, 20) };
   }, [tasks]);
 
   const openAdd = () => { setEditingTask(undefined); setIsFormOpen(true); };
@@ -124,6 +127,14 @@ export default function Maintenance() {
             <Section title="Needs Attention" count={attention.length} accentClass="text-amber-500">
               {attention.map((t) => (
                 <MaintenanceTaskCard key={t.id} task={t} variant="attention" onComplete={() => completeTask.mutate(t)} onClick={() => openEdit(t)} />
+              ))}
+            </Section>
+          )}
+
+          {inProgress.length > 0 && (
+            <Section title="In Progress" count={inProgress.length} accentClass="text-violet-500">
+              {inProgress.map((t) => (
+                <MaintenanceTaskCard key={t.id} task={t} variant="upcoming" onComplete={() => completeTask.mutate(t)} onClick={() => openEdit(t)} />
               ))}
             </Section>
           )}
