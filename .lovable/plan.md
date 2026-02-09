@@ -1,41 +1,41 @@
 
 
-# Handle Completed/Done Tasks on Calendar
+# Fix Calendar Picker Position Jumping in Task Form
 
-## Overview
-Gray out completed tasks, add strikethrough in daily view, and add a "Show completed" toggle to the calendar header.
+## Problem
+When opening the date picker in the Task form, the calendar popup starts below the field but jumps above it when navigating months. This happens because the Radix Popover detects a collision with the viewport edge and flips the popover to the other side. The other forms (Maintenance, Assets) don't exhibit this because they have different scroll/layout contexts.
 
-## Helper Function
-Add a reusable helper `isItemCompleted(item)` that returns `true` when a Kanban task has status `done` or a maintenance task has status `completed`. This will be used across all view components.
+## Solution
+Pin the popover to always open below the trigger by setting `side="bottom"` and `avoidCollisions={false}` on the `PopoverContent` in the Task form. Also add the missing `pointer-events-auto` class to the Calendar.
 
-## Changes
+## File Change
 
-### 1. `src/pages/Calendar.tsx`
-- Add `showCompleted` state (default `true`)
-- Add a Switch toggle in the header area (near the legend row) labeled "Show completed"
-- Derive a filtered `filteredItems` list: when `showCompleted` is false, filter out completed items; pass `filteredItems` to all view components
-- Import `Switch` from `@/components/ui/switch` and `Label` from `@/components/ui/label`
+**`src/components/tasks/TaskForm.tsx`** (line ~144)
 
-### 2. `src/components/calendar/MonthlyView.tsx`
-- **Mobile dots**: Use `bg-gray-300` instead of `bg-primary`/`bg-orange-500` when the item is completed
-- **Desktop pills**: Use `bg-gray-300 text-gray-500` instead of the colored backgrounds when completed
+Change:
+```tsx
+<PopoverContent className="w-auto p-0" align="start">
+  <Calendar
+    mode="single"
+    selected={dueDate}
+    onSelect={setDueDate}
+    initialFocus
+  />
+</PopoverContent>
+```
 
-### 3. `src/components/calendar/WeeklyView.tsx`
-- **Task cards**: When completed, apply `opacity-60` to the card button
-- **Type badge**: Use `bg-gray-200 text-gray-500` instead of the colored badge styles when completed
-- **Status badge**: Already shows status text, no change needed
+To:
+```tsx
+<PopoverContent className="w-auto p-0" align="start" side="bottom" avoidCollisions={false}>
+  <Calendar
+    mode="single"
+    selected={dueDate}
+    onSelect={setDueDate}
+    initialFocus
+    className="p-3 pointer-events-auto"
+  />
+</PopoverContent>
+```
 
-### 4. `src/components/calendar/DailyView.tsx`
-- When a task is completed, add `opacity-60` to the card and `line-through` to the title text
-- Applies to both Kanban and Maintenance task cards
+This prevents the popover from recalculating its position when the calendar content changes during month navigation.
 
-### 5. `src/components/calendar/TaskPopover.tsx`
-- When the item is completed, use `bg-gray-300 text-gray-500` for the type badge instead of the primary/orange color
-
-### 6. `src/hooks/useCalendarTasks.ts`
-- No changes needed -- it already fetches completed tasks (done in last 7 days). The filtering is handled client-side in Calendar.tsx.
-
-## Technical Details
-- The completed check: `(item.type === 'kanban' && item.status === 'done') || (item.type === 'maintenance' && item.status === 'completed')`
-- Toggle state is session-only React state, no persistence
-- All 4 view/interaction components get the same `items` prop -- filtering happens once at the page level before passing down
