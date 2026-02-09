@@ -16,11 +16,11 @@ import { Label } from '@/components/ui/label';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -117,14 +117,14 @@ function AssetTasksSection({ assetId, showOnKanban }: { assetId: string; showOnK
         </Collapsible>
       )}
 
-      <Sheet open={taskFormOpen} onOpenChange={setTaskFormOpen}>
-        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>{editingTask ? 'Edit Task' : 'Add Maintenance Task'}</SheetTitle>
-          </SheetHeader>
+      <Dialog open={taskFormOpen} onOpenChange={setTaskFormOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingTask ? 'Edit Task' : 'Add Maintenance Task'}</DialogTitle>
+          </DialogHeader>
           <MaintenanceTaskForm task={editingTask} lockedAssetId={assetId} onClose={() => setTaskFormOpen(false)} />
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -271,14 +271,14 @@ export default function Assets() {
         <AssetTasksSection assetId={fresh.id} showOnKanban={fresh.showOnKanban} />
 
         {/* Sheet for editing from detail */}
-        <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
-            <SheetHeader>
-              <SheetTitle>{editingAsset ? 'Edit Asset' : 'Add Asset'}</SheetTitle>
-            </SheetHeader>
+        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+          <DialogContent className="max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{editingAsset ? 'Edit Asset' : 'Add Asset'}</DialogTitle>
+            </DialogHeader>
             <AssetForm asset={editingAsset} onClose={closeForm} />
-          </SheetContent>
-        </Sheet>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
@@ -328,14 +328,14 @@ export default function Assets() {
         ))
       )}
 
-      <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>{editingAsset ? 'Edit Asset' : 'Add Asset'}</SheetTitle>
-          </SheetHeader>
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingAsset ? 'Edit Asset' : 'Add Asset'}</DialogTitle>
+          </DialogHeader>
           <AssetForm asset={editingAsset} onClose={closeForm} />
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
