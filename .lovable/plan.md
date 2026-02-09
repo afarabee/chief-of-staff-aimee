@@ -1,71 +1,78 @@
 
 
-# Plan: Add Function Calling to AI Chatbot
+# Add Calendar Page
 
 ## Overview
-Upgrade the chat Edge Function to use Gemini's function calling feature, allowing the AI to create and update records (tasks, ideas, maintenance tasks, assets, providers) directly from natural language commands.
+Create a new Calendar page at `/calendar` with monthly, weekly, and daily views showing both Kanban tasks (from `cos_tasks`) and maintenance tasks (from `tasks`), color-coded by type.
 
-## Changes
+## New Files
 
-### 1. Edge Function (`supabase/functions/chat/index.ts`) -- Major rewrite
+### 1. `src/hooks/useCalendarTasks.ts`
+Custom hook that fetches from both tables using TanStack Query:
+- **Kanban tasks**: `cos_tasks` where `due_date IS NOT NULL` and (`status != 'done'` OR completed in last 7 days)
+- **Maintenance tasks**: `tasks` where `next_due_date IS NOT NULL` and (`status != 'completed'` OR completed in last 7 days), with joined `assets.name` and `service_providers.name`
+- Normalizes both into a unified `CalendarItem` type
+- Query keys: `['calendar-kanban-tasks']` and `['calendar-maintenance-tasks']`
 
-**Add Supabase client initialization:**
-- Import `createClient` from `@supabase/supabase-js` (Deno CDN)
-- Initialize with `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from env
+### 2. `src/pages/Calendar.tsx`
+Main calendar page with:
+- **State**: `currentDate`, `view` (monthly/weekly/daily)
+- **Header**: page title, ToggleGroup for view selection (Monthly default), ChevronLeft/ChevronRight navigation, period label, "Today" button
+- **Legend**: colored dots for Kanban (primary) and Maintenance (orange/teal)
+- **Conditional rendering** of MonthlyView, WeeklyView, or DailyView components
+- **Task popover** and **create-task dialog** managed at page level
+- Reuses existing `TaskForm` and `MaintenanceTaskForm` in Dialog wrappers for edit/create, pre-filling dates when creating from calendar
 
-**Add Gemini tool declarations:**
-- Define 8 function declarations: `create_task`, `update_task`, `create_idea`, `update_idea`, `create_maintenance_task`, `update_maintenance_task`, `create_asset`, `create_provider`
-- Each with typed parameters matching the database schema
-- Pass as `tools` array in the Gemini API request
+### 3. `src/components/calendar/MonthlyView.tsx`
+- CSS grid, 7 columns (Sun-Sat), header row with day names
+- Day cells: day number, colored pills for tasks (truncated titles), "+N more" overflow
+- Today highlighted, adjacent-month days muted
+- Click day number -> switch to daily view; click pill -> open popover; click empty day -> create task dialog
+- Mobile (<640px): dots instead of text pills
 
-**Add function execution handlers:**
-- A `executeFunctionCall(name, args, supabaseClient)` function that routes to the correct table operation
-- `create_task`: INSERT into `cos_tasks` (defaults: status=backlog, priority=low)
-- `update_task`: UPDATE `cos_tasks` by id
-- `create_idea`: INSERT into `cos_ideas` (default: status=new)
-- `update_idea`: UPDATE `cos_ideas` by id
-- `create_maintenance_task`: INSERT into `tasks` (default: status=pending)
-- `update_maintenance_task`: UPDATE `tasks` by id; if status=completed, auto-set date_completed to today
-- `create_asset`: INSERT into `assets`
-- `create_provider`: INSERT into `service_providers`
-- Each returns `{ success, record }` or `{ success: false, error }`
+### 4. `src/components/calendar/WeeklyView.tsx`
+- 7-column layout for one week
+- Column headers: day name + date, today highlighted
+- Task cards with title, type badge, status label
+- Click task -> popover; click empty area -> create task dialog
 
-**Handle the function-calling loop:**
-- After initial Gemini call, check if response contains `functionCall` in parts
-- If yes: execute the DB operation, then send a follow-up request to Gemini with the function result so it generates a natural confirmation message
-- If no: return text response as before
-- Return `{ reply, mutated: true/false }` so the frontend knows to refresh
+### 5. `src/components/calendar/DailyView.tsx`
+- Single day detail view with tasks grouped by type (Kanban section, Maintenance section)
+- Kanban cards: title, status badge, priority badge, description snippet
+- Maintenance cards: title, status badge, asset name, provider name, recurrence
+- Empty state with "Add a task" button
+- Click task -> popover
 
-**Update context section builders:**
-- Include `id` fields in all data sections (assets, tasks, ideas, maintenance, providers) so the AI can reference them for updates
-- Add a categories section with IDs so the AI can assign categories when creating assets/providers
+### 6. `src/components/calendar/TaskPopover.tsx`
+- Popover showing task details: title, type badge, status, priority (kanban only), due date, asset/provider (maintenance only), description snippet
+- "Edit" button opens appropriate existing form dialog
 
-**Update system prompt:**
-- Add instructions about creating/updating records via function calls
-- Include default category ID for tasks/ideas
-- Tell the AI to confirm actions and ask for clarification when ambiguous
+### 7. `src/components/calendar/CreateTaskDialog.tsx`
+- Small dialog asking "What type of task?" with two buttons: "Kanban Task" and "Maintenance Task"
+- Opens the existing `TaskForm` or `MaintenanceTaskForm` with date pre-filled
 
-### 2. Frontend (`src/components/chat/AIChatBot.tsx`)
+## Modified Files
 
-**Update `fetchChatContext`:**
-- Include `id` in all mapped objects (assets, tasks, ideas, maintenance tasks, providers)
-- Fetch `categories` table (id, name, icon) and add to context
-- Fetch `cos_categories` table (id, name) and add to context as `cos_categories`
+### 8. `src/App.tsx`
+- Import `Calendar` page (lazy or direct)
+- Add route: `<Route path="/calendar" element={<CalendarPage />} />`
 
-**Update `ChatContext` interface:**
-- Add `categories` and `cos_categories` arrays
+### 9. `src/components/layout/AppSidebar.tsx`
+- Add nav item `{ title: 'Calendar', url: '/calendar', icon: Calendar }` (Calendar icon already imported)
+- Place it after "Today" and before "Tasks" in the nav order
 
-**Handle mutations in `sendMessage`:**
-- After receiving response, check `data.mutated` flag
-- If true: re-fetch context (`contextRef.current = await fetchChatContext()`) and invalidate TanStack Query caches using `queryClient.invalidateQueries` for keys: `tasks`, `ideas`, `assets`, `providers`, `maintenance-tasks`, `categories`
-- Import `useQueryClient` from TanStack Query for cache invalidation
+### 10. `src/hooks/useMaintenanceTasks.ts`
+- Add `['calendar-maintenance-tasks']` to the `ALL_KEYS` array so calendar data is invalidated when maintenance tasks are created/edited
 
-### 3. No database or config changes needed
-- RLS policies already allow all access (single-user app)
-- Edge function config unchanged
+### 11. `src/hooks/useTasks.ts`
+- Add `queryClient.invalidateQueries({ queryKey: ['calendar-kanban-tasks'] })` in create/update/delete success handlers
 
-## Technical Notes
-- The Gemini function-calling loop may involve 2 API calls per mutation request (initial call returning functionCall, then follow-up with result for natural language confirmation)
-- The Edge Function uses the service role key to bypass RLS for writes, ensuring reliability
-- Error handling: if a DB operation fails, the error message is sent back to Gemini as the function result so it can explain the failure naturally
-- Context refresh after mutations ensures follow-up questions reflect the latest state
+## Technical Details
+
+- **Date math**: All calculations use `date-fns` (startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, isSameDay, isSameMonth, isToday)
+- **No third-party calendar library** -- built with CSS grid + date-fns
+- **Client-side filtering**: Data fetched once per query, filtered by visible date range in useMemo
+- **Colors**: Kanban tasks use `bg-primary` (app primary); Maintenance tasks use `bg-orange-500` for good contrast
+- **Responsive**: Monthly view shows dots on mobile; Weekly view stacks vertically; Daily view is full-width
+- **Existing form reuse**: TaskForm and MaintenanceTaskForm are rendered inside Dialog wrappers, with initial date values passed as props where the forms accept them (MaintenanceTaskForm already initializes `dueDate` from `task?.nextDueDate`; TaskForm initializes from `task?.dueDate`)
+
