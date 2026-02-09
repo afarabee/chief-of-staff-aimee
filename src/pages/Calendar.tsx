@@ -1,0 +1,203 @@
+import { useState, useCallback } from 'react';
+import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfWeek, endOfWeek } from 'date-fns';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useCalendarTasks, CalendarItem } from '@/hooks/useCalendarTasks';
+import { MonthlyView } from '@/components/calendar/MonthlyView';
+import { WeeklyView } from '@/components/calendar/WeeklyView';
+import { DailyView } from '@/components/calendar/DailyView';
+import { CreateTaskDialog } from '@/components/calendar/CreateTaskDialog';
+import { TaskForm } from '@/components/tasks/TaskForm';
+import { MaintenanceTaskForm } from '@/components/maintenance/MaintenanceTaskForm';
+import { usePageTitle } from '@/hooks/usePageTitle';
+
+type ViewMode = 'monthly' | 'weekly' | 'daily';
+
+export default function CalendarPage() {
+  usePageTitle('Calendar');
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [view, setView] = useState<ViewMode>('monthly');
+  const { items, isLoading } = useCalendarTasks();
+
+  // Create dialog state
+  const [createDate, setCreateDate] = useState<Date | null>(null);
+  const [createType, setCreateType] = useState<'kanban' | 'maintenance' | null>(null);
+
+  // Edit dialog state
+  const [editItem, setEditItem] = useState<CalendarItem | null>(null);
+
+  const navigate = useCallback((dir: 1 | -1) => {
+    setCurrentDate((d) => {
+      if (view === 'monthly') return dir === 1 ? addMonths(d, 1) : subMonths(d, 1);
+      if (view === 'weekly') return dir === 1 ? addWeeks(d, 1) : subWeeks(d, 1);
+      return dir === 1 ? addDays(d, 1) : subDays(d, 1);
+    });
+  }, [view]);
+
+  const periodLabel = (() => {
+    if (view === 'monthly') return format(currentDate, 'MMMM yyyy');
+    if (view === 'weekly') {
+      const ws = startOfWeek(currentDate);
+      const we = endOfWeek(currentDate);
+      return `${format(ws, 'MMM d')} – ${format(we, 'MMM d, yyyy')}`;
+    }
+    return format(currentDate, 'EEEE, MMM d, yyyy');
+  })();
+
+  const handleDayClick = (date: Date) => {
+    setCurrentDate(date);
+    setView('daily');
+  };
+
+  const handleEmptyDayClick = (date: Date) => {
+    setCreateDate(date);
+  };
+
+  const handleSelectCreateType = (type: 'kanban' | 'maintenance') => {
+    setCreateType(type);
+    setCreateDate((prev) => prev); // keep date
+  };
+
+  const handleEditItem = (item: CalendarItem) => {
+    setEditItem(item);
+  };
+
+  const closeCreate = () => {
+    setCreateDate(null);
+    setCreateType(null);
+  };
+
+  const closeEdit = () => {
+    setEditItem(null);
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h1 className="text-2xl font-bold">Calendar</h1>
+        <ToggleGroup type="single" value={view} onValueChange={(v) => v && setView(v as ViewMode)} size="sm" variant="outline">
+          <ToggleGroupItem value="monthly">Monthly</ToggleGroupItem>
+          <ToggleGroupItem value="weekly">Weekly</ToggleGroupItem>
+          <ToggleGroupItem value="daily">Daily</ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+
+      {/* Navigation */}
+      <div className="flex items-center gap-2">
+        <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <Button variant="outline" size="icon" onClick={() => navigate(1)}>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+        <span className="text-sm font-medium flex-1">{periodLabel}</span>
+        <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
+          Today
+        </Button>
+      </div>
+
+      {/* Legend */}
+      <div className="flex gap-4 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-primary" />
+          Kanban Tasks
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-orange-500" />
+          Maintenance Tasks
+        </span>
+      </div>
+
+      {/* Calendar Views */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12 text-muted-foreground">Loading…</div>
+      ) : (
+        <>
+          {view === 'monthly' && (
+            <MonthlyView
+              currentDate={currentDate}
+              items={items}
+              onDayClick={handleDayClick}
+              onEmptyDayClick={handleEmptyDayClick}
+              onEditItem={handleEditItem}
+            />
+          )}
+          {view === 'weekly' && (
+            <WeeklyView
+              currentDate={currentDate}
+              items={items}
+              onEmptyDayClick={handleEmptyDayClick}
+              onEditItem={handleEditItem}
+            />
+          )}
+          {view === 'daily' && (
+            <DailyView
+              currentDate={currentDate}
+              items={items}
+              onAddTask={handleEmptyDayClick}
+              onEditItem={handleEditItem}
+            />
+          )}
+        </>
+      )}
+
+      {/* Create Task Dialog - type selector */}
+      <CreateTaskDialog
+        open={!!createDate && !createType}
+        onOpenChange={(open) => { if (!open) closeCreate(); }}
+        onSelectType={handleSelectCreateType}
+      />
+
+      {/* Create Kanban Task */}
+      <Dialog open={createType === 'kanban'} onOpenChange={(open) => { if (!open) closeCreate(); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>New Kanban Task</DialogTitle>
+          </DialogHeader>
+          <TaskForm
+            task={{ dueDate: createDate ?? undefined } as any}
+            onClose={closeCreate}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Maintenance Task */}
+      <Dialog open={createType === 'maintenance'} onOpenChange={(open) => { if (!open) closeCreate(); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>New Maintenance Task</DialogTitle>
+          </DialogHeader>
+          <MaintenanceTaskForm
+            task={{ nextDueDate: createDate ? format(createDate, 'yyyy-MM-dd') : undefined } as any}
+            onClose={closeCreate}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Task Dialog */}
+      {editItem && (
+        <Dialog open={!!editItem} onOpenChange={(open) => { if (!open) closeEdit(); }}>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit {editItem.type === 'kanban' ? 'Kanban' : 'Maintenance'} Task</DialogTitle>
+            </DialogHeader>
+            {editItem.type === 'kanban' ? (
+              <TaskForm
+                task={{ id: editItem.id, title: editItem.title, description: editItem.description ?? '', dueDate: new Date(editItem.date + 'T00:00:00'), status: editItem.status as any, priority: editItem.priority as any, categoryId: null, createdAt: new Date(), completedAt: null, imageUrl: null } }
+                onClose={closeEdit}
+              />
+            ) : (
+              <MaintenanceTaskForm
+                task={{ id: editItem.id, name: editItem.title, nextDueDate: editItem.date, status: editItem.status, recurrenceRule: editItem.recurrenceRule ?? null, assetName: editItem.assetName, providerName: editItem.providerName, notes: editItem.description ?? null } as any}
+                onClose={closeEdit}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  );
+}

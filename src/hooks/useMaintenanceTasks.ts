@@ -28,7 +28,7 @@ function mapRow(row: any): MaintenanceTask {
 
 const SELECT = '*, assets(id, name, show_on_kanban), service_providers(id, name)';
 
-const ALL_KEYS = [['maintenance-tasks'], ['kanban-maintenance']];
+const ALL_KEYS = [['maintenance-tasks'], ['kanban-maintenance'], ['calendar-maintenance-tasks']];
 
 function invalidateAll(qc: ReturnType<typeof useQueryClient>) {
   ALL_KEYS.forEach((k) => qc.invalidateQueries({ queryKey: k }));

@@ -15,6 +15,7 @@ import {
 
 const navItems = [
   { title: 'Today', url: '/', icon: LayoutDashboard },
+  { title: 'Calendar', url: '/calendar', icon: Calendar },
   { title: 'Tasks', url: '/tasks', icon: CheckSquare },
   { title: 'Ideas', url: '/ideas', icon: Lightbulb },
   { title: 'Categories', url: '/categories', icon: Tags },
