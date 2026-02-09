@@ -109,6 +109,7 @@ export function useCreateTask() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['calendar-kanban-tasks'] });
       toast({ title: 'Task created', description: 'Your task has been saved.' });
     },
     onError: (error) => {
@@ -140,6 +141,7 @@ export function useUpdateTask() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['calendar-kanban-tasks'] });
     },
     onError: (error) => {
       console.error('Failed to update task:', error);
@@ -167,6 +169,7 @@ export function useDeleteTask() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['calendar-kanban-tasks'] });
       toast({ title: 'Task deleted', description: 'The task has been removed.' });
     },
     onError: (error) => {

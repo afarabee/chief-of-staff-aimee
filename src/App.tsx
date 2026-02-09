@@ -13,6 +13,7 @@ import CategoryDetail from "./pages/CategoryDetail";
 import Assets from "./pages/Assets";
 import Providers from "./pages/Providers";
 import Maintenance from "./pages/Maintenance";
+import CalendarPage from "./pages/Calendar";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="/assets" element={<Assets />} />
               <Route path="/providers" element={<Providers />} />
               <Route path="/maintenance" element={<Maintenance />} />
+              <Route path="/calendar" element={<CalendarPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
