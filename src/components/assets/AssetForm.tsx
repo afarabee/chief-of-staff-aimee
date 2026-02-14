@@ -109,6 +109,13 @@ export function AssetForm({ asset, onClose }: AssetFormProps) {
               initialFocus
               className="p-3 pointer-events-auto"
             />
+            {purchaseDate && (
+              <div className="border-t border-border p-2">
+                <Button type="button" variant="ghost" size="sm" className="w-full text-xs" onClick={() => setPurchaseDate(undefined)}>
+                  Clear date
+                </Button>
+              </div>
+            )}
           </PopoverContent>
         </Popover>
       </div>
