@@ -53,8 +53,9 @@ export function useCreateAsset() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (asset: { name: string; category_id?: string | null; description?: string | null; purchase_date?: string | null; notes?: string | null }) => {
-      const { error } = await supabase.from('assets').insert(asset);
+      const { data, error } = await supabase.from('assets').insert(asset).select('id').single();
       if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['assets'] });

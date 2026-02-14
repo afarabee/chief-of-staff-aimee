@@ -20,7 +20,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { useAssets } from '@/hooks/useAssets';
+import { useAssets, useCreateAsset } from '@/hooks/useAssets';
 import { useProviders, useCreateProvider } from '@/hooks/useProviders';
 import { useCreateMaintenanceTask, useUpdateMaintenanceTask } from '@/hooks/useMaintenanceTasks';
 import { RECURRENCE_OPTIONS, RECURRENCE_UNITS, isPresetRecurrence } from '@/types/maintenance';
@@ -71,12 +71,15 @@ export function MaintenanceTaskForm({ task, lockedAssetId, lockedProviderId, onC
   const [newProviderName, setNewProviderName] = useState('');
   const [newProviderPhone, setNewProviderPhone] = useState('');
   const [newProviderEmail, setNewProviderEmail] = useState('');
+  const [showNewAsset, setShowNewAsset] = useState(false);
+  const [newAssetName, setNewAssetName] = useState('');
 
   const { data: assets = [] } = useAssets();
   const { data: providers = [] } = useProviders();
   const createTask = useCreateMaintenanceTask();
   const updateTask = useUpdateMaintenanceTask();
   const createProvider = useCreateProvider();
+  const createAsset = useCreateAsset();
   const isPending = createTask.isPending || updateTask.isPending;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -112,16 +115,65 @@ export function MaintenanceTaskForm({ task, lockedAssetId, lockedProviderId, onC
 
       <div className="space-y-2">
         <Label>Asset</Label>
-        <Select value={assetId} onValueChange={setAssetId} disabled={!!lockedAssetId}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select an asset" />
-          </SelectTrigger>
-          <SelectContent>
-            {assets.map((a) => (
-              <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {showNewAsset ? (
+          <div className="space-y-2 rounded-md border border-border p-3">
+            <div className="space-y-1">
+              <Label htmlFor="new-asset-name" className="text-xs">Name *</Label>
+              <Input id="new-asset-name" value={newAssetName} onChange={(e) => setNewAssetName(e.target.value)} placeholder="Asset name" />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                disabled={!newAssetName.trim() || createAsset.isPending}
+                onClick={() => {
+                  createAsset.mutate(
+                    { name: newAssetName.trim() },
+                    {
+                      onSuccess: (data) => {
+                        setAssetId(data.id);
+                        setNewAssetName('');
+                        setShowNewAsset(false);
+                      },
+                    }
+                  );
+                }}
+              >
+                {createAsset.isPending ? 'Saving…' : 'Save Asset'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setNewAssetName('');
+                  setShowNewAsset(false);
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <Select value={assetId} onValueChange={setAssetId} disabled={!!lockedAssetId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select an asset" />
+              </SelectTrigger>
+              <SelectContent>
+                {assets.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {!lockedAssetId && (
+              <Button type="button" variant="ghost" size="sm" className="h-auto p-0 text-xs" onClick={() => setShowNewAsset(true)}>
+                <Plus className="mr-1 h-3 w-3" />
+                New Asset
+              </Button>
+            )}
+          </>
+        )}
       </div>
 
       <div className="space-y-2">
