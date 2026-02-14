@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, DollarSign } from 'lucide-react';
+import { CalendarIcon, DollarSign, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,7 +21,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { useAssets } from '@/hooks/useAssets';
-import { useProviders } from '@/hooks/useProviders';
+import { useProviders, useCreateProvider } from '@/hooks/useProviders';
 import { useCreateMaintenanceTask, useUpdateMaintenanceTask } from '@/hooks/useMaintenanceTasks';
 import { RECURRENCE_OPTIONS, RECURRENCE_UNITS, isPresetRecurrence } from '@/types/maintenance';
 import type { MaintenanceTask } from '@/types/maintenance';
@@ -67,11 +67,16 @@ export function MaintenanceTaskForm({ task, lockedAssetId, lockedProviderId, onC
   );
   const [notes, setNotes] = useState(task?.notes ?? '');
   const [attachmentUrl, setAttachmentUrl] = useState<string | null>(task?.attachmentUrl ?? null);
+  const [showNewProvider, setShowNewProvider] = useState(false);
+  const [newProviderName, setNewProviderName] = useState('');
+  const [newProviderPhone, setNewProviderPhone] = useState('');
+  const [newProviderEmail, setNewProviderEmail] = useState('');
 
   const { data: assets = [] } = useAssets();
   const { data: providers = [] } = useProviders();
   const createTask = useCreateMaintenanceTask();
   const updateTask = useUpdateMaintenanceTask();
+  const createProvider = useCreateProvider();
   const isPending = createTask.isPending || updateTask.isPending;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -121,16 +126,81 @@ export function MaintenanceTaskForm({ task, lockedAssetId, lockedProviderId, onC
 
       <div className="space-y-2">
         <Label>Service Provider</Label>
-        <Select value={providerId} onValueChange={setProviderId} disabled={!!lockedProviderId}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select a provider" />
-          </SelectTrigger>
-          <SelectContent>
-            {providers.map((p) => (
-              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {showNewProvider ? (
+          <div className="space-y-2 rounded-md border border-border p-3">
+            <div className="space-y-1">
+              <Label htmlFor="new-provider-name" className="text-xs">Name *</Label>
+              <Input id="new-provider-name" value={newProviderName} onChange={(e) => setNewProviderName(e.target.value)} placeholder="Provider name" />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="new-provider-phone" className="text-xs">Phone</Label>
+              <Input id="new-provider-phone" value={newProviderPhone} onChange={(e) => setNewProviderPhone(e.target.value)} placeholder="Phone number" />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="new-provider-email" className="text-xs">Email</Label>
+              <Input id="new-provider-email" type="email" value={newProviderEmail} onChange={(e) => setNewProviderEmail(e.target.value)} placeholder="Email address" />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                disabled={!newProviderName.trim() || createProvider.isPending}
+                onClick={() => {
+                  createProvider.mutate(
+                    {
+                      name: newProviderName.trim(),
+                      phone: newProviderPhone.trim() || null,
+                      email: newProviderEmail.trim() || null,
+                    },
+                    {
+                      onSuccess: (data) => {
+                        setProviderId(data.id);
+                        setNewProviderName('');
+                        setNewProviderPhone('');
+                        setNewProviderEmail('');
+                        setShowNewProvider(false);
+                      },
+                    }
+                  );
+                }}
+              >
+                {createProvider.isPending ? 'Saving…' : 'Save Provider'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setNewProviderName('');
+                  setNewProviderPhone('');
+                  setNewProviderEmail('');
+                  setShowNewProvider(false);
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <Select value={providerId} onValueChange={setProviderId} disabled={!!lockedProviderId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a provider" />
+              </SelectTrigger>
+              <SelectContent>
+                {providers.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {!lockedProviderId && (
+              <Button type="button" variant="ghost" size="sm" className="h-auto p-0 text-xs" onClick={() => setShowNewProvider(true)}>
+                <Plus className="mr-1 h-3 w-3" />
+                New Provider
+              </Button>
+            )}
+          </>
+        )}
       </div>
 
       <div className="space-y-2">
