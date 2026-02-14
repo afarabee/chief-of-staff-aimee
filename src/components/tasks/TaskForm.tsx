@@ -149,6 +149,13 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
                 initialFocus
                 className="p-3 pointer-events-auto"
               />
+              {dueDate && (
+                <div className="border-t border-border p-2">
+                  <Button type="button" variant="ghost" size="sm" className="w-full text-xs" onClick={() => setDueDate(undefined)}>
+                    Clear date
+                  </Button>
+                </div>
+              )}
             </PopoverContent>
           </Popover>
         </div>

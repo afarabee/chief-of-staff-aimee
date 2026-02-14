@@ -147,6 +147,13 @@ export function MaintenanceTaskForm({ task, lockedAssetId, lockedProviderId, onC
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar mode="single" selected={dueDate} onSelect={setDueDate} initialFocus className="p-3 pointer-events-auto" />
+            {dueDate && (
+              <div className="border-t border-border p-2">
+                <Button type="button" variant="ghost" size="sm" className="w-full text-xs" onClick={() => setDueDate(undefined)}>
+                  Clear date
+                </Button>
+              </div>
+            )}
           </PopoverContent>
         </Popover>
       </div>
@@ -236,6 +243,13 @@ export function MaintenanceTaskForm({ task, lockedAssetId, lockedProviderId, onC
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar mode="single" selected={completedDate} onSelect={setCompletedDate} initialFocus className="p-3 pointer-events-auto" />
+              {completedDate && (
+                <div className="border-t border-border p-2">
+                  <Button type="button" variant="ghost" size="sm" className="w-full text-xs" onClick={() => setCompletedDate(undefined)}>
+                    Clear date
+                  </Button>
+                </div>
+              )}
             </PopoverContent>
           </Popover>
         </div>
