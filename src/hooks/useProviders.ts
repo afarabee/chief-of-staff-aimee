@@ -40,8 +40,9 @@ export function useCreateProvider() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (provider: { name: string; category_id?: string | null; phone?: string | null; email?: string | null; address?: string | null; website?: string | null; notes?: string | null }) => {
-      const { error } = await supabase.from('service_providers').insert(provider);
+      const { data, error } = await supabase.from('service_providers').insert(provider).select('id').single();
       if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['providers'] });
