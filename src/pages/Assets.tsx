@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { format, parseISO, isPast, isToday } from 'date-fns';
 import { icons } from 'lucide-react';
 import { ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, Circle, Package, Pencil, Plus, Repeat, Trash2 } from 'lucide-react';
@@ -35,6 +35,7 @@ import {
 import type { Asset } from '@/types/assets';
 import { useEffect } from 'react';
 import type { MaintenanceTask } from '@/types/maintenance';
+import { LinkedProvidersSection } from '@/components/links/LinkedProvidersSection';
 
 function AssetTasksSection({ assetId, showOnKanban }: { assetId: string; showOnKanban: boolean }) {
   const { data: tasks = [] } = useAssetMaintenanceTasks(assetId);
@@ -144,6 +145,7 @@ export default function Assets() {
   usePageTitle('Assets');
   const { data: assets = [], isLoading } = useAssets();
   const deleteAsset = useDeleteAsset();
+  const navigate = useNavigate();
 
   const [view, setView] = useState<'list' | 'detail'>('list');
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
@@ -267,6 +269,11 @@ export default function Assets() {
             </div>
           )}
         </div>
+
+        <LinkedProvidersSection
+          assetId={fresh.id}
+          onNavigateToProvider={(providerId) => navigate(`/providers?detail=${providerId}`)}
+        />
 
         <AssetTasksSection assetId={fresh.id} showOnKanban={fresh.showOnKanban} />
 

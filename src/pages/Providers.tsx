@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { icons } from 'lucide-react';
 import { ArrowLeft, Globe, Mail, MapPin, Pencil, Phone, Plus, Trash2, Wrench } from 'lucide-react';
 import { isPast, parseISO } from 'date-fns';
@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import type { Provider } from '@/types/providers';
 import type { MaintenanceTask } from '@/types/maintenance';
+import { LinkedAssetsSection } from '@/components/links/LinkedAssetsSection';
 
 function DynamicIcon({ name, className }: { name: string; className?: string }) {
   const pascalName = name
@@ -46,6 +47,7 @@ export default function Providers() {
   usePageTitle('Providers');
   const { data: providers = [], isLoading } = useProviders();
   const deleteProvider = useDeleteProvider();
+  const navigate = useNavigate();
 
   const [view, setView] = useState<'list' | 'detail'>('list');
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
@@ -170,6 +172,12 @@ export default function Providers() {
             </div>
           )}
         </div>
+
+        {/* Linked Assets Section */}
+        <LinkedAssetsSection
+          providerId={fresh.id}
+          onNavigateToAsset={(assetId) => navigate(`/assets?detail=${assetId}`)}
+        />
 
         {/* Maintenance Tasks Section */}
         <div className="space-y-3">
