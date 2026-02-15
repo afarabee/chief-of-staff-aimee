@@ -219,10 +219,6 @@ export function MaintenanceTaskForm({ task, lockedAssetId, lockedProviderId, onC
               <Label htmlFor="new-provider-phone" className="text-xs">Phone</Label>
               <Input id="new-provider-phone" value={newProviderPhone} onChange={(e) => setNewProviderPhone(e.target.value)} placeholder="Phone number" />
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="new-provider-email" className="text-xs">Email</Label>
-              <Input id="new-provider-email" type="email" value={newProviderEmail} onChange={(e) => setNewProviderEmail(e.target.value)} placeholder="Email address" />
-            </div>
             <div className="flex gap-2">
               <Button
                 type="button"
