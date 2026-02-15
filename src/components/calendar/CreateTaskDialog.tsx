@@ -45,8 +45,8 @@ export function CreateTaskDialog({ open, onOpenChange, onSelectType, date }: Cre
           >
             <ClipboardCheck className="h-5 w-5 text-orange-500" />
             <div className="text-left">
-              <div className="font-medium">Maintenance Task</div>
-              <div className="text-xs text-muted-foreground">Schedule maintenance work</div>
+              <div className="font-medium">Reminder</div>
+              <div className="text-xs text-muted-foreground">Schedule a maintenance reminder</div>
             </div>
           </Button>
         </div>

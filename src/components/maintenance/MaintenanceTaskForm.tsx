@@ -112,7 +112,7 @@ export function MaintenanceTaskForm({ task, lockedAssetId, lockedProviderId, onC
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="task-name">Task Name *</Label>
+        <Label htmlFor="task-name">Reminder Name *</Label>
         <Input id="task-name" value={name} onChange={(e) => setName(e.target.value)} required />
       </div>
 

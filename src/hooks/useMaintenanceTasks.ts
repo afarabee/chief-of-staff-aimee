@@ -102,7 +102,7 @@ export function useCreateMaintenanceTask() {
     },
     onSuccess: () => {
       invalidateAll(qc);
-      toast({ title: 'Task added' });
+      toast({ title: 'Reminder added' });
     },
     onError: (e: Error) => {
       toast({ title: 'Error', description: e.message, variant: 'destructive' });
@@ -131,7 +131,7 @@ export function useUpdateMaintenanceTask() {
     },
     onSuccess: () => {
       invalidateAll(qc);
-      toast({ title: 'Task updated' });
+      toast({ title: 'Reminder updated' });
     },
     onError: (e: Error) => {
       toast({ title: 'Error', description: e.message, variant: 'destructive' });
@@ -148,7 +148,7 @@ export function useDeleteMaintenanceTask() {
     },
     onSuccess: () => {
       invalidateAll(qc);
-      toast({ title: 'Task deleted' });
+      toast({ title: 'Reminder deleted' });
     },
     onError: (e: Error) => {
       toast({ title: 'Error', description: e.message, variant: 'destructive' });
@@ -200,9 +200,9 @@ export function useCompleteMaintenanceTask() {
     onSuccess: (nextDateStr) => {
       invalidateAll(qc);
       if (nextDateStr) {
-        toast({ title: `Task completed — next occurrence scheduled for ${nextDateStr}` });
+        toast({ title: `Reminder completed — next occurrence scheduled for ${nextDateStr}` });
       } else {
-        toast({ title: 'Task completed' });
+        toast({ title: 'Reminder completed' });
       }
     },
     onError: (e: Error) => {

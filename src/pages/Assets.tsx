@@ -95,7 +95,7 @@ function AssetTasksSection({ assetId, showOnKanban }: { assetId: string; showOnK
           })
         )}
         <Button variant="outline" size="sm" className="gap-1" onClick={openTaskAdd}>
-          <Plus className="h-3 w-3" /> Add Task
+          <Plus className="h-3 w-3" /> Add Reminder
         </Button>
       </div>
 
@@ -120,7 +120,7 @@ function AssetTasksSection({ assetId, showOnKanban }: { assetId: string; showOnK
       <Dialog open={taskFormOpen} onOpenChange={setTaskFormOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingTask ? 'Edit Task' : 'Add Maintenance Task'}</DialogTitle>
+            <DialogTitle>{editingTask ? 'Edit Reminder' : 'Add Reminder'}</DialogTitle>
           </DialogHeader>
           <MaintenanceTaskForm task={editingTask} lockedAssetId={assetId} onClose={() => setTaskFormOpen(false)} />
         </DialogContent>

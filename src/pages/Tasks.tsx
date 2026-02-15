@@ -202,7 +202,7 @@ export default function Tasks() {
 
         <div className="flex items-center gap-2 ml-auto">
           <Switch id="show-maintenance" checked={showMaintenance} onCheckedChange={setShowMaintenance} />
-          <Label htmlFor="show-maintenance" className="text-sm text-muted-foreground">Maintenance</Label>
+          <Label htmlFor="show-maintenance" className="text-sm text-muted-foreground">Reminders</Label>
         </div>
       </div>
 
@@ -235,7 +235,7 @@ export default function Tasks() {
       <Sheet open={isMaintenanceFormOpen} onOpenChange={setIsMaintenanceFormOpen}>
         <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Edit Maintenance Task</SheetTitle>
+            <SheetTitle>Edit Reminder</SheetTitle>
           </SheetHeader>
           <MaintenanceTaskForm task={editingMaintenanceTask} onClose={() => setIsMaintenanceFormOpen(false)} />
         </SheetContent>
