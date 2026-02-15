@@ -30,7 +30,7 @@ export function TaskPopover({ item, onEdit, children, open, onOpenChange }: Task
               variant={item.type === 'kanban' ? 'default' : 'secondary'}
               className={completed ? 'bg-gray-300 text-gray-500' : item.type === 'maintenance' ? 'bg-orange-500 text-white hover:bg-orange-600' : ''}
             >
-              {item.type === 'kanban' ? 'Kanban Task' : 'Maintenance Task'}
+              {item.type === 'kanban' ? 'Kanban Task' : 'Reminder'}
             </Badge>
             <Badge variant="outline" className="capitalize">{item.status.replace(/_/g, ' ')}</Badge>
             {item.priority && <Badge variant="outline" className="capitalize">{item.priority}</Badge>}

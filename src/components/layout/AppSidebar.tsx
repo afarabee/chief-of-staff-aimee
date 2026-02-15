@@ -21,7 +21,7 @@ const navItems = [
   { title: 'Categories', url: '/categories', icon: Tags },
   { title: 'Assets', url: '/assets', icon: Package },
   { title: 'Providers', url: '/providers', icon: Wrench },
-  { title: 'Maintenance', url: '/maintenance', icon: ClipboardCheck },
+  { title: 'Reminders', url: '/maintenance', icon: ClipboardCheck },
 ];
 
 export function AppSidebar() {

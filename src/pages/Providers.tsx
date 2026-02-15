@@ -175,18 +175,18 @@ export default function Providers() {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold text-foreground">Maintenance Tasks</h2>
+              <h2 className="text-lg font-semibold text-foreground">Reminders</h2>
               {providerTasks.length > 0 && (
                 <Badge variant="secondary">{providerTasks.length}</Badge>
               )}
             </div>
             <Button size="sm" variant="outline" onClick={() => { setEditingTask(undefined); setIsTaskFormOpen(true); }}>
               <Plus className="h-4 w-4" />
-              Add Task
+              Add Reminder
             </Button>
           </div>
           {providerTasks.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No maintenance tasks for this provider</p>
+            <p className="text-sm text-muted-foreground">No reminders for this provider</p>
           ) : (
             <div className="space-y-2">
               {providerTasks.map((task) => {
@@ -224,7 +224,7 @@ export default function Providers() {
         <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
           <DialogContent className="max-h-[85vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{editingTask ? 'Edit Task' : 'Add Task'}</DialogTitle>
+              <DialogTitle>{editingTask ? 'Edit Reminder' : 'Add Reminder'}</DialogTitle>
             </DialogHeader>
             <MaintenanceTaskForm
               task={editingTask}

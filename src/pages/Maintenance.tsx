@@ -37,7 +37,7 @@ function Section({ title, count, accentClass, defaultOpen = true, children }: Se
 }
 
 export default function Maintenance() {
-  usePageTitle('Maintenance');
+  usePageTitle('Reminders');
   const { data: tasks = [], isLoading } = useMaintenanceTasks();
   const completeTask = useCompleteMaintenanceTask();
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -95,10 +95,10 @@ export default function Maintenance() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground">Maintenance</h1>
+        <h1 className="text-2xl font-bold text-foreground">Reminders</h1>
         <Button onClick={openAdd}>
           <Plus className="h-4 w-4" />
-          Add Task
+          Add Reminder
         </Button>
       </div>
 
@@ -107,10 +107,10 @@ export default function Maintenance() {
       ) : isEmpty ? (
         <div className="flex flex-col items-center gap-4 py-16 text-center">
           <ClipboardCheck className="h-12 w-12 text-muted-foreground" />
-          <p className="text-muted-foreground">No maintenance tasks yet. Add a task or generate a maintenance plan from an asset.</p>
+          <p className="text-muted-foreground">No reminders yet. Add a reminder or generate a maintenance plan from an asset.</p>
           <Button onClick={openAdd}>
             <Plus className="h-4 w-4" />
-            Add Task
+            Add Reminder
           </Button>
         </div>
       ) : (
@@ -141,7 +141,7 @@ export default function Maintenance() {
 
           <Section title="Upcoming" count={upcoming.length} accentClass="text-blue-500">
             {upcoming.length === 0 ? (
-              <p className="text-sm text-muted-foreground pl-6">No upcoming tasks</p>
+              <p className="text-sm text-muted-foreground pl-6">No upcoming reminders</p>
             ) : (
               upcoming.map((t) => (
                 <MaintenanceTaskCard key={t.id} task={t} variant="upcoming" onComplete={() => completeTask.mutate(t)} onClick={() => openEdit(t)} />
@@ -162,7 +162,7 @@ export default function Maintenance() {
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingTask ? 'Edit Task' : 'Add Maintenance Task'}</DialogTitle>
+            <DialogTitle>{editingTask ? 'Edit Reminder' : 'Add Reminder'}</DialogTitle>
           </DialogHeader>
           <MaintenanceTaskForm task={editingTask} onClose={closeForm} />
         </DialogContent>

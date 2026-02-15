@@ -117,7 +117,7 @@ export default function CalendarPage() {
         </span>
         <span className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-orange-500" />
-          Maintenance Tasks
+          Reminders
         </span>
         <span className="hidden sm:inline text-muted-foreground">Double-click a day to add a task</span>
         <div className="flex items-center gap-2 ml-auto">
@@ -187,7 +187,7 @@ export default function CalendarPage() {
       <Dialog open={createType === 'maintenance'} onOpenChange={(open) => { if (!open) closeCreate(); }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>New Maintenance Task</DialogTitle>
+            <DialogTitle>New Reminder</DialogTitle>
           </DialogHeader>
           <MaintenanceTaskForm
             task={{ nextDueDate: createDate ? format(createDate, 'yyyy-MM-dd') : undefined } as any}
@@ -201,7 +201,7 @@ export default function CalendarPage() {
         <Dialog open={!!editItem} onOpenChange={(open) => { if (!open) closeEdit(); }}>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Edit {editItem.type === 'kanban' ? 'Kanban' : 'Maintenance'} Task</DialogTitle>
+              <DialogTitle>Edit {editItem.type === 'kanban' ? 'Kanban Task' : 'Reminder'}</DialogTitle>
             </DialogHeader>
             {editItem.type === 'kanban' ? (
               <TaskForm

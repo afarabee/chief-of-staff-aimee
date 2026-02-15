@@ -74,7 +74,7 @@ const toolDeclarations = [
   },
   {
     name: "create_maintenance_task",
-    description: "Create a maintenance task (tasks table) linked to an asset.",
+    description: "Create a reminder (tasks table) linked to an asset.",
     parameters: {
       type: "object",
       properties: {
@@ -91,7 +91,7 @@ const toolDeclarations = [
   },
   {
     name: "update_maintenance_task",
-    description: "Update an existing maintenance task (tasks table).",
+    description: "Update an existing reminder (tasks table).",
     parameters: {
       type: "object",
       properties: {
@@ -295,7 +295,7 @@ function buildMaintenanceSection(tasks: any[]): string {
     if (t.providerName) parts.push(`Provider: ${t.providerName}`);
     return parts.join(" ");
   });
-  return `\nMAINTENANCE TASKS (asset-related recurring/scheduled tasks):\n${lines.join("\n")}`;
+  return `\nREMINDERS (asset-related recurring/scheduled reminders):\n${lines.join("\n")}`;
 }
 
 function buildProviderSection(providers: any[]): string {
@@ -371,7 +371,7 @@ ${dataSections}
 When answering:
 - NEVER include UUIDs, database IDs, or internal identifiers in your responses. Only show human-readable information like titles, names, dates, statuses, and priorities. IDs are for internal use only.
 - Reference specific items by name when relevant
-- If asked about tasks, distinguish between Kanban tasks (personal/ad-hoc) and maintenance tasks (asset-related)
+- If asked about tasks, distinguish between Kanban tasks (personal/ad-hoc) and reminders (asset-related maintenance reminders)
 - For task counts or summaries, give accurate numbers based on the data
 - For overdue items, compare due dates against today's date (${today})
 - If asked to find something, search across all data types

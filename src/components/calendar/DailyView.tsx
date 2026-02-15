@@ -75,7 +75,7 @@ export function DailyView({ currentDate, items, onAddTask, onEditItem }: DailyVi
         <section>
           <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
             <span className="h-3 w-3 rounded-full bg-orange-500" />
-            Maintenance Tasks
+            Reminders
           </h3>
           <div className="space-y-2">
             {maintenanceItems.map((item) => {
