@@ -190,17 +190,17 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
         onChange={handleFileSelect}
         className="hidden"
       />
-      <div className="flex flex-col items-center justify-center py-6 px-4 text-center">
+      <div className="flex flex-col items-center justify-center py-3 px-4 text-center">
         {isUploading ? (
           <>
-            <Loader2 className="h-8 w-8 text-muted-foreground animate-spin mb-2" />
+            <Loader2 className="h-6 w-6 text-muted-foreground animate-spin mb-1" />
             <p className="text-sm text-muted-foreground">Uploading...</p>
           </>
         ) : (
           <>
-            <div className="flex items-center gap-2 mb-2">
-              <ImageIcon className="h-6 w-6 text-muted-foreground" />
-              <Upload className="h-5 w-5 text-muted-foreground" />
+            <div className="flex items-center gap-2 mb-1">
+              <ImageIcon className="h-5 w-5 text-muted-foreground" />
+              <Upload className="h-4 w-4 text-muted-foreground" />
             </div>
             <p className="text-sm text-muted-foreground">
               Click to upload or drag & drop

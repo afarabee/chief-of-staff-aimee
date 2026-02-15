@@ -94,7 +94,7 @@ export function IdeaForm({ idea, onClose }: IdeaFormProps) {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Describe your idea..."
-          rows={4}
+          rows={6}
         />
       </div>
 

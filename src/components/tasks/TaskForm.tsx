@@ -116,7 +116,7 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Add a description..."
-          rows={3}
+          rows={6}
         />
       </div>
 
