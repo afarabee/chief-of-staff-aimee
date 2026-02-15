@@ -20,7 +20,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { useAssets, useCreateAsset } from '@/hooks/useAssets';
+import { useAssets, useCreateAsset, useAssetCategories } from '@/hooks/useAssets';
 import { useProviders, useCreateProvider } from '@/hooks/useProviders';
 import { useCreateMaintenanceTask, useUpdateMaintenanceTask } from '@/hooks/useMaintenanceTasks';
 import { RECURRENCE_OPTIONS, RECURRENCE_UNITS, isPresetRecurrence } from '@/types/maintenance';
@@ -73,9 +73,12 @@ export function MaintenanceTaskForm({ task, lockedAssetId, lockedProviderId, onC
   const [newProviderEmail, setNewProviderEmail] = useState('');
   const [showNewAsset, setShowNewAsset] = useState(false);
   const [newAssetName, setNewAssetName] = useState('');
+  const [newAssetCategoryId, setNewAssetCategoryId] = useState('');
+  const [newProviderCategoryId, setNewProviderCategoryId] = useState('');
 
   const { data: assets = [] } = useAssets();
   const { data: providers = [] } = useProviders();
+  const { data: assetCategories = [] } = useAssetCategories();
   const createTask = useCreateMaintenanceTask();
   const updateTask = useUpdateMaintenanceTask();
   const createProvider = useCreateProvider();
@@ -121,6 +124,19 @@ export function MaintenanceTaskForm({ task, lockedAssetId, lockedProviderId, onC
               <Label htmlFor="new-asset-name" className="text-xs">Name *</Label>
               <Input id="new-asset-name" value={newAssetName} onChange={(e) => setNewAssetName(e.target.value)} placeholder="Asset name" />
             </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Category</Label>
+              <Select value={newAssetCategoryId} onValueChange={setNewAssetCategoryId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {assetCategories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex gap-2">
               <Button
                 type="button"
@@ -128,11 +144,12 @@ export function MaintenanceTaskForm({ task, lockedAssetId, lockedProviderId, onC
                 disabled={!newAssetName.trim() || createAsset.isPending}
                 onClick={() => {
                   createAsset.mutate(
-                    { name: newAssetName.trim() },
+                    { name: newAssetName.trim(), category_id: newAssetCategoryId || null },
                     {
                       onSuccess: (data) => {
                         setAssetId(data.id);
                         setNewAssetName('');
+                        setNewAssetCategoryId('');
                         setShowNewAsset(false);
                       },
                     }
@@ -147,6 +164,7 @@ export function MaintenanceTaskForm({ task, lockedAssetId, lockedProviderId, onC
                 size="sm"
                 onClick={() => {
                   setNewAssetName('');
+                  setNewAssetCategoryId('');
                   setShowNewAsset(false);
                 }}
               >
@@ -185,6 +203,19 @@ export function MaintenanceTaskForm({ task, lockedAssetId, lockedProviderId, onC
               <Input id="new-provider-name" value={newProviderName} onChange={(e) => setNewProviderName(e.target.value)} placeholder="Provider name" />
             </div>
             <div className="space-y-1">
+              <Label className="text-xs">Category</Label>
+              <Select value={newProviderCategoryId} onValueChange={setNewProviderCategoryId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {assetCategories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
               <Label htmlFor="new-provider-phone" className="text-xs">Phone</Label>
               <Input id="new-provider-phone" value={newProviderPhone} onChange={(e) => setNewProviderPhone(e.target.value)} placeholder="Phone number" />
             </div>
@@ -203,6 +234,7 @@ export function MaintenanceTaskForm({ task, lockedAssetId, lockedProviderId, onC
                       name: newProviderName.trim(),
                       phone: newProviderPhone.trim() || null,
                       email: newProviderEmail.trim() || null,
+                      category_id: newProviderCategoryId || null,
                     },
                     {
                       onSuccess: (data) => {
@@ -210,6 +242,7 @@ export function MaintenanceTaskForm({ task, lockedAssetId, lockedProviderId, onC
                         setNewProviderName('');
                         setNewProviderPhone('');
                         setNewProviderEmail('');
+                        setNewProviderCategoryId('');
                         setShowNewProvider(false);
                       },
                     }
@@ -226,6 +259,7 @@ export function MaintenanceTaskForm({ task, lockedAssetId, lockedProviderId, onC
                   setNewProviderName('');
                   setNewProviderPhone('');
                   setNewProviderEmail('');
+                  setNewProviderCategoryId('');
                   setShowNewProvider(false);
                 }}
               >
