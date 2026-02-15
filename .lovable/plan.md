@@ -1,63 +1,63 @@
 
 
-# Rename All User-Facing "Maintenance Task" to "Reminder"
+# Link Assets and Providers Directly
 
 ## Overview
-Every user-facing string referencing "maintenance task" or "maintenance" (including the sidebar label and page heading) changes to "Reminder(s)." Internal code (types, hooks, file names, DB columns) stays the same.
+Create a direct many-to-many relationship between Assets and Service Providers, so you can associate a provider with an asset (and vice versa) without needing to create a reminder first.
 
-## Changes by File
+## Database Change
+Create a new junction table `asset_providers` with:
+- `id` (uuid, primary key)
+- `asset_id` (uuid, references assets)
+- `provider_id` (uuid, references service_providers)
+- `created_at` (timestamp)
+- A unique constraint on (asset_id, provider_id) to prevent duplicates
+- RLS policy allowing all access (matching existing tables)
 
-### 1. `src/components/layout/AppSidebar.tsx`
-- Sidebar nav label "Maintenance" -> **"Reminders"**
+## UI Changes
 
-### 2. `src/pages/Maintenance.tsx`
-- Page heading "Maintenance" -> **"Reminders"**
-- `usePageTitle('Maintenance')` -> `usePageTitle('Reminders')`
-- "Add Task" buttons -> **"Add Reminder"**
-- Empty state text -> **"No reminders yet. Add a reminder or generate a maintenance plan from an asset."**
-- Dialog title: "Add Maintenance Task" -> **"Add Reminder"**, "Edit Task" -> **"Edit Reminder"**
-- "No upcoming tasks" -> **"No upcoming reminders"**
+### Asset Detail View (Assets.tsx)
+- Add a "Providers" section above the Tasks section
+- Shows linked providers as clickable chips/cards with the provider name
+- "Link Provider" button opens a dropdown/select to pick from existing providers
+- Each linked provider has an "unlink" (X) button to remove the association
+- Clicking a provider name navigates to that provider's detail view
 
-### 3. `src/components/maintenance/MaintenanceTaskForm.tsx`
-- "Task Name *" label -> **"Reminder Name *"**
+### Provider Detail View (Providers.tsx)
+- Add an "Assets" section above the Reminders section
+- Shows linked assets as clickable chips/cards with the asset name
+- "Link Asset" button opens a dropdown/select to pick from existing assets
+- Each linked asset has an "unlink" (X) button
+- Clicking an asset name navigates to that asset's detail view
 
-### 4. `src/hooks/useMaintenanceTasks.ts`
-- "Task added" -> **"Reminder added"**
-- "Task updated" -> **"Reminder updated"**
-- "Task deleted" -> **"Reminder deleted"**
-- "Task completed..." -> **"Reminder completed..."**
+## New Hooks (src/hooks/useAssetProviders.ts)
+- `useAssetProviders(assetId)` -- fetch providers linked to an asset
+- `useProviderAssets(providerId)` -- fetch assets linked to a provider
+- `useLinkAssetProvider()` -- insert into asset_providers
+- `useUnlinkAssetProvider()` -- delete from asset_providers
 
-### 5. `src/pages/Calendar.tsx`
-- Legend label "Maintenance Tasks" -> **"Reminders"**
-- Dialog title "New Maintenance Task" -> **"New Reminder"**
+## Technical Details
 
-### 6. `src/components/calendar/CreateTaskDialog.tsx`
-- "Maintenance Task" button label -> **"Reminder"**
-- Subtitle -> **"Schedule a maintenance reminder"**
+### New file: `src/hooks/useAssetProviders.ts`
+Contains all four hooks above. Queries join through the junction table to return full provider/asset names. Invalidates both `asset-providers` and `provider-assets` query keys on mutations.
 
-### 7. `src/components/calendar/TaskPopover.tsx`
-- Badge "Maintenance Task" -> **"Reminder"**
+### Modified files:
+1. **`src/pages/Assets.tsx`** -- Add a `LinkedProvidersSection` component in the detail view showing linked providers with link/unlink controls
+2. **`src/pages/Providers.tsx`** -- Add a `LinkedAssetsSection` component in the detail view showing linked assets with link/unlink controls
 
-### 8. `src/components/calendar/DailyView.tsx`
-- Section heading "Maintenance Tasks" -> **"Reminders"**
+### Migration SQL:
+```sql
+CREATE TABLE asset_providers (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  asset_id uuid NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
+  provider_id uuid NOT NULL REFERENCES service_providers(id) ON DELETE CASCADE,
+  created_at timestamptz DEFAULT now(),
+  UNIQUE(asset_id, provider_id)
+);
 
-### 9. `src/pages/Assets.tsx`
-- "Add Task" -> **"Add Reminder"**
-- Dialog titles -> **"Add Reminder"** / **"Edit Reminder"**
+ALTER TABLE asset_providers ENABLE ROW LEVEL SECURITY;
 
-### 10. `src/pages/Providers.tsx`
-- Section heading "Maintenance Tasks" -> **"Reminders"**
-- "Add Task" -> **"Add Reminder"**
-- Empty state -> **"No reminders for this provider"**
-- Dialog titles -> **"Add Reminder"** / **"Edit Reminder"**
-
-### 11. `src/pages/Tasks.tsx`
-- Sheet title "Edit Maintenance Task" -> **"Edit Reminder"**
-
-### 12. `supabase/functions/chat/index.ts`
-- Update AI system prompt to use "reminders" terminology
-
-## What Does NOT Change
-- File names, component names, hook names, TypeScript types, database tables/columns
-- Internal code comments (only user-visible strings change)
+CREATE POLICY "Allow all access to asset_providers" ON asset_providers
+  FOR ALL USING (true) WITH CHECK (true);
+```
 
