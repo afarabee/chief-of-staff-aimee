@@ -208,7 +208,7 @@ export function useUpdateMaintenanceTask() {
           let deleteQuery = supabase
             .from('tasks')
             .delete()
-            .eq('name', taskName)
+            .eq('name', current.name)
             .eq('recurrence_rule', oldRule)
             .eq('status', 'pending')
             .neq('id', id);
@@ -241,6 +241,32 @@ export function useUpdateMaintenanceTask() {
             const { error: bulkErr } = await supabase.from('tasks').insert(rows);
             if (bulkErr) throw bulkErr;
           }
+        }
+      } else if (!ruleChanged && !dateChanged && current.recurrence_rule) {
+        // Propagate field changes to all future pending siblings
+        const siblingUpdates: Record<string, any> = {};
+        if (updates.name !== undefined && updates.name !== current.name) siblingUpdates.name = updates.name;
+        if (updates.asset_id !== undefined && updates.asset_id !== current.asset_id) siblingUpdates.asset_id = updates.asset_id;
+        if (updates.provider_id !== undefined) siblingUpdates.provider_id = updates.provider_id;
+        if (updates.notes !== undefined) siblingUpdates.notes = updates.notes;
+
+        if (Object.keys(siblingUpdates).length > 0) {
+          let siblingQuery = supabase
+            .from('tasks')
+            .update(siblingUpdates)
+            .eq('name', current.name)
+            .eq('recurrence_rule', current.recurrence_rule)
+            .eq('status', 'pending')
+            .neq('id', id);
+
+          if (current.asset_id) {
+            siblingQuery = siblingQuery.eq('asset_id', current.asset_id);
+          } else {
+            siblingQuery = siblingQuery.is('asset_id', null);
+          }
+
+          const { error: sibErr } = await siblingQuery;
+          if (sibErr) throw sibErr;
         }
       }
     },
