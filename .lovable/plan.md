@@ -1,47 +1,36 @@
 
 
-# Pre-Generate Recurring Reminder Occurrences
+# Update Future Occurrences When Editing a Recurring Reminder
 
 ## Overview
-When a recurring reminder is created (or edited to add a recurrence rule), automatically generate all future occurrences to fill one year. If the recurrence interval exceeds one year, generate exactly two reminders: the initial one and the next occurrence.
+Currently, when a recurring reminder is edited, future occurrences are only deleted and regenerated if the recurrence rule or due date changes. Other field changes (name, asset, provider, notes, etc.) are not propagated to existing future occurrences. This change ensures that **all** editable fields are synced to future pending occurrences whenever a recurring reminder is updated.
 
 ## Current Behavior
-- Only one reminder is created at a time
-- The next occurrence is generated only when a reminder is marked as completed
+- Editing a reminder's name, notes, asset, or provider only updates that single reminder
+- Future pending occurrences retain the old values
+- Only rule/date changes trigger delete-and-regenerate of future occurrences
 
 ## New Behavior
-- On **create**: if a recurrence rule and a next_due_date are set, calculate all future dates within one year from the initial date and bulk-insert them alongside the original
-- On **edit**: if the recurrence rule or due date changes, remove previously auto-generated future occurrences and regenerate them
-- On **complete**: when completing a recurring task that already has future occurrences pre-generated, do NOT create a duplicate next occurrence (the existing logic for spawning the next one should be skipped since it already exists)
-
-## Example
-- Reminder: "Change HVAC filter", due 2026-03-01, recurrence: every 3 months
-- Generated reminders: Mar 1, Jun 1, Sep 1, Dec 1 (4 occurrences within a year)
-- Reminder: "Annual furnace inspection", due 2026-03-01, recurrence: every 2 years
-- Generated reminders: Mar 1 2026, Mar 1 2028 (2 occurrences since interval > 1 year)
+- When editing a recurring reminder, identify all future pending occurrences (same name, same recurrence_rule, same asset_id, status = pending, id != current)
+- If the recurrence rule or due date changed: delete and regenerate (existing logic, already works)
+- If other fields changed (name, asset_id, provider_id, notes) but rule/date did NOT change: bulk-update all future pending occurrences with the new values
+- This covers scenarios like renaming a reminder, changing its linked asset/provider, or updating notes
 
 ## Technical Details
 
-### File: `src/hooks/useMaintenanceTasks.ts`
+### File: `src/hooks/useMaintenanceTasks.ts` -- `useUpdateMaintenanceTask`
 
-**New helper function** `generateOccurrences(startDate, rule, maxCount=52)`:
-- Parse the recurrence rule (e.g. `3m`, `7d`, `1y`)
-- Calculate the interval in days to determine if it exceeds one year
-- If interval > 365 days: return just the next occurrence date (1 item)
-- Otherwise: keep adding intervals until the date exceeds startDate + 1 year
-- Return array of date strings
+Add a new branch after the existing rule/date-change logic:
 
-**Modify `useCreateMaintenanceTask`**:
-- After inserting the primary task, if `recurrence_rule` and `next_due_date` are present, call `generateOccurrences` and bulk-insert all future occurrences with the same name, asset_id, provider_id, notes, recurrence_rule, and status `pending`
+- If rule/date did NOT change, but the task has a recurrence_rule and there are field changes (name, asset_id, provider_id, notes):
+  1. Build a query to find sibling pending occurrences using the **old** name, old asset_id, and old recurrence_rule (excluding the current task id)
+  2. Build an update payload with the changed fields
+  3. Bulk-update those rows via `.update()` with the matching filters
 
-**Modify `useUpdateMaintenanceTask`**:
-- When `recurrence_rule` or `next_due_date` changes on a pending task, delete all other pending tasks with the same name, asset_id, and recurrence_rule that have a future due date, then regenerate occurrences from the updated date/rule
-- This keeps edits clean without orphaned future tasks
+- The existing delete-and-regenerate path already handles the case where rule/date changes, and it already uses the new field values when regenerating -- so no changes needed there.
 
-**Modify `useCompleteMaintenanceTask`**:
-- Remove the existing logic that creates the next occurrence on completion, since future occurrences are already pre-generated
-- Keep the status update to `completed` and `date_completed` setting
-
-### No database or schema changes required
-All changes are in application logic only. The existing `tasks` table structure supports this as-is.
+### Example
+- "Change HVAC filter" has 4 future occurrences (Jun, Sep, Dec, Mar)
+- User renames it to "Replace HVAC filter" and changes the linked provider
+- All 4 future pending occurrences get updated with the new name and provider
 
