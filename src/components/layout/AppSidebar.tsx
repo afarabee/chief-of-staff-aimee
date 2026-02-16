@@ -18,10 +18,10 @@ const navItems = [
   { title: 'Calendar', url: '/calendar', icon: Calendar },
   { title: 'Tasks', url: '/tasks', icon: CheckSquare },
   { title: 'Ideas', url: '/ideas', icon: Lightbulb },
+  { title: 'Reminders', url: '/maintenance', icon: ClipboardCheck },
   { title: 'Categories', url: '/categories', icon: Tags },
   { title: 'Assets', url: '/assets', icon: Package },
   { title: 'Providers', url: '/providers', icon: Wrench },
-  { title: 'Reminders', url: '/maintenance', icon: ClipboardCheck },
 ];
 
 export function AppSidebar() {
