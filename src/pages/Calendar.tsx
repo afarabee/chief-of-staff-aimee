@@ -88,25 +88,23 @@ export default function CalendarPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h1 className="text-2xl font-bold">Calendar</h1>
-        <ToggleGroup type="single" value={view} onValueChange={(v) => v && setView(v as ViewMode)} size="sm" variant="outline">
-          <ToggleGroupItem value="monthly">Monthly</ToggleGroupItem>
-          <ToggleGroupItem value="weekly">Weekly</ToggleGroupItem>
-          <ToggleGroupItem value="daily">Daily</ToggleGroupItem>
-        </ToggleGroup>
-      </div>
-
-      {/* Navigation */}
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <Button variant="outline" size="icon" onClick={() => navigate(1)}>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-        <span className="text-sm font-medium flex-1">{periodLabel}</span>
-        <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
-          Today
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigate(-1)}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigate(1)}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <span className="text-sm font-medium">{periodLabel}</span>
+          <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
+            Today
+          </Button>
+          <ToggleGroup type="single" value={view} onValueChange={(v) => v && setView(v as ViewMode)} size="sm" variant="outline" className="ml-2">
+            <ToggleGroupItem value="monthly">Monthly</ToggleGroupItem>
+            <ToggleGroupItem value="weekly">Weekly</ToggleGroupItem>
+            <ToggleGroupItem value="daily">Daily</ToggleGroupItem>
+          </ToggleGroup>
+        </div>
       </div>
 
       {/* Legend & Toggle */}
