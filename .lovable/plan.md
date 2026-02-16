@@ -1,20 +1,27 @@
 
 
-# Resize Description and Attachment in Task & Idea Forms
+# Expand Accepted Attachment Types to Include PDFs and PNGs
 
 ## Overview
-Make the Description textarea taller and the Attachment upload area more compact in both the Task and Idea forms (Add and Edit modes).
+Currently the upload component only accepts image files (`image/*`). This change expands it to also accept PDFs, and updates the preview to handle non-image files gracefully.
 
-## Changes
+## Changes (single file: `src/components/ui/image-upload.tsx`)
 
-### 1. TaskForm (`src/components/tasks/TaskForm.tsx`)
-- Change the Description `Textarea` from `rows={3}` to `rows={6}` for a taller text area
+### 1. Expand accepted MIME types
+- Change the `accept` attribute on the file input from `image/*` to `image/*,.pdf`
+- Update the validation check in `uploadFile()` from `file.type.startsWith('image/')` to also allow `application/pdf`
+- Update the drag-and-drop handler to accept PDFs too
+- Update the paste handler to accept PDFs too
 
-### 2. IdeaForm (`src/components/ideas/IdeaForm.tsx`)
-- Change the Description `Textarea` from `rows={4}` to `rows={6}` for consistency
+### 2. Update preview for non-image files
+- When the attached file is a PDF (detected by URL ending in `.pdf`), show a file icon with the filename instead of an `<img>` tag, since PDFs can't be previewed as images
+- Images (including PNGs, which are already covered by `image/*`) continue to show the image preview as before
 
-### 3. ImageUpload (`src/components/ui/image-upload.tsx`)
-- Reduce the empty-state padding from `py-6 px-4` to `py-3 px-4` to make the drop zone more compact
-- Reduce icon sizes slightly (h-6/h-5 to h-5/h-4)
+### 3. Update labels
+- Change the toast message from "Image uploaded" to "File uploaded"
+- Change the upload area hint text from referencing only images to "Images & PDFs"
+- Add a `Paperclip` or `FileText` icon alongside the image icon to indicate PDF support
 
-These are small CSS/prop tweaks across 3 files -- no logic changes.
+### Note
+PNGs are already accepted since `image/*` covers all image types including PNG. The real expansion here is adding PDF support.
+
