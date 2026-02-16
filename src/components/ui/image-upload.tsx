@@ -1,9 +1,23 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Upload, X, Loader2, ImageIcon } from 'lucide-react';
+import { Upload, X, Loader2, ImageIcon, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
+
+const ACCEPTED_TYPES = ['image/', 'application/pdf'];
+
+function isAcceptedFile(file: File) {
+  return ACCEPTED_TYPES.some((t) => file.type.startsWith(t));
+}
+
+function isPdfUrl(url: string) {
+  try {
+    return new URL(url).pathname.toLowerCase().endsWith('.pdf');
+  } catch {
+    return false;
+  }
+}
 
 interface ImageUploadProps {
   value: string | null;
@@ -25,10 +39,10 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
   };
 
   const uploadFile = async (file: File) => {
-    if (!file.type.startsWith('image/')) {
+    if (!isAcceptedFile(file)) {
       toast({
         title: 'Invalid file type',
-        description: 'Please upload an image file.',
+        description: 'Please upload an image or PDF file.',
         variant: 'destructive',
       });
       return;
@@ -51,14 +65,14 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
 
       onChange(publicUrl);
       toast({
-        title: 'Image uploaded',
-        description: 'Your image has been attached.',
+        title: 'File uploaded',
+        description: 'Your file has been attached.',
       });
     } catch (error) {
       console.error('Upload failed:', error);
       toast({
         title: 'Upload failed',
-        description: 'Failed to upload image. Please try again.',
+        description: 'Failed to upload file. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -71,7 +85,6 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
     if (file) {
       uploadFile(file);
     }
-    // Reset input so the same file can be selected again
     e.target.value = '';
   };
 
@@ -80,7 +93,7 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
     if (!items) return;
 
     for (const item of items) {
-      if (item.type.startsWith('image/')) {
+      if (isAcceptedFile(item as unknown as File) || item.type.startsWith('image/') || item.type === 'application/pdf') {
         e.preventDefault();
         const file = item.getAsFile();
         if (file) {
@@ -95,7 +108,7 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
     e.preventDefault();
     setIsDragOver(false);
     const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith('image/')) {
+    if (file && isAcceptedFile(file)) {
       uploadFile(file);
     }
   };
@@ -114,7 +127,6 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
     if (!value) return;
 
     try {
-      // Extract file path from URL
       const url = new URL(value);
       const pathMatch = url.pathname.match(/\/attachments\/(.+)$/);
       if (pathMatch) {
@@ -132,9 +144,7 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
     const container = containerRef.current;
     if (!container) return;
 
-    // Listen for paste events when this component is focused or in the form
     const handleGlobalPaste = (e: ClipboardEvent) => {
-      // Only handle if we're within the form context
       const activeElement = document.activeElement;
       const form = container.closest('form');
       if (form && form.contains(activeElement)) {
@@ -147,14 +157,24 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
   }, [handlePaste]);
 
   if (value) {
+    const isPdf = isPdfUrl(value);
     return (
       <div className={cn('relative group', className)} ref={containerRef}>
         <div className="relative rounded-lg border border-border overflow-hidden bg-muted/30">
-          <img
-            src={value}
-            alt="Attachment"
-            className="w-full h-32 object-cover"
-          />
+          {isPdf ? (
+            <div className="flex items-center gap-2 px-3 py-3">
+              <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
+              <span className="text-sm text-foreground truncate">
+                {decodeURIComponent(value.split('/').pop() || 'file.pdf')}
+              </span>
+            </div>
+          ) : (
+            <img
+              src={value}
+              alt="Attachment"
+              className="w-full h-32 object-cover"
+            />
+          )}
           <Button
             type="button"
             variant="destructive"
@@ -186,27 +206,25 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,.pdf"
         onChange={handleFileSelect}
         className="hidden"
       />
       <div className="flex flex-col items-center justify-center py-3 px-4 text-center">
         {isUploading ? (
           <>
-            <Loader2 className="h-6 w-6 text-muted-foreground animate-spin mb-1" />
+            <Loader2 className="h-5 w-5 text-muted-foreground animate-spin mb-1" />
             <p className="text-sm text-muted-foreground">Uploading...</p>
           </>
         ) : (
           <>
             <div className="flex items-center gap-2 mb-1">
-              <ImageIcon className="h-5 w-5 text-muted-foreground" />
+              <ImageIcon className="h-4 w-4 text-muted-foreground" />
+              <FileText className="h-4 w-4 text-muted-foreground" />
               <Upload className="h-4 w-4 text-muted-foreground" />
             </div>
             <p className="text-sm text-muted-foreground">
-              Click to upload or drag & drop
-            </p>
-            <p className="text-xs text-muted-foreground/70 mt-1">
-              Paste from clipboard (Ctrl+V)
+              Images & PDFs — click, drag, or paste
             </p>
           </>
         )}
