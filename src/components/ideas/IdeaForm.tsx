@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CheckSquare } from 'lucide-react';
+import { EnrichWithAI } from '@/components/ai/EnrichWithAI';
 import { Idea, IdeaStatus } from '@/types';
 import { useApp } from '@/contexts/AppContext';
 import { useCategories } from '@/hooks/useCategories';
@@ -143,6 +144,14 @@ export function IdeaForm({ idea, onClose }: IdeaFormProps) {
           </Select>
         </div>
       </div>
+
+      {idea && (
+        <EnrichWithAI
+          itemType="idea"
+          item={{ id: idea.id, title, description, status }}
+          existingSuggestions={idea.aiSuggestions || null}
+        />
+      )}
 
       <div className="flex justify-between pt-4">
         {idea && (

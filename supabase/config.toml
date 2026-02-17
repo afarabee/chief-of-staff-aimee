@@ -2,3 +2,6 @@ project_id = "npngxiprlrsodvggbaqt"
 
 [functions.chat]
 verify_jwt = false
+
+[functions.enrich-item]
+verify_jwt = false
