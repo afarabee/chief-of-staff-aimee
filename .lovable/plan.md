@@ -1,36 +1,79 @@
 
 
-# Update Future Occurrences When Editing a Recurring Reminder
+# Add "Enrich with AI" Feature
 
 ## Overview
-Currently, when a recurring reminder is edited, future occurrences are only deleted and regenerated if the recurrence rule or due date changes. Other field changes (name, asset, provider, notes, etc.) are not propagated to existing future occurrences. This change ensures that **all** editable fields are synced to future pending occurrences whenever a recurring reminder is updated.
+Add an "Enrich with AI" button to Task, Idea, and Reminder edit forms. When clicked, Gemini analyzes the item and generates specific, actionable suggestions for what an AI assistant could do to help. Suggestions are saved to the existing `ai_suggestions` column on each table.
 
-## Current Behavior
-- Editing a reminder's name, notes, asset, or provider only updates that single reminder
-- Future pending occurrences retain the old values
-- Only rule/date changes trigger delete-and-regenerate of future occurrences
-
-## New Behavior
-- When editing a recurring reminder, identify all future pending occurrences (same name, same recurrence_rule, same asset_id, status = pending, id != current)
-- If the recurrence rule or due date changed: delete and regenerate (existing logic, already works)
-- If other fields changed (name, asset_id, provider_id, notes) but rule/date did NOT change: bulk-update all future pending occurrences with the new values
-- This covers scenarios like renaming a reminder, changing its linked asset/provider, or updating notes
+## What You'll See
+- A new "Enrich with AI" button (with sparkle icon) appears in the edit forms for Tasks, Ideas, and Reminders
+- Clicking it calls Gemini, which returns a numbered list of 3-5 practical AI suggestions
+- The suggestions appear in a styled card below the button
+- If suggestions already exist, they show immediately and the button says "Re-enrich with AI"
+- Suggestions persist in the database and are visible whenever you reopen the item
 
 ## Technical Details
 
-### File: `src/hooks/useMaintenanceTasks.ts` -- `useUpdateMaintenanceTask`
+### 1. New Edge Function: `enrich-item`
+**File:** `supabase/functions/enrich-item/index.ts`
 
-Add a new branch after the existing rule/date-change logic:
+- Accepts POST with `{ item_type, item }` where `item_type` is `"task"`, `"idea"`, or `"reminder"`
+- Builds a focused prompt asking Gemini for 3-5 actionable AI suggestions specific to the item
+- Calls Gemini 2.0 Flash API (same pattern as the `chat` function, using `GEMINI_API_KEY` / `VITE_GEMINI_API_KEY`)
+- Saves the response text to the appropriate table's `ai_suggestions` column via Supabase service role client
+- Returns `{ suggestions: "..." }` or `{ error: "..." }`
 
-- If rule/date did NOT change, but the task has a recurrence_rule and there are field changes (name, asset_id, provider_id, notes):
-  1. Build a query to find sibling pending occurrences using the **old** name, old asset_id, and old recurrence_rule (excluding the current task id)
-  2. Build an update payload with the changed fields
-  3. Bulk-update those rows via `.update()` with the matching filters
+### 2. Update `supabase/config.toml`
+Add:
+```
+[functions.enrich-item]
+verify_jwt = false
+```
 
-- The existing delete-and-regenerate path already handles the case where rule/date changes, and it already uses the new field values when regenerating -- so no changes needed there.
+### 3. New Reusable Hook: `src/hooks/useEnrichItem.ts`
+- Exports a `useEnrichItem()` hook wrapping a TanStack `useMutation`
+- Calls `supabase.functions.invoke('enrich-item', { body: { item_type, item } })`
+- On success: invalidates the relevant query cache (`tasks`, `ideas`, `maintenance-tasks`)
+- On error: shows a toast
 
-### Example
-- "Change HVAC filter" has 4 future occurrences (Jun, Sep, Dec, Mar)
-- User renames it to "Replace HVAC filter" and changes the linked provider
-- All 4 future pending occurrences get updated with the new name and provider
+### 4. New Reusable Component: `src/components/ai/EnrichWithAI.tsx`
+- Props: `itemType`, `item` (the data to send), `existingSuggestions` (string or null), `isLoading` (from mutation)
+- Renders the button: "Enrich with AI" (Sparkles icon) or "Re-enrich with AI" (RefreshCw icon) if suggestions exist
+- Shows loading state with spinner and "Enriching..." text
+- Renders a suggestions card when `ai_suggestions` is present (Sparkles icon header, formatted text, preserving line breaks)
+
+### 5. Integrate into TaskForm (`src/components/tasks/TaskForm.tsx`)
+- Only shown when editing an existing task (not creating new)
+- Pass task fields: `{ id, title, description, status, priority, due_date }`
+- Show suggestions card if `task.ai_suggestions` exists (note: need to add `aiSuggestions` to the Task type)
+
+### 6. Integrate into IdeaForm (`src/components/ideas/IdeaForm.tsx`)
+- Only shown when editing an existing idea
+- Pass idea fields: `{ id, title, description, status }`
+
+### 7. Integrate into MaintenanceTaskForm (`src/components/maintenance/MaintenanceTaskForm.tsx`)
+- Only shown when editing an existing reminder
+- Pass reminder fields: `{ id, name, notes, status, next_due_date, recurrence_rule }`
+
+### 8. Update Types
+- Add `aiSuggestions: string | null` to `Task` interface in `src/types/index.ts`
+- Add `aiSuggestions: string | null` to `Idea` interface in `src/types/index.ts`
+- Add `aiSuggestions: string | null` to `MaintenanceTask` interface in `src/types/maintenance.ts`
+- Update the DB-to-app mapping functions in `useTasks.ts`, `useIdeas.ts`, and `useMaintenanceTasks.ts` to read `ai_suggestions`
+
+### Files Created
+- `supabase/functions/enrich-item/index.ts`
+- `src/hooks/useEnrichItem.ts`
+- `src/components/ai/EnrichWithAI.tsx`
+
+### Files Modified
+- `supabase/config.toml` -- add enrich-item function config
+- `src/types/index.ts` -- add `aiSuggestions` to Task and Idea
+- `src/types/maintenance.ts` -- add `aiSuggestions` to MaintenanceTask
+- `src/hooks/useTasks.ts` -- map `ai_suggestions` field
+- `src/hooks/useIdeas.ts` -- map `ai_suggestions` field
+- `src/hooks/useMaintenanceTasks.ts` -- map `ai_suggestions` field
+- `src/components/tasks/TaskForm.tsx` -- add EnrichWithAI component
+- `src/components/ideas/IdeaForm.tsx` -- add EnrichWithAI component
+- `src/components/maintenance/MaintenanceTaskForm.tsx` -- add EnrichWithAI component
 
