@@ -141,6 +141,7 @@ export type Database = {
       }
       cos_ideas: {
         Row: {
+          ai_suggestions: string | null
           category_id: string | null
           created_at: string | null
           description: string | null
@@ -152,6 +153,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          ai_suggestions?: string | null
           category_id?: string | null
           created_at?: string | null
           description?: string | null
@@ -163,6 +165,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          ai_suggestions?: string | null
           category_id?: string | null
           created_at?: string | null
           description?: string | null
@@ -185,6 +188,7 @@ export type Database = {
       }
       cos_tasks: {
         Row: {
+          ai_suggestions: string | null
           category_id: string | null
           created_at: string | null
           description: string | null
@@ -198,6 +202,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          ai_suggestions?: string | null
           category_id?: string | null
           created_at?: string | null
           description?: string | null
@@ -211,6 +216,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          ai_suggestions?: string | null
           category_id?: string | null
           created_at?: string | null
           description?: string | null
@@ -323,6 +329,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          ai_suggestions: string | null
           asset_id: string | null
           attachment_url: string | null
           cost: number | null
@@ -338,6 +345,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          ai_suggestions?: string | null
           asset_id?: string | null
           attachment_url?: string | null
           cost?: number | null
@@ -353,6 +361,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          ai_suggestions?: string | null
           asset_id?: string | null
           attachment_url?: string | null
           cost?: number | null

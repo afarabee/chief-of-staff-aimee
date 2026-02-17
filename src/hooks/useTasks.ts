@@ -43,6 +43,7 @@ function dbTaskToTask(dbTask: DbTask): Task {
       ? new Date(dbTask.updated_at) 
       : null,
     imageUrl: dbTask.image_url || null,
+    aiSuggestions: dbTask.ai_suggestions || null,
   };
 }
 

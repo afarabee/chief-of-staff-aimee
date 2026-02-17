@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { CalendarIcon, Lightbulb } from 'lucide-react';
+import { EnrichWithAI } from '@/components/ai/EnrichWithAI';
 import { Task, TaskStatus, TaskPriority } from '@/types';
 import { useApp } from '@/contexts/AppContext';
 import { useCategories } from '@/hooks/useCategories';
@@ -217,6 +218,14 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
           </Select>
         </div>
       </div>
+
+      {task && (
+        <EnrichWithAI
+          itemType="task"
+          item={{ id: task.id, title, description, status, priority, due_date: task.dueDate?.toISOString().split('T')[0] || null }}
+          existingSuggestions={task.aiSuggestions || null}
+        />
+      )}
 
       <div className="flex justify-between pt-4">
         {task && (

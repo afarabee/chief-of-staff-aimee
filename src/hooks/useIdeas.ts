@@ -24,6 +24,7 @@ function dbIdeaToIdea(dbIdea: DbIdea): Idea {
     categoryId: dbIdea.category_id || null,
     createdAt: new Date(dbIdea.created_at || Date.now()),
     imageUrl: (dbIdea as DbIdea & { image_url?: string | null }).image_url || null,
+    aiSuggestions: dbIdea.ai_suggestions || null,
   };
 }
 
