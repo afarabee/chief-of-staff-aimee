@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.enrich-item]
 verify_jwt = false
+
+[functions.execute-suggestion]
+verify_jwt = false

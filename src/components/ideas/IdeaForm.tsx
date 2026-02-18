@@ -150,6 +150,8 @@ export function IdeaForm({ idea, onClose }: IdeaFormProps) {
           itemType="idea"
           item={{ id: idea.id, title, description, status }}
           existingSuggestions={idea.aiSuggestions || null}
+          itemTitle={title}
+          categoryId={categoryId}
         />
       )}
 

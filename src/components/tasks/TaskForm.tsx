@@ -224,6 +224,8 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
           itemType="task"
           item={{ id: task.id, title, description, status, priority, due_date: task.dueDate?.toISOString().split('T')[0] || null }}
           existingSuggestions={task.aiSuggestions || null}
+          itemTitle={title}
+          categoryId={categoryId}
         />
       )}
 
