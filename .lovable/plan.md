@@ -1,114 +1,93 @@
 
-
-# Actionable AI Suggestions -- Interactive Suggestion Cards
+# Mobile Responsiveness Fix
 
 ## Overview
-Upgrade the "Enrich with AI" feature so each suggestion becomes an interactive card with three action buttons: Execute (run the suggestion via Gemini), Chat (pre-fill the chatbot), and Create Subtask (create a cos_tasks entry). Suggestions change from plain text to a JSON array, and executed results are stored inline.
+Fix all mobile usability issues across the app: modals that overflow the screen, sidebar that stays open after navigation, the Today view layout, and general touch/spacing improvements. On mobile (below 768px), all form dialogs will render as full-screen bottom sheets instead of centered dialogs.
 
 ## What You'll See
-- Each AI suggestion rendered as its own card/row with the suggestion text and three icon buttons
-- **Execute** (Zap icon): Calls Gemini to perform the suggestion, shows the result in a collapsible section below
-- **Chat** (MessageSquare icon): Opens the floating chatbot and pre-fills the input with the suggestion in context
-- **Create Subtask** (ListPlus icon): Creates a new task in cos_tasks from the suggestion
-- Executed results show in a collapsible area with markdown-like formatting and a copy button
-- Old plain-text suggestions are automatically converted to the new JSON format on display
+- On phones, all add/edit forms (Tasks, Ideas, Reminders, Assets, Providers) slide up as full-screen bottom sheets with a scrollable body and fixed header/footer
+- Tapping a sidebar nav link automatically closes the sidebar
+- The Today dashboard stacks cards vertically on mobile with proper spacing
+- AI Suggestion action buttons stack below the suggestion text on mobile
+- All buttons meet 44px minimum touch target size on mobile
+- No content touches screen edges (proper padding throughout)
 
 ## Technical Details
 
-### 1. Update `enrich-item` Edge Function
-**File:** `supabase/functions/enrich-item/index.ts`
+### 1. Create a `ResponsiveFormDialog` wrapper component
+**File:** `src/components/ui/responsive-dialog.tsx`
 
-- Change the Gemini prompt to request a JSON array response format: `[{ "suggestion": "..." }, ...]`
-- After receiving Gemini's response, strip any markdown code fences (` ```json ... ``` `) and parse as JSON
-- If JSON parsing fails, fall back to splitting by numbered lines and wrapping each in `{ "suggestion": "..." }`
-- Save the JSON string (via `JSON.stringify`) to `ai_suggestions`
-- Return `{ suggestions: theJsonArray }` instead of plain text
+A new component that renders a `Dialog` on desktop and a full-screen `Sheet` (side="bottom") on mobile, using the existing `useIsMobile()` hook.
 
-### 2. Create `execute-suggestion` Edge Function
-**File:** `supabase/functions/execute-suggestion/index.ts`
+Props: `open`, `onOpenChange`, `title` (string), `children` (the form content).
 
-- Accepts POST: `{ suggestion, item_type, item_title, item_description, item_id, suggestion_index }`
-- Builds a Gemini prompt asking it to thoroughly execute the suggestion in context of the item
-- Calls Gemini 2.0 Flash, gets the result
-- Reads the current `ai_suggestions` JSON from the appropriate table, parses it, sets `result` on the matching suggestion index, writes it back
-- Returns `{ result: "..." }`
+On mobile (Sheet):
+- Full width, max-height 95vh
+- Flex column layout with sticky header (title + close), scrollable body, no separate footer (forms handle their own buttons inside the scroll area)
+- `overflow-y: auto`, `overflow-x: hidden` on the body
+- Extra bottom padding (`pb-8`) to account for safe areas
 
-### 3. Update `supabase/config.toml`
-Add:
-```
-[functions.execute-suggestion]
-verify_jwt = false
-```
+On desktop (Dialog):
+- Keep current behavior: centered, max-w-lg, max-h-[85vh], overflow-y-auto, overflow-x-hidden
 
-### 4. Create helper: `src/lib/parseSuggestions.ts`
-- Export `parseSuggestions(raw: string | null): Array<{ suggestion: string; result?: string | null }>`
-- Try `JSON.parse(raw)`. If it returns an array of objects with `suggestion` fields, return it
-- Otherwise, treat as plain text: split by lines matching `/^\d+\.\s/`, wrap each in `{ suggestion: text }`
-- Handles null/empty gracefully (returns empty array)
+### 2. Replace Dialog usage in all form modals
+**Files modified:**
+- `src/pages/Tasks.tsx` -- Task edit dialog and maintenance sheet
+- `src/pages/Ideas.tsx` -- Idea edit dialog
+- `src/pages/Maintenance.tsx` -- Reminder edit dialog
+- `src/pages/Assets.tsx` -- Asset edit dialog (list view + detail view + inner task dialog)
+- `src/pages/Providers.tsx` -- Provider edit dialog + task dialog (list + detail)
+- `src/pages/Calendar.tsx` -- Create/edit kanban and maintenance dialogs
+- `src/pages/Index.tsx` -- Task and Idea edit dialogs
+- `src/pages/CategoryDetail.tsx` -- Task and Idea edit dialogs
+- `src/pages/Categories.tsx` -- Category create/edit dialog (if it can overflow)
 
-### 5. Create hook: `src/hooks/useExecuteSuggestion.ts`
-- `useMutation` that calls `supabase.functions.invoke('execute-suggestion', { body })`
-- On success: invalidates tasks/ideas/maintenance-tasks queries
-- Returns the result text
+Replace `<Dialog>` + `<DialogContent>` + `<DialogHeader>` + `<DialogTitle>` pattern with `<ResponsiveFormDialog title="..." open={...} onOpenChange={...}>`. The form remains as children.
 
-### 6. Create hook: `src/hooks/useCreateSubtask.ts`
-- `useMutation` that inserts into `cos_tasks` via Supabase client:
-  - `title`: suggestion text truncated to 80 chars
-  - `description`: "Subtask created from AI suggestion for: [parent title]\n\nFull suggestion: [text]\n\nCreated by AI Enrichment"
-  - `status`: "Backlog" (matching DB default casing)
-  - `priority`: "Low"
-  - `category_id`: parent's category_id or null
-- Invalidates `tasks` query, shows toast
+### 3. Auto-close sidebar on mobile navigation
+**File:** `src/components/layout/AppSidebar.tsx`
 
-### 7. Major rewrite: `src/components/ai/EnrichWithAI.tsx`
-Replace the plain text display with interactive suggestion cards:
+- Import `useSidebar` (already imported) and extract `setOpenMobile` and `isMobile`
+- Add an `onClick` handler to each `NavLink` that calls `setOpenMobile(false)` when `isMobile` is true
+- This closes the Sheet-based mobile sidebar after tapping a link
 
-- Parse `existingSuggestions` and local suggestions using `parseSuggestions()`
-- Each suggestion renders as a row with:
-  - Suggestion text (left, taking most width)
-  - Three icon buttons (right):
-    - **Execute** (Zap): calls `useExecuteSuggestion`, shows spinner on that row only, stores result; once done, shows checkmark, disabled
-    - **Chat** (MessageSquare): opens the chatbot and pre-fills input (see Step 8)
-    - **Create Subtask** (ListPlus): calls `useCreateSubtask`, shows toast, becomes checkmark when done
-- When a suggestion has a `result`:
-  - Show a Collapsible below with "Show result" / "Hide result" toggle
-  - Render result with basic markdown formatting (bold, bullets, headers)
-  - Include a Copy button (clipboard icon) in the result header
-- Use `Tooltip` on each button for labels
-- Track per-suggestion state (executing index, created subtask indices) in local component state
+### 4. Make the Today view responsive
+**File:** `src/pages/Index.tsx`
 
-### 8. Chat pre-fill mechanism
-- The `AIChatBot` component manages its own `input` state
-- Add a simple event-based approach: create a custom event `'prefill-chat'` that carries the text
-- In `EnrichWithAI`, when Chat is clicked:
-  - Dispatch `window.dispatchEvent(new CustomEvent('prefill-chat', { detail: { text } }))`
-  - The text format: `For my [task/idea/reminder] titled '[item title]': [suggestion text]`
-- In `AIChatBot`, add a `useEffect` listener for `'prefill-chat'` events:
-  - Set `input` to the event detail text
-  - Set `open` to true
-  - Focus the input
+- Change `grid gap-8 lg:grid-cols-2` to `grid gap-4 md:gap-8 md:grid-cols-2` so cards stack on mobile
+- Reduce the main container padding reference: in `AppLayout.tsx`, change `p-8` to `p-4 md:p-8`
+- Ensure the quick capture input and button have proper mobile sizing
 
-### 9. Update `useEnrichItem.ts`
-- Change return type to handle JSON array (the edge function now returns an array)
-- The mutation return value should be the JSON string for local state
+### 5. Update AppLayout padding for mobile
+**File:** `src/components/layout/AppLayout.tsx`
 
-### 10. Update parent forms (minor)
-- `TaskForm`, `IdeaForm`, `MaintenanceTaskForm`: pass `itemTitle` as a new prop to `EnrichWithAI` (needed for chat pre-fill and subtask description)
-- Pass `categoryId` for subtask creation
+- Change `<div className="p-8">` to `<div className="p-4 md:p-8">` for mobile-friendly padding
+- Change header `px-6` to `px-4 md:px-6`
+
+### 6. Mobile-friendly AI Suggestions
+**File:** `src/components/ai/EnrichWithAI.tsx`
+
+- Change the suggestion row from `flex items-start gap-2` to `flex flex-col sm:flex-row sm:items-start gap-2`
+- On mobile: suggestion text takes full width, action buttons row below it (horizontally)
+- Ensure action buttons are at least 44px touch targets on mobile: `h-7 w-7 sm:h-7 sm:w-7` stays, but add `min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0` or simply increase to `h-10 w-10 sm:h-7 sm:w-7`
+
+### 7. General mobile touch-target improvements
+- Buttons in forms already use shadcn defaults which are generally fine
+- The sidebar nav items already have adequate height from SidebarMenuButton
 
 ### Files Created
-- `supabase/functions/execute-suggestion/index.ts`
-- `src/lib/parseSuggestions.ts`
-- `src/hooks/useExecuteSuggestion.ts`
-- `src/hooks/useCreateSubtask.ts`
+- `src/components/ui/responsive-dialog.tsx`
 
 ### Files Modified
-- `supabase/functions/enrich-item/index.ts` -- JSON format prompt + parsing
-- `supabase/config.toml` -- add execute-suggestion
-- `src/components/ai/EnrichWithAI.tsx` -- full rewrite with interactive cards
-- `src/components/chat/AIChatBot.tsx` -- add prefill-chat event listener
-- `src/hooks/useEnrichItem.ts` -- handle JSON return type
-- `src/components/tasks/TaskForm.tsx` -- pass itemTitle and categoryId props
-- `src/components/ideas/IdeaForm.tsx` -- pass itemTitle and categoryId props
-- `src/components/maintenance/MaintenanceTaskForm.tsx` -- pass itemTitle prop
-
+- `src/components/layout/AppSidebar.tsx` -- auto-close on mobile nav
+- `src/components/layout/AppLayout.tsx` -- responsive padding
+- `src/pages/Tasks.tsx` -- use ResponsiveFormDialog
+- `src/pages/Ideas.tsx` -- use ResponsiveFormDialog
+- `src/pages/Maintenance.tsx` -- use ResponsiveFormDialog
+- `src/pages/Assets.tsx` -- use ResponsiveFormDialog
+- `src/pages/Providers.tsx` -- use ResponsiveFormDialog
+- `src/pages/Calendar.tsx` -- use ResponsiveFormDialog
+- `src/pages/Index.tsx` -- responsive grid + use ResponsiveFormDialog
+- `src/pages/CategoryDetail.tsx` -- use ResponsiveFormDialog
+- `src/pages/Categories.tsx` -- use ResponsiveFormDialog
+- `src/components/ai/EnrichWithAI.tsx` -- stack suggestion buttons on mobile
