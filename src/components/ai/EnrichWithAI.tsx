@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sparkles, RefreshCw, Loader2, Zap, MessageSquare, ListPlus, Check, ChevronDown, ChevronUp, Copy } from 'lucide-react';
+import { Sparkles, RefreshCw, Loader2, Zap, ListPlus, Check, ChevronDown, ChevronUp, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -90,11 +90,6 @@ export function EnrichWithAI({ itemType, item, existingSuggestions, itemTitle, c
     );
   };
 
-  const handleChat = (suggestion: string) => {
-    const title = itemTitle || item.title || item.name || 'Untitled';
-    const text = `For my ${itemType} titled '${title}': ${suggestion}`;
-    window.dispatchEvent(new CustomEvent('prefill-chat', { detail: { text } }));
-  };
 
   const handleCreateSubtask = (idx: number, suggestion: string) => {
     const title = itemTitle || item.title || item.name || 'Untitled';
@@ -196,20 +191,6 @@ export function EnrichWithAI({ itemType, item, existingSuggestions, itemTitle, c
                           <TooltipContent>Execute this suggestion</TooltipContent>
                         </Tooltip>
 
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => handleChat(s.suggestion)}
-                            >
-                              <MessageSquare className="h-3.5 w-3.5" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Discuss in chatbot</TooltipContent>
-                        </Tooltip>
 
                         <Tooltip>
                           <TooltipTrigger asChild>
