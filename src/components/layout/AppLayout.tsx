@@ -30,7 +30,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <div className="flex min-h-screen w-full">
         <AppSidebar />
         <main className="flex-1 bg-background">
-          <header className="flex h-14 items-center gap-4 border-b px-6">
+          <header className="flex h-14 items-center gap-4 border-b px-4 md:px-6">
             <SidebarTrigger className="-ml-2" />
             <Button
               variant="ghost"
@@ -42,7 +42,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             </Button>
             <InlineSearch />
           </header>
-          <div className="p-8">{children}</div>
+          <div className="p-4 md:p-8">{children}</div>
         </main>
       </div>
       <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />

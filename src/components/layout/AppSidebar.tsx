@@ -25,8 +25,14 @@ const navItems = [
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, setOpenMobile, isMobile } = useSidebar();
   const isCollapsed = state === 'collapsed';
+
+  const handleNavClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   return (
     <Sidebar
@@ -59,6 +65,7 @@ export function AppSidebar() {
                       end={item.url === '/'}
                       className="flex items-center gap-3 text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                       activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                      onClick={handleNavClick}
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>

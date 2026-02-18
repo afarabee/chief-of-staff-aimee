@@ -8,7 +8,7 @@ import { MaintenanceTaskForm } from '@/components/maintenance/MaintenanceTaskFor
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ResponsiveFormDialog } from '@/components/ui/responsive-dialog';
 import { cn } from '@/lib/utils';
 import type { MaintenanceTask } from '@/types/maintenance';
 
@@ -43,7 +43,6 @@ export default function Maintenance() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<MaintenanceTask | undefined>();
 
-
   const { overdue, attention, inProgress, upcoming, completed } = useMemo(() => {
     const overdue: MaintenanceTask[] = [];
     const attention: MaintenanceTask[] = [];
@@ -68,19 +67,14 @@ export default function Maintenance() {
           upcoming.push(t);
         }
       } else if (t.status === 'pending') {
-        upcoming.push(t); // no due date
+        upcoming.push(t);
       }
     });
 
-    // Sort overdue: most overdue first (earliest date first)
     overdue.sort((a, b) => (a.nextDueDate ?? '').localeCompare(b.nextDueDate ?? ''));
-    // attention: by due date asc
     attention.sort((a, b) => (a.nextDueDate ?? '9').localeCompare(b.nextDueDate ?? '9'));
-    // in progress: by due date asc
     inProgress.sort((a, b) => (a.nextDueDate ?? '9').localeCompare(b.nextDueDate ?? '9'));
-    // upcoming: by due date asc
     upcoming.sort((a, b) => (a.nextDueDate ?? '9').localeCompare(b.nextDueDate ?? '9'));
-    // completed: by date_completed desc
     completed.sort((a, b) => (b.dateCompleted ?? '').localeCompare(a.dateCompleted ?? ''));
 
     return { overdue, attention, inProgress, upcoming, completed: completed.slice(0, 20) };
@@ -159,14 +153,13 @@ export default function Maintenance() {
         </div>
       )}
 
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingTask ? 'Edit Reminder' : 'Add Reminder'}</DialogTitle>
-          </DialogHeader>
-          <MaintenanceTaskForm task={editingTask} onClose={closeForm} />
-        </DialogContent>
-      </Dialog>
+      <ResponsiveFormDialog
+        open={isFormOpen}
+        onOpenChange={setIsFormOpen}
+        title={editingTask ? 'Edit Reminder' : 'Add Reminder'}
+      >
+        <MaintenanceTaskForm task={editingTask} onClose={closeForm} />
+      </ResponsiveFormDialog>
     </div>
   );
 }

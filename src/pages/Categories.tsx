@@ -7,12 +7,7 @@ import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { ResponsiveFormDialog } from '@/components/ui/responsive-dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -153,42 +148,39 @@ export default function Categories() {
         </CardContent>
       </Card>
 
-      {/* Create/Edit Dialog */}
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingCategory ? 'Edit Category' : 'New Category'}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                value={categoryIcon}
-                onChange={(e) => setCategoryIcon(e.target.value)}
-                placeholder="🏠"
-                className="w-16 text-center text-lg"
-                maxLength={2}
-              />
-              <Input
-                value={categoryName}
-                onChange={(e) => setCategoryName(e.target.value)}
-                placeholder="Category name (e.g., Home)"
-                autoFocus
-                className="flex-1"
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={!categoryName.trim()}>
-                {editingCategory ? 'Update' : 'Create'}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <ResponsiveFormDialog
+        open={isFormOpen}
+        onOpenChange={setIsFormOpen}
+        title={editingCategory ? 'Edit Category' : 'New Category'}
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="flex gap-2">
+            <Input
+              value={categoryIcon}
+              onChange={(e) => setCategoryIcon(e.target.value)}
+              placeholder="🏠"
+              className="w-16 text-center text-lg"
+              maxLength={2}
+            />
+            <Input
+              value={categoryName}
+              onChange={(e) => setCategoryName(e.target.value)}
+              placeholder="Category name (e.g., Home)"
+              autoFocus
+              className="flex-1"
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={!categoryName.trim()}>
+              {editingCategory ? 'Update' : 'Create'}
+            </Button>
+          </div>
+        </form>
+      </ResponsiveFormDialog>
 
-      {/* Delete Confirmation */}
       <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

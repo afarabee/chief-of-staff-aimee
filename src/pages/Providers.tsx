@@ -12,12 +12,7 @@ import { MaintenanceTaskCard } from '@/components/maintenance/MaintenanceTaskCar
 import { MaintenanceTaskForm } from '@/components/maintenance/MaintenanceTaskForm';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { ResponsiveFormDialog } from '@/components/ui/responsive-dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,10 +29,7 @@ import type { MaintenanceTask } from '@/types/maintenance';
 import { LinkedAssetsSection } from '@/components/links/LinkedAssetsSection';
 
 function DynamicIcon({ name, className }: { name: string; className?: string }) {
-  const pascalName = name
-    .split('-')
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join('');
+  const pascalName = name.split('-').map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join('');
   const Icon = (icons as Record<string, any>)[pascalName];
   if (!Icon) return null;
   return <Icon className={className} />;
@@ -80,11 +72,8 @@ export default function Providers() {
   const openDetail = (provider: Provider) => { setSelectedProvider(provider); setView('detail'); };
   const backToList = () => { setView('list'); setSelectedProvider(null); };
 
-  const handleDelete = (id: string) => {
-    deleteProvider.mutate(id, { onSuccess: backToList });
-  };
+  const handleDelete = (id: string) => { deleteProvider.mutate(id, { onSuccess: backToList }); };
 
-  // Group by category
   const grouped = providers.reduce<Record<string, { name: string; icon: string | null; color: string | null; providers: Provider[] }>>((acc, p) => {
     const key = p.categoryName ?? 'Uncategorized';
     if (!acc[key]) acc[key] = { name: key, icon: p.categoryIcon ?? null, color: p.categoryColor ?? null, providers: [] };
@@ -93,7 +82,6 @@ export default function Providers() {
   }, {});
   const groups = Object.values(grouped).sort((a, b) => a.name.localeCompare(b.name));
 
-  // ── Detail View ──
   if (view === 'detail' && selectedProvider) {
     const fresh = providers.find((p) => p.id === selectedProvider.id) ?? selectedProvider;
     return (
@@ -132,10 +120,7 @@ export default function Providers() {
         </div>
 
         {fresh.categoryName && (
-          <Badge
-            variant="secondary"
-            style={{ backgroundColor: fresh.categoryColor ? `${fresh.categoryColor}20` : undefined, color: fresh.categoryColor ?? undefined }}
-          >
+          <Badge variant="secondary" style={{ backgroundColor: fresh.categoryColor ? `${fresh.categoryColor}20` : undefined, color: fresh.categoryColor ?? undefined }}>
             {fresh.categoryName}
           </Badge>
         )}
@@ -173,20 +158,13 @@ export default function Providers() {
           )}
         </div>
 
-        {/* Linked Assets Section */}
-        <LinkedAssetsSection
-          providerId={fresh.id}
-          onNavigateToAsset={(assetId) => navigate(`/assets?detail=${assetId}`)}
-        />
+        <LinkedAssetsSection providerId={fresh.id} onNavigateToAsset={(assetId) => navigate(`/assets?detail=${assetId}`)} />
 
-        {/* Maintenance Tasks Section */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-semibold text-foreground">Reminders</h2>
-              {providerTasks.length > 0 && (
-                <Badge variant="secondary">{providerTasks.length}</Badge>
-              )}
+              {providerTasks.length > 0 && <Badge variant="secondary">{providerTasks.length}</Badge>}
             </div>
             <Button size="sm" variant="outline" onClick={() => { setEditingTask(undefined); setIsTaskFormOpen(true); }}>
               <Plus className="h-4 w-4" />
@@ -199,12 +177,9 @@ export default function Providers() {
             <div className="space-y-2">
               {providerTasks.map((task) => {
                 const variant: 'overdue' | 'attention' | 'upcoming' | 'completed' =
-                  task.status === 'completed'
-                    ? 'completed'
-                    : task.status === 'needs_attention'
-                      ? 'attention'
-                      : task.nextDueDate && isPast(parseISO(task.nextDueDate))
-                        ? 'overdue'
+                  task.status === 'completed' ? 'completed'
+                    : task.status === 'needs_attention' ? 'attention'
+                      : task.nextDueDate && isPast(parseISO(task.nextDueDate)) ? 'overdue'
                         : 'upcoming';
                 return (
                   <MaintenanceTaskCard
@@ -220,32 +195,17 @@ export default function Providers() {
           )}
         </div>
 
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogContent className="max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingProvider ? 'Edit Provider' : 'Add Provider'}</DialogTitle>
-            </DialogHeader>
-            <ProviderForm provider={editingProvider} onClose={closeForm} />
-          </DialogContent>
-        </Dialog>
+        <ResponsiveFormDialog open={isFormOpen} onOpenChange={setIsFormOpen} title={editingProvider ? 'Edit Provider' : 'Add Provider'}>
+          <ProviderForm provider={editingProvider} onClose={closeForm} />
+        </ResponsiveFormDialog>
 
-        <Dialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen}>
-          <DialogContent className="max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingTask ? 'Edit Reminder' : 'Add Reminder'}</DialogTitle>
-            </DialogHeader>
-            <MaintenanceTaskForm
-              task={editingTask}
-              lockedProviderId={fresh.id}
-              onClose={() => setIsTaskFormOpen(false)}
-            />
-          </DialogContent>
-        </Dialog>
+        <ResponsiveFormDialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen} title={editingTask ? 'Edit Reminder' : 'Add Reminder'}>
+          <MaintenanceTaskForm task={editingTask} lockedProviderId={fresh.id} onClose={() => setIsTaskFormOpen(false)} />
+        </ResponsiveFormDialog>
       </div>
     );
   }
 
-  // ── List View ──
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -272,10 +232,7 @@ export default function Providers() {
           <div key={group.name} className="space-y-2">
             <div className="flex items-center gap-2">
               {group.icon && <DynamicIcon name={group.icon} className="h-4 w-4" />}
-              <h2
-                className="text-sm font-semibold uppercase tracking-wide"
-                style={{ color: group.color ?? undefined }}
-              >
+              <h2 className="text-sm font-semibold uppercase tracking-wide" style={{ color: group.color ?? undefined }}>
                 {group.name}
               </h2>
             </div>
@@ -288,14 +245,9 @@ export default function Providers() {
         ))
       )}
 
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingProvider ? 'Edit Provider' : 'Add Provider'}</DialogTitle>
-          </DialogHeader>
-          <ProviderForm provider={editingProvider} onClose={closeForm} />
-        </DialogContent>
-      </Dialog>
+      <ResponsiveFormDialog open={isFormOpen} onOpenChange={setIsFormOpen} title={editingProvider ? 'Edit Provider' : 'Add Provider'}>
+        <ProviderForm provider={editingProvider} onClose={closeForm} />
+      </ResponsiveFormDialog>
     </div>
   );
 }

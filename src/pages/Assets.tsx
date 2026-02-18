@@ -15,12 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { ResponsiveFormDialog } from '@/components/ui/responsive-dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -118,24 +113,19 @@ function AssetTasksSection({ assetId, showOnKanban }: { assetId: string; showOnK
         </Collapsible>
       )}
 
-      <Dialog open={taskFormOpen} onOpenChange={setTaskFormOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingTask ? 'Edit Reminder' : 'Add Reminder'}</DialogTitle>
-          </DialogHeader>
-          <MaintenanceTaskForm task={editingTask} lockedAssetId={assetId} onClose={() => setTaskFormOpen(false)} />
-        </DialogContent>
-      </Dialog>
+      <ResponsiveFormDialog
+        open={taskFormOpen}
+        onOpenChange={setTaskFormOpen}
+        title={editingTask ? 'Edit Reminder' : 'Add Reminder'}
+      >
+        <MaintenanceTaskForm task={editingTask} lockedAssetId={assetId} onClose={() => setTaskFormOpen(false)} />
+      </ResponsiveFormDialog>
     </div>
   );
 }
 
 function DynamicIcon({ name, className }: { name: string; className?: string }) {
-  // Convert kebab-case to PascalCase for lucide lookup
-  const pascalName = name
-    .split('-')
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join('');
+  const pascalName = name.split('-').map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join('');
   const Icon = (icons as Record<string, any>)[pascalName];
   if (!Icon) return null;
   return <Icon className={className} />;
@@ -152,7 +142,6 @@ export default function Assets() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | undefined>(undefined);
 
-  // Support deep-link editing via ?edit=id
   const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => {
     const editId = searchParams.get('edit');
@@ -167,43 +156,24 @@ export default function Assets() {
     }
   }, [searchParams, assets, isLoading]);
 
-  const openAdd = () => {
-    setEditingAsset(undefined);
-    setIsFormOpen(true);
-  };
-  const openEdit = (asset: Asset) => {
-    setEditingAsset(asset);
-    setIsFormOpen(true);
-  };
+  const openAdd = () => { setEditingAsset(undefined); setIsFormOpen(true); };
+  const openEdit = (asset: Asset) => { setEditingAsset(asset); setIsFormOpen(true); };
   const closeForm = () => setIsFormOpen(false);
 
-  const openDetail = (asset: Asset) => {
-    setSelectedAsset(asset);
-    setView('detail');
-  };
-  const backToList = () => {
-    setView('list');
-    setSelectedAsset(null);
-  };
+  const openDetail = (asset: Asset) => { setSelectedAsset(asset); setView('detail'); };
+  const backToList = () => { setView('list'); setSelectedAsset(null); };
 
-  const handleDelete = (id: string) => {
-    deleteAsset.mutate(id, { onSuccess: backToList });
-  };
+  const handleDelete = (id: string) => { deleteAsset.mutate(id, { onSuccess: backToList }); };
 
-  // Group assets by category
   const grouped = assets.reduce<Record<string, { name: string; icon: string | null; color: string | null; assets: Asset[] }>>((acc, asset) => {
     const key = asset.categoryName ?? 'Uncategorized';
-    if (!acc[key]) {
-      acc[key] = { name: key, icon: asset.categoryIcon ?? null, color: asset.categoryColor ?? null, assets: [] };
-    }
+    if (!acc[key]) acc[key] = { name: key, icon: asset.categoryIcon ?? null, color: asset.categoryColor ?? null, assets: [] };
     acc[key].assets.push(asset);
     return acc;
   }, {});
   const groups = Object.values(grouped).sort((a, b) => a.name.localeCompare(b.name));
 
-  // ── Detail View ──
   if (view === 'detail' && selectedAsset) {
-    // Re-read from query cache so edits reflect
     const fresh = assets.find((a) => a.id === selectedAsset.id) ?? selectedAsset;
     return (
       <div className="space-y-6">
@@ -241,10 +211,7 @@ export default function Assets() {
         </div>
 
         {fresh.categoryName && (
-          <Badge
-            variant="secondary"
-            style={{ backgroundColor: fresh.categoryColor ? `${fresh.categoryColor}20` : undefined, color: fresh.categoryColor ?? undefined }}
-          >
+          <Badge variant="secondary" style={{ backgroundColor: fresh.categoryColor ? `${fresh.categoryColor}20` : undefined, color: fresh.categoryColor ?? undefined }}>
             {fresh.categoryName}
           </Badge>
         )}
@@ -270,27 +237,16 @@ export default function Assets() {
           )}
         </div>
 
-        <LinkedProvidersSection
-          assetId={fresh.id}
-          onNavigateToProvider={(providerId) => navigate(`/providers?detail=${providerId}`)}
-        />
-
+        <LinkedProvidersSection assetId={fresh.id} onNavigateToProvider={(providerId) => navigate(`/providers?detail=${providerId}`)} />
         <AssetTasksSection assetId={fresh.id} showOnKanban={fresh.showOnKanban} />
 
-        {/* Sheet for editing from detail */}
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogContent className="max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingAsset ? 'Edit Asset' : 'Add Asset'}</DialogTitle>
-            </DialogHeader>
-            <AssetForm asset={editingAsset} onClose={closeForm} />
-          </DialogContent>
-        </Dialog>
+        <ResponsiveFormDialog open={isFormOpen} onOpenChange={setIsFormOpen} title={editingAsset ? 'Edit Asset' : 'Add Asset'}>
+          <AssetForm asset={editingAsset} onClose={closeForm} />
+        </ResponsiveFormDialog>
       </div>
     );
   }
 
-  // ── List View ──
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -316,13 +272,8 @@ export default function Assets() {
         groups.map((group) => (
           <div key={group.name} className="space-y-2">
             <div className="flex items-center gap-2">
-              {group.icon && (
-                <DynamicIcon name={group.icon} className="h-4 w-4" />
-              )}
-              <h2
-                className="text-sm font-semibold uppercase tracking-wide"
-                style={{ color: group.color ?? undefined }}
-              >
+              {group.icon && <DynamicIcon name={group.icon} className="h-4 w-4" />}
+              <h2 className="text-sm font-semibold uppercase tracking-wide" style={{ color: group.color ?? undefined }}>
                 {group.name}
               </h2>
             </div>
@@ -335,14 +286,9 @@ export default function Assets() {
         ))
       )}
 
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingAsset ? 'Edit Asset' : 'Add Asset'}</DialogTitle>
-          </DialogHeader>
-          <AssetForm asset={editingAsset} onClose={closeForm} />
-        </DialogContent>
-      </Dialog>
+      <ResponsiveFormDialog open={isFormOpen} onOpenChange={setIsFormOpen} title={editingAsset ? 'Edit Asset' : 'Add Asset'}>
+        <AssetForm asset={editingAsset} onClose={closeForm} />
+      </ResponsiveFormDialog>
     </div>
   );
 }

@@ -14,12 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { ResponsiveFormDialog } from '@/components/ui/responsive-dialog';
 
 const Index = () => {
   usePageTitle('Dashboard');
@@ -74,7 +69,6 @@ const Index = () => {
   }, [tasks]);
 
   const overdueTasks = useMemo(() => {
-    const today = startOfDay(new Date());
     return tasks.filter(
       (task) =>
         task.dueDate &&
@@ -96,7 +90,6 @@ const Index = () => {
       'backlog': 3,
     };
 
-    // Exclude done tasks, today tasks, and overdue tasks
     const eligibleTasks = tasks.filter(
       (task) =>
         task.status !== 'done' &&
@@ -104,17 +97,14 @@ const Index = () => {
         !(task.dueDate && isPast(task.dueDate) && !isToday(task.dueDate))
     );
 
-    // Tasks with future due dates, sorted by date
     const futureDatedTasks = eligibleTasks
       .filter((task) => task.dueDate && isFuture(task.dueDate))
       .sort((a, b) => compareAsc(a.dueDate!, b.dueDate!));
 
-    // Tasks without due dates, sorted by status priority
     const undatedTasks = eligibleTasks
       .filter((task) => !task.dueDate)
       .sort((a, b) => (statusPriority[a.status] ?? 99) - (statusPriority[b.status] ?? 99));
 
-    // Combine: dated first, then undated by status
     return [...futureDatedTasks, ...undatedTasks].slice(0, 3);
   }, [tasks]);
 
@@ -128,7 +118,7 @@ const Index = () => {
           </div>
           <Skeleton className="h-10 w-32" />
         </div>
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-4 md:gap-8 md:grid-cols-2">
           <Card>
             <CardHeader className="pb-3">
               <Skeleton className="h-6 w-24" />
@@ -182,7 +172,7 @@ const Index = () => {
         </Button>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-2">
+      <div className="grid gap-4 md:gap-8 md:grid-cols-2">
         {/* Overdue Tasks */}
         <Card className="border-red-200 bg-red-50 dark:bg-red-950/30 shadow-md">
           <CardHeader className="pb-3">
@@ -325,24 +315,22 @@ const Index = () => {
       </Card>
 
       {/* Task Edit Dialog */}
-      <Dialog open={isTaskFormOpen} onOpenChange={(open) => !open && handleCloseTaskForm()}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Task</DialogTitle>
-          </DialogHeader>
-          <TaskForm task={editingTask} onClose={handleCloseTaskForm} />
-        </DialogContent>
-      </Dialog>
+      <ResponsiveFormDialog
+        open={isTaskFormOpen}
+        onOpenChange={(open) => !open && handleCloseTaskForm()}
+        title="Edit Task"
+      >
+        <TaskForm task={editingTask} onClose={handleCloseTaskForm} />
+      </ResponsiveFormDialog>
 
       {/* Idea Edit Dialog */}
-      <Dialog open={isIdeaFormOpen} onOpenChange={(open) => !open && handleCloseIdeaForm()}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Idea</DialogTitle>
-          </DialogHeader>
-          <IdeaForm idea={editingIdea} onClose={handleCloseIdeaForm} />
-        </DialogContent>
-      </Dialog>
+      <ResponsiveFormDialog
+        open={isIdeaFormOpen}
+        onOpenChange={(open) => !open && handleCloseIdeaForm()}
+        title="Edit Idea"
+      >
+        <IdeaForm idea={editingIdea} onClose={handleCloseIdeaForm} />
+      </ResponsiveFormDialog>
     </div>
   );
 };
