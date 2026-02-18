@@ -13,18 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+import { ResponsiveFormDialog } from '@/components/ui/responsive-dialog';
 import {
   Select,
   SelectContent,
@@ -91,17 +80,13 @@ export default function Tasks() {
       grouped[task.status].push(task);
     });
     
-    // Sort each column: tasks with due dates first (ascending), then tasks without due dates
     Object.keys(grouped).forEach((status) => {
       grouped[status as TaskStatus].sort((a, b) => {
-        // Tasks with due dates come before tasks without
         if (a.dueDate && !b.dueDate) return -1;
         if (!a.dueDate && b.dueDate) return 1;
-        // Both have due dates: sort ascending (earliest/overdue first)
         if (a.dueDate && b.dueDate) {
           return a.dueDate.getTime() - b.dueDate.getTime();
         }
-        // Neither has due date: maintain original order
         return 0;
       });
     });
@@ -109,7 +94,6 @@ export default function Tasks() {
     return grouped;
   }, [filteredTasks]);
 
-  // Map maintenance tasks to kanban columns
   const maintenanceByStatus = useMemo(() => {
     if (!showMaintenance) return {} as Record<TaskStatus, MaintenanceTask[]>;
     const mapped: Partial<Record<TaskStatus, MaintenanceTask[]>> = {};
@@ -223,23 +207,21 @@ export default function Tasks() {
         </div>
       </DragDropContext>
 
-      <Dialog open={isFormOpen} onOpenChange={(open) => !open && handleCloseForm()}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingTask ? 'Edit Task' : 'New Task'}</DialogTitle>
-          </DialogHeader>
-          <TaskForm task={editingTask} onClose={handleCloseForm} />
-        </DialogContent>
-      </Dialog>
+      <ResponsiveFormDialog
+        open={isFormOpen}
+        onOpenChange={(open) => !open && handleCloseForm()}
+        title={editingTask ? 'Edit Task' : 'New Task'}
+      >
+        <TaskForm task={editingTask} onClose={handleCloseForm} />
+      </ResponsiveFormDialog>
 
-      <Sheet open={isMaintenanceFormOpen} onOpenChange={setIsMaintenanceFormOpen}>
-        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Edit Reminder</SheetTitle>
-          </SheetHeader>
-          <MaintenanceTaskForm task={editingMaintenanceTask} onClose={() => setIsMaintenanceFormOpen(false)} />
-        </SheetContent>
-      </Sheet>
+      <ResponsiveFormDialog
+        open={isMaintenanceFormOpen}
+        onOpenChange={(open) => { if (!open) setIsMaintenanceFormOpen(false); }}
+        title="Edit Reminder"
+      >
+        <MaintenanceTaskForm task={editingMaintenanceTask} onClose={() => setIsMaintenanceFormOpen(false)} />
+      </ResponsiveFormDialog>
     </div>
   );
 }

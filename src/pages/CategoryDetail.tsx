@@ -11,12 +11,7 @@ import { TaskForm } from '@/components/tasks/TaskForm';
 import { IdeaForm } from '@/components/ideas/IdeaForm';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { ResponsiveFormDialog } from '@/components/ui/responsive-dialog';
 
 export default function CategoryDetail() {
   const { categoryId } = useParams<{ categoryId: string }>();
@@ -92,7 +87,6 @@ export default function CategoryDetail() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
           <ArrowLeft className="h-5 w-5" />
@@ -105,7 +99,6 @@ export default function CategoryDetail() {
         </div>
       </div>
 
-      {/* Tasks Section */}
       <section className="space-y-4">
         <div className="flex items-center gap-2">
           <CheckSquare className="h-5 w-5 text-muted-foreground" />
@@ -122,17 +115,12 @@ export default function CategoryDetail() {
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {categoryTasks.map((task) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                onClick={() => handleOpenTaskForm(task)}
-              />
+              <TaskCard key={task.id} task={task} onClick={() => handleOpenTaskForm(task)} />
             ))}
           </div>
         )}
       </section>
 
-      {/* Ideas Section */}
       <section className="space-y-4">
         <div className="flex items-center gap-2">
           <Lightbulb className="h-5 w-5 text-muted-foreground" />
@@ -149,35 +137,27 @@ export default function CategoryDetail() {
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {categoryIdeas.map((idea) => (
-              <IdeaCard
-                key={idea.id}
-                idea={idea}
-                onClick={() => handleOpenIdeaForm(idea)}
-              />
+              <IdeaCard key={idea.id} idea={idea} onClick={() => handleOpenIdeaForm(idea)} />
             ))}
           </div>
         )}
       </section>
 
-      {/* Task Edit Dialog */}
-      <Dialog open={isTaskFormOpen} onOpenChange={(open) => !open && handleCloseTaskForm()}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Task</DialogTitle>
-          </DialogHeader>
-          <TaskForm task={editingTask} onClose={handleCloseTaskForm} />
-        </DialogContent>
-      </Dialog>
+      <ResponsiveFormDialog
+        open={isTaskFormOpen}
+        onOpenChange={(open) => !open && handleCloseTaskForm()}
+        title="Edit Task"
+      >
+        <TaskForm task={editingTask} onClose={handleCloseTaskForm} />
+      </ResponsiveFormDialog>
 
-      {/* Idea Edit Dialog */}
-      <Dialog open={isIdeaFormOpen} onOpenChange={(open) => !open && handleCloseIdeaForm()}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Idea</DialogTitle>
-          </DialogHeader>
-          <IdeaForm idea={editingIdea} onClose={handleCloseIdeaForm} />
-        </DialogContent>
-      </Dialog>
+      <ResponsiveFormDialog
+        open={isIdeaFormOpen}
+        onOpenChange={(open) => !open && handleCloseIdeaForm()}
+        title="Edit Idea"
+      >
+        <IdeaForm idea={editingIdea} onClose={handleCloseIdeaForm} />
+      </ResponsiveFormDialog>
     </div>
   );
 }

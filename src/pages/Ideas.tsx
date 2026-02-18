@@ -8,12 +8,7 @@ import { IdeaCard } from '@/components/ideas/IdeaCard';
 import { IdeaForm } from '@/components/ideas/IdeaForm';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { ResponsiveFormDialog } from '@/components/ui/responsive-dialog';
 import {
   Select,
   SelectContent,
@@ -166,14 +161,13 @@ export default function Ideas() {
         </div>
       )}
 
-      <Dialog open={isFormOpen} onOpenChange={(open) => !open && handleCloseForm()}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingIdea ? 'Edit Idea' : 'New Idea'}</DialogTitle>
-          </DialogHeader>
-          <IdeaForm idea={editingIdea} onClose={handleCloseForm} />
-        </DialogContent>
-      </Dialog>
+      <ResponsiveFormDialog
+        open={isFormOpen}
+        onOpenChange={(open) => !open && handleCloseForm()}
+        title={editingIdea ? 'Edit Idea' : 'New Idea'}
+      >
+        <IdeaForm idea={editingIdea} onClose={handleCloseForm} />
+      </ResponsiveFormDialog>
     </div>
   );
 }
