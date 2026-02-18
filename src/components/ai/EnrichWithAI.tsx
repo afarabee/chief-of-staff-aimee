@@ -168,9 +168,9 @@ export function EnrichWithAI({ itemType, item, existingSuggestions, itemTitle, c
                 const isResultOpen = openResults.has(idx);
 
                 return (
-                  <div key={idx} className="border border-border/50 rounded-md p-3 space-y-2">
-                    <div className="flex items-start gap-2">
-                      <p className="text-sm text-foreground flex-1 leading-relaxed">
+                  <div key={idx} className="border border-border/50 rounded-md p-3 space-y-2 min-w-0">
+                    <div className="flex items-start gap-2 min-w-0">
+                      <p className="text-sm text-foreground flex-1 leading-relaxed break-words min-w-0">
                         {s.suggestion}
                       </p>
                       <div className="flex items-center gap-1 shrink-0">
