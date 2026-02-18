@@ -423,6 +423,7 @@ export function MaintenanceTaskForm({ task, lockedAssetId, lockedProviderId, onC
           itemType="reminder"
           item={{ id: task.id, name, notes, status, next_due_date: task.nextDueDate, recurrence_rule: task.recurrenceRule }}
           existingSuggestions={task.aiSuggestions || null}
+          itemTitle={name}
         />
       )}
 

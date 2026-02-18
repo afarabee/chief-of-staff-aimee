@@ -2,24 +2,27 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
-interface EnrichItemParams {
+interface ExecuteSuggestionParams {
+  suggestion: string;
   item_type: 'task' | 'idea' | 'reminder';
-  item: Record<string, any>;
+  item_title: string;
+  item_description: string;
+  item_id: string;
+  suggestion_index: number;
 }
 
-export function useEnrichItem() {
+export function useExecuteSuggestion() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: EnrichItemParams) => {
-      const { data, error } = await supabase.functions.invoke('enrich-item', {
+    mutationFn: async (params: ExecuteSuggestionParams) => {
+      const { data, error } = await supabase.functions.invoke('execute-suggestion', {
         body: params,
       });
 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      // Return the JSON string (edge function now returns JSON string in suggestions field)
-      return (typeof data.suggestions === 'string' ? data.suggestions : JSON.stringify(data.suggestions)) as string;
+      return data.result as string;
     },
     onSuccess: (_data, variables) => {
       if (variables.item_type === 'task') {
@@ -33,7 +36,7 @@ export function useEnrichItem() {
     },
     onError: (error: Error) => {
       toast({
-        title: 'Enrichment failed',
+        title: 'Execution failed',
         description: error.message,
         variant: 'destructive',
       });

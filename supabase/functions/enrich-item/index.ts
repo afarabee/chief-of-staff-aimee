@@ -7,6 +7,32 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function parseGeminiJsonResponse(text: string): Array<{ suggestion: string }> {
+  // Strip markdown code fences if present
+  let cleaned = text.trim();
+  cleaned = cleaned.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "");
+
+  try {
+    const parsed = JSON.parse(cleaned);
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].suggestion) {
+      return parsed;
+    }
+  } catch {
+    // Fall back to splitting numbered lines
+  }
+
+  // Fallback: split by numbered lines
+  const lines = text.split(/\n/).filter((l) => l.trim());
+  const suggestions: Array<{ suggestion: string }> = [];
+  for (const line of lines) {
+    const match = line.match(/^\d+\.\s*(.+)/);
+    if (match) {
+      suggestions.push({ suggestion: match[1].trim() });
+    }
+  }
+  return suggestions.length > 0 ? suggestions : [{ suggestion: text.trim() }];
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -31,7 +57,6 @@ serve(async (req) => {
       });
     }
 
-    // Build the prompt
     const title = item.title || item.name || "Untitled";
     const description = item.description || item.notes || "None";
     const status = item.status || "None";
@@ -49,26 +74,23 @@ Priority: ${priority}
 Due date: ${dueDate}
 Recurrence: ${recurrence}
 
-Write your suggestions as a numbered list. Each suggestion should:
+Each suggestion should:
 - Start with a clear action verb (Draft, Research, Create, Compare, Summarize, Find, Write, Build, Outline, Calculate, etc.)
 - Be specific to THIS item, not generic advice
 - Describe something an AI can actually do (not physical tasks)
 - Be 1-2 sentences max
-
-Examples of good suggestions:
-- "Draft a comparison table of the top 3 pet insurance providers with monthly costs, coverage limits, and exclusions."
-- "Write a cancellation email template for the n8n subscription, including a request for confirmation."
-- "Create a step-by-step checklist for winterizing the pontoon boat."
-- "Research the average cost of dryer vent cleaning services in your area."
 
 Do NOT include:
 - Generic suggestions like "Set a reminder" or "Break this into subtasks" (they already have a task system)
 - Physical actions the AI can't do
 - Suggestions to use other apps or tools
 
-Respond ONLY with the numbered list, no intro or outro text.`;
+Respond ONLY with a JSON array of objects. Each object has a single "suggestion" field containing the suggestion text. Example:
+[
+  { "suggestion": "Draft a comparison table of the top 3 pet insurance providers with monthly costs, coverage limits, and exclusions." },
+  { "suggestion": "Write a cancellation email template for the n8n subscription, including a request for confirmation." }
+]`;
 
-    // Call Gemini
     const geminiRes = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
@@ -90,15 +112,18 @@ Respond ONLY with the numbered list, no intro or outro text.`;
     }
 
     const geminiData = await geminiRes.json();
-    const suggestions =
+    const rawText =
       geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
-    if (!suggestions) {
+    if (!rawText) {
       return new Response(JSON.stringify({ error: "No suggestions generated" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const suggestionsArray = parseGeminiJsonResponse(rawText);
+    const suggestionsJson = JSON.stringify(suggestionsArray);
 
     // Save to database
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -118,7 +143,7 @@ Respond ONLY with the numbered list, no intro or outro text.`;
 
     const { error: updateErr } = await sb
       .from(table)
-      .update({ ai_suggestions: suggestions })
+      .update({ ai_suggestions: suggestionsJson })
       .eq("id", item.id);
 
     if (updateErr) {
@@ -129,7 +154,7 @@ Respond ONLY with the numbered list, no intro or outro text.`;
       });
     }
 
-    return new Response(JSON.stringify({ suggestions }), {
+    return new Response(JSON.stringify({ suggestions: suggestionsJson }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

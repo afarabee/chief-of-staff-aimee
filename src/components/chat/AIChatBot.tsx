@@ -144,6 +144,20 @@ export function AIChatBot() {
     }
   }, [open]);
 
+  // Listen for prefill-chat events from EnrichWithAI
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const customEvent = e as CustomEvent<{ text: string }>;
+      if (customEvent.detail?.text) {
+        setInput(customEvent.detail.text);
+        setOpen(true);
+        setTimeout(() => inputRef.current?.focus(), 100);
+      }
+    };
+    window.addEventListener('prefill-chat', handler);
+    return () => window.removeEventListener('prefill-chat', handler);
+  }, []);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     if (open && !loading) {
