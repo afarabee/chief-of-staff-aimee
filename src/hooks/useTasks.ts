@@ -61,6 +61,7 @@ function taskToDbInsert(task: Omit<Task, 'id' | 'createdAt' | 'completedAt'>): T
 }
 
 // Convert partial task to database format for update
+// NOTE: ai_suggestions is intentionally excluded — it is only updated by Edge Functions (enrich/execute)
 function taskToDbUpdate(updates: Partial<Task>): TablesUpdate<'cos_tasks'> & { image_url?: string | null } {
   const dbUpdate: TablesUpdate<'cos_tasks'> & { image_url?: string | null } = {};
   
@@ -73,6 +74,7 @@ function taskToDbUpdate(updates: Partial<Task>): TablesUpdate<'cos_tasks'> & { i
   if (updates.priority !== undefined) dbUpdate.priority = updates.priority;
   if (updates.categoryId !== undefined) dbUpdate.category_id = updates.categoryId || null;
   if (updates.imageUrl !== undefined) dbUpdate.image_url = updates.imageUrl || null;
+  // ai_suggestions intentionally NOT updated here
   
   return dbUpdate;
 }
