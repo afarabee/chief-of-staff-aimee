@@ -80,7 +80,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const statusMap: Record<IdeaStatus, TaskStatus> = {
       'new': 'to-do',
       'in-progress': 'in-progress',
-      'parked': 'backlog',
+      'parked': 'blocked',
       'done': 'done',
     };
 
@@ -92,6 +92,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       priority: 'medium',
       dueDate: null,
       imageUrl: idea.imageUrl,
+      aiSuggestions: idea.aiSuggestions ?? null,
     });
 
     deleteIdeaMutation.mutate(ideaId);
@@ -120,6 +121,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       categoryId: task.categoryId,
       status: statusMap[task.status],
       imageUrl: task.imageUrl,
+      aiSuggestions: task.aiSuggestions ?? null,
     });
 
     deleteTaskMutation.mutate(taskId);
