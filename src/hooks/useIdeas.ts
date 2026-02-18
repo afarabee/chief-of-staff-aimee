@@ -40,6 +40,7 @@ function ideaToDbInsert(idea: Omit<Idea, 'id' | 'createdAt'>): TablesInsert<'cos
 }
 
 // Convert partial idea to database format for update
+// NOTE: ai_suggestions is intentionally excluded — it is only updated by Edge Functions (enrich/execute)
 function ideaToDbUpdate(updates: Partial<Idea>): TablesUpdate<'cos_ideas'> & { image_url?: string | null } {
   const dbUpdate: TablesUpdate<'cos_ideas'> & { image_url?: string | null } = {};
   
@@ -48,6 +49,7 @@ function ideaToDbUpdate(updates: Partial<Idea>): TablesUpdate<'cos_ideas'> & { i
   if (updates.status !== undefined) dbUpdate.status = updates.status;
   if (updates.categoryId !== undefined) dbUpdate.category_id = updates.categoryId || null;
   if (updates.imageUrl !== undefined) dbUpdate.image_url = updates.imageUrl || null;
+  // ai_suggestions intentionally NOT updated here
   
   return dbUpdate;
 }

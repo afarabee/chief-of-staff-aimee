@@ -84,23 +84,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
       'done': 'done',
     };
 
-    createTaskMutation.mutate({
-      title: idea.title,
-      description: idea.description,
-      categoryId: idea.categoryId,
-      status: statusMap[idea.status],
-      priority: 'medium',
-      dueDate: null,
-      imageUrl: idea.imageUrl,
-      aiSuggestions: idea.aiSuggestions ?? null,
-    });
-
-    deleteIdeaMutation.mutate(ideaId);
-
-    toast({
-      title: 'Idea converted to task',
-      description: `"${idea.title}" is now a task.`,
-    });
+    createTaskMutation.mutate(
+      {
+        title: idea.title,
+        description: idea.description,
+        categoryId: idea.categoryId,
+        status: statusMap[idea.status],
+        priority: 'medium',
+        dueDate: null,
+        imageUrl: idea.imageUrl,
+        aiSuggestions: idea.aiSuggestions ?? null,
+      },
+      {
+        onSuccess: () => {
+          deleteIdeaMutation.mutate(ideaId);
+          toast({
+            title: 'Idea converted to task',
+            description: `"${idea.title}" is now a task.`,
+          });
+        },
+      }
+    );
   };
 
   const convertTaskToIdea = (taskId: string) => {
@@ -115,21 +119,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
       'done': 'done',
     };
 
-    createIdeaMutation.mutate({
-      title: task.title,
-      description: task.description,
-      categoryId: task.categoryId,
-      status: statusMap[task.status],
-      imageUrl: task.imageUrl,
-      aiSuggestions: task.aiSuggestions ?? null,
-    });
-
-    deleteTaskMutation.mutate(taskId);
-
-    toast({
-      title: 'Task converted to idea',
-      description: `"${task.title}" is now an idea.`,
-    });
+    createIdeaMutation.mutate(
+      {
+        title: task.title,
+        description: task.description,
+        categoryId: task.categoryId,
+        status: statusMap[task.status],
+        imageUrl: task.imageUrl,
+        aiSuggestions: task.aiSuggestions ?? null,
+      },
+      {
+        onSuccess: () => {
+          deleteTaskMutation.mutate(taskId);
+          toast({
+            title: 'Task converted to idea',
+            description: `"${task.title}" is now an idea.`,
+          });
+        },
+      }
+    );
   };
 
   return (
