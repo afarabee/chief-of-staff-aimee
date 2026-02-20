@@ -1,35 +1,148 @@
 
-# Fix Dashboard Mobile Layout (below 768px)
+# AI Activity, History, and Dismiss Suggestions
 
-## Issues Found
+## Overview
+Four interconnected features: dismiss individual AI suggestions, log executions to a database table, show per-item AI history in edit forms, and a central AI Activity page.
 
-1. **Page title + QuickAdd header** (line 147): `flex items-center gap-4` can overflow horizontally when the date text is long on a narrow screen
-2. **Task titles not truncating** (TaskCard line 113): Title `h3` has no `truncate` or `min-w-0` constraint, so long titles push content wider than the viewport
-3. **Idea titles not truncating** (IdeaCard line 83): Same issue
-4. **No overflow protection on page container**: The root `div` in Index.tsx has no `overflow-x-hidden`, allowing child content to cause horizontal scroll
-5. **Button touch targets**: Several buttons (like "View all", delete icons) are smaller than 44px on mobile
-6. **AppLayout padding**: Already `p-4 md:p-8` which is fine, but the content inside can still overflow
+---
 
-## Changes
+## Part A: Dismiss Suggestions
 
-### 1. `src/pages/Index.tsx` -- Mobile-safe layout
-- Line 146: Add `overflow-x-hidden` to the root container div
-- Line 147-159: Change header from horizontal flex to stacked layout on mobile: `flex flex-col-reverse sm:flex-row sm:items-center gap-4`
-- Line 149: Make the title text responsive: `text-2xl sm:text-3xl`
-- Line 170: Make the "Save" button 44px tall on mobile: add `min-h-[44px]`
-- Lines 189, 224, 260, 295: Make "View all" buttons 44px tap targets on mobile: add `min-h-[44px]`
+### Changes
 
-### 2. `src/components/tasks/TaskCard.tsx` -- Truncate titles
-- Line 113: Add `truncate` to the title `h3` so long task names get ellipsis instead of overflowing
-- Line 90: Add `overflow-hidden` to the card container
+**`src/lib/parseSuggestions.ts`**
+- Add `dismissed?: boolean` to the `ParsedSuggestion` interface
+- Preserve the `dismissed` field when parsing JSON suggestions
 
-### 3. `src/components/ideas/IdeaCard.tsx` -- Truncate titles
-- Line 83: Add `truncate` to the title `h3`
-- Line 76: Add `overflow-hidden` to the card container
+**`src/hooks/useDismissSuggestion.ts`** (new file)
+- A custom hook that takes `itemType`, `itemId`, and `suggestionIndex`
+- Reads the current `ai_suggestions` JSON from the appropriate table (`cos_tasks`, `cos_ideas`, or `tasks`)
+- Sets `dismissed: true` on the suggestion at the given index
+- Writes the updated JSON back via a direct Supabase PATCH
+- Invalidates the relevant TanStack Query cache
+- No Edge Function needed
 
-### 4. `src/components/dashboard/QuickAdd.tsx` -- Touch-friendly button
-- Line 23: Ensure the Quick Add button meets 44px minimum height (already `size="lg"` which should be fine, but add `min-h-[44px]` explicitly)
+**`src/components/ai/EnrichWithAI.tsx`**
+- Import the `X` icon from lucide-react and the new `useDismissSuggestion` hook
+- Filter rendered suggestions: only show those where `dismissed` is not `true`
+- Add a dismiss button (X icon, top-right) to each suggestion card with tooltip "Dismiss suggestion"
+- Track dismissed indices in local state so the UI updates immediately before the DB write completes
+- On "Re-enrich," the entire `ai_suggestions` array is replaced, so dismissed state resets naturally
 
-## Technical Details
+---
 
-All changes use Tailwind responsive prefixes (no prefix = mobile-first, `sm:` = 640px+, `md:` = 768px+) and are purely additive CSS class changes. No logic or structural changes needed.
+## Part B: AI Executions Table
+
+### Database
+The `ai_executions` table already exists with the correct schema (id, item_type, item_id, item_title, suggestion, result, created_at). No migration needed.
+
+### Edge Function Update
+
+**`supabase/functions/execute-suggestion/index.ts`**
+- After generating the Gemini result and before returning, INSERT a row into `ai_executions` with `item_type`, `item_id`, `item_title`, `suggestion`, and `result`
+- `item_title` is already passed from the frontend in the request body -- just use it in the insert
+
+### Frontend Hook Update
+
+**`src/hooks/useExecuteSuggestion.ts`**
+- Add `['ai-executions', variables.item_id]` to the list of query keys invalidated on success (so the history section refreshes)
+
+---
+
+## Part C: Per-Item AI History
+
+### New Hook
+
+**`src/hooks/useAiExecutions.ts`** (new file)
+- `useAiExecutions(itemId: string | undefined)` -- a TanStack Query hook
+- Query key: `['ai-executions', itemId]`
+- Queries `ai_executions` where `item_id` matches, ordered by `created_at` desc
+- Enabled only when `itemId` is defined (lazy loading)
+
+### New Component
+
+**`src/components/ai/AiHistorySection.tsx`** (new file)
+- Props: `itemId: string`
+- Uses `useAiExecutions(itemId)` to fetch past executions
+- Renders nothing if no executions exist
+- Header: Clock icon + "AI History"
+- Each entry:
+  - Suggestion text (bold, truncated to 1 line)
+  - Relative timestamp (using `date-fns`'s `formatDistanceToNow`)
+  - Collapsible result section (collapsed by default) with rendered markdown
+  - Copy button for result text
+- Uses existing Collapsible, Card, and Button components
+
+### Form Integration
+
+**`src/components/tasks/TaskForm.tsx`**
+- Import and render `<AiHistorySection itemId={task.id} />` below the `EnrichWithAI` section (only when editing)
+
+**`src/components/ideas/IdeaForm.tsx`**
+- Same: render `<AiHistorySection itemId={idea.id} />` below EnrichWithAI
+
+**`src/components/maintenance/MaintenanceTaskForm.tsx`**
+- Same: render `<AiHistorySection itemId={task.id} />` below EnrichWithAI
+
+---
+
+## Part D: Central AI Activity Page
+
+### Sidebar
+
+**`src/components/layout/AppSidebar.tsx`**
+- Add a new nav item: `{ title: 'AI Activity', url: '/ai-activity', icon: Sparkles }`
+- Place it after "Providers" (last in the current list)
+
+### New Hook
+
+**`src/hooks/useAllAiExecutions.ts`** (new file)
+- `useAllAiExecutions(itemTypeFilter?: string)` -- fetches from `ai_executions`
+- Query key: `['ai-executions', 'all', itemTypeFilter]`
+- Orders by `created_at` desc, limit 50
+- Optionally filters by `item_type` if provided
+
+### New Page
+
+**`src/pages/AiActivity.tsx`** (new file)
+- Page title: "AI Activity", subtitle: "History of all AI-executed suggestions"
+- Filter tabs at top: "All", "Tasks", "Ideas", "Reminders" (using existing Tabs component)
+- List of execution entries, each showing:
+  - Colored badge for item type (blue for Task, amber for Idea, green for Reminder)
+  - Item title (text, not a link)
+  - Suggestion text (truncated with tooltip for full text)
+  - Result preview (~100 chars) with "Show more" collapsible
+  - Relative timestamp
+  - Copy button for result
+- Empty state with sparkles icon and guidance message
+- Uses existing Card, Badge, Tabs, Collapsible, Tooltip, Button components
+
+### Router
+
+**`src/App.tsx`**
+- Import `AiActivity` page
+- Add route: `<Route path="/ai-activity" element={<AiActivity />} />`
+
+---
+
+## New Files Summary
+| File | Purpose |
+|------|---------|
+| `src/hooks/useDismissSuggestion.ts` | Client-side dismiss mutation |
+| `src/hooks/useAiExecutions.ts` | Per-item execution history query |
+| `src/hooks/useAllAiExecutions.ts` | All executions query (with filter) |
+| `src/components/ai/AiHistorySection.tsx` | Per-item history UI component |
+| `src/pages/AiActivity.tsx` | Central AI Activity page |
+
+## Modified Files Summary
+| File | Change |
+|------|--------|
+| `src/lib/parseSuggestions.ts` | Add `dismissed` field to interface |
+| `src/components/ai/EnrichWithAI.tsx` | Dismiss button + filter dismissed |
+| `supabase/functions/execute-suggestion/index.ts` | INSERT into `ai_executions` |
+| `src/hooks/useExecuteSuggestion.ts` | Invalidate ai-executions cache |
+| `src/components/tasks/TaskForm.tsx` | Add AiHistorySection |
+| `src/components/ideas/IdeaForm.tsx` | Add AiHistorySection |
+| `src/components/maintenance/MaintenanceTaskForm.tsx` | Add AiHistorySection |
+| `src/components/layout/AppSidebar.tsx` | Add AI Activity nav item |
+| `src/App.tsx` | Add /ai-activity route |
