@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_executions: {
+        Row: {
+          created_at: string | null
+          id: string
+          item_id: string
+          item_title: string
+          item_type: string
+          result: string
+          suggestion: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          item_id: string
+          item_title: string
+          item_type: string
+          result: string
+          suggestion: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          item_id?: string
+          item_title?: string
+          item_type?: string
+          result?: string
+          suggestion?: string
+        }
+        Relationships: []
+      }
       asset_providers: {
         Row: {
           asset_id: string

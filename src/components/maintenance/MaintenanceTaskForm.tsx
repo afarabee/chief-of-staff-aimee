@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { CalendarIcon, DollarSign, Plus } from 'lucide-react';
 import { EnrichWithAI } from '@/components/ai/EnrichWithAI';
+import { AiHistorySection } from '@/components/ai/AiHistorySection';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -419,12 +420,15 @@ export function MaintenanceTaskForm({ task, lockedAssetId, lockedProviderId, onC
       </div>
 
       {task && (
-        <EnrichWithAI
-          itemType="reminder"
-          item={{ id: task.id, name, notes, status, next_due_date: task.nextDueDate, recurrence_rule: task.recurrenceRule }}
-          existingSuggestions={task.aiSuggestions || null}
-          itemTitle={name}
-        />
+        <>
+          <EnrichWithAI
+            itemType="reminder"
+            item={{ id: task.id, name, notes, status, next_due_date: task.nextDueDate, recurrence_rule: task.recurrenceRule }}
+            existingSuggestions={task.aiSuggestions || null}
+            itemTitle={name}
+          />
+          <AiHistorySection itemId={task.id} />
+        </>
       )}
 
       <div className="flex gap-2 pt-2">

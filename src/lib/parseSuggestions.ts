@@ -1,6 +1,7 @@
 export interface ParsedSuggestion {
   suggestion: string;
   result?: string | null;
+  dismissed?: boolean;
 }
 
 export function parseSuggestions(raw: string | null): ParsedSuggestion[] {
