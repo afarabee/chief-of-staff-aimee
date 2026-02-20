@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sparkles, RefreshCw, Loader2, Zap, ListPlus, Check, ChevronDown, ChevronUp, Copy } from 'lucide-react';
+import { Sparkles, RefreshCw, Loader2, Zap, ListPlus, Check, ChevronDown, ChevronUp, Copy, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -7,6 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useEnrichItem } from '@/hooks/useEnrichItem';
 import { useExecuteSuggestion } from '@/hooks/useExecuteSuggestion';
 import { useCreateSubtask } from '@/hooks/useCreateSubtask';
+import { useDismissSuggestion } from '@/hooks/useDismissSuggestion';
 import { parseSuggestions, ParsedSuggestion } from '@/lib/parseSuggestions';
 import { toast } from '@/hooks/use-toast';
 
@@ -36,14 +37,19 @@ export function EnrichWithAI({ itemType, item, existingSuggestions, itemTitle, c
   const enrich = useEnrichItem();
   const executeSuggestion = useExecuteSuggestion();
   const createSubtask = useCreateSubtask();
+  const dismissSuggestion = useDismissSuggestion();
   const [localSuggestionsRaw, setLocalSuggestionsRaw] = useState<string | null>(null);
   const [executingIndex, setExecutingIndex] = useState<number | null>(null);
   const [executedResults, setExecutedResults] = useState<Record<number, string>>({});
   const [createdSubtasks, setCreatedSubtasks] = useState<Set<number>>(new Set());
   const [openResults, setOpenResults] = useState<Set<number>>(new Set());
+  const [dismissedIndices, setDismissedIndices] = useState<Set<number>>(new Set());
 
   const raw = localSuggestionsRaw ?? existingSuggestions;
-  const suggestions = parseSuggestions(raw);
+  const allSuggestions = parseSuggestions(raw);
+  const suggestions = allSuggestions
+    .map((s, idx) => ({ ...s, originalIndex: idx }))
+    .filter((s) => !s.dismissed && !dismissedIndices.has(s.originalIndex));
 
   // Merge stored results from parsed suggestions
   const getSuggestionResult = (idx: number, s: ParsedSuggestion): string | null => {
@@ -59,6 +65,7 @@ export function EnrichWithAI({ itemType, item, existingSuggestions, itemTitle, c
           setExecutedResults({});
           setCreatedSubtasks(new Set());
           setOpenResults(new Set());
+          setDismissedIndices(new Set());
         },
       }
     );
@@ -155,7 +162,8 @@ export function EnrichWithAI({ itemType, item, existingSuggestions, itemTitle, c
           </CardHeader>
           <CardContent className="px-4 pb-4 pt-0 space-y-2">
             <TooltipProvider>
-              {suggestions.map((s, idx) => {
+              {suggestions.map((s) => {
+                const idx = s.originalIndex;
                 const result = getSuggestionResult(idx, s);
                 const isExecuting = executingIndex === idx;
                 const isExecuted = !!result;
@@ -163,7 +171,7 @@ export function EnrichWithAI({ itemType, item, existingSuggestions, itemTitle, c
                 const isResultOpen = openResults.has(idx);
 
                 return (
-                  <div key={idx} className="border border-border/50 rounded-md p-3 space-y-2 min-w-0">
+                  <div key={idx} className="relative border border-border/50 rounded-md p-3 space-y-2 min-w-0">
                     <div className="flex flex-col sm:flex-row sm:items-start gap-2 min-w-0">
                       <p className="text-sm text-foreground flex-1 leading-relaxed break-words min-w-0">
                         {s.suggestion}
@@ -210,6 +218,24 @@ export function EnrichWithAI({ itemType, item, existingSuggestions, itemTitle, c
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>Create as subtask</TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => {
+                                setDismissedIndices((prev) => new Set(prev).add(idx));
+                                dismissSuggestion.mutate({ itemType, itemId: item.id, suggestionIndex: idx });
+                              }}
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Dismiss suggestion</TooltipContent>
                         </Tooltip>
                       </div>
                     </div>

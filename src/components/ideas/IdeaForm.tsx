@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { CheckSquare } from 'lucide-react';
 import { EnrichWithAI } from '@/components/ai/EnrichWithAI';
+import { AiHistorySection } from '@/components/ai/AiHistorySection';
 import { Idea, IdeaStatus } from '@/types';
 import { useApp } from '@/contexts/AppContext';
 import { useCategories } from '@/hooks/useCategories';
@@ -148,13 +149,16 @@ export function IdeaForm({ idea, onClose }: IdeaFormProps) {
       </div>
 
       {idea && (
-        <EnrichWithAI
-          itemType="idea"
-          item={{ id: idea.id, title, description, status }}
-          existingSuggestions={idea.aiSuggestions || null}
-          itemTitle={title}
-          categoryId={categoryId}
-        />
+        <>
+          <EnrichWithAI
+            itemType="idea"
+            item={{ id: idea.id, title, description, status }}
+            existingSuggestions={idea.aiSuggestions || null}
+            itemTitle={title}
+            categoryId={categoryId}
+          />
+          <AiHistorySection itemId={idea.id} />
+        </>
       )}
 
       <div className="flex justify-between pt-4">

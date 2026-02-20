@@ -109,6 +109,18 @@ Do this task thoroughly and provide a complete, useful result. Format your respo
       }
     }
 
+    // Log execution to ai_executions
+    const { error: insertErr } = await sb.from("ai_executions").insert({
+      item_type,
+      item_id,
+      item_title: item_title || "Untitled",
+      suggestion,
+      result,
+    });
+    if (insertErr) {
+      console.error("Failed to log ai_execution:", insertErr);
+    }
+
     return new Response(JSON.stringify({ result }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

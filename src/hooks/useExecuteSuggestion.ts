@@ -33,6 +33,8 @@ export function useExecuteSuggestion() {
         queryClient.invalidateQueries({ queryKey: ['maintenance-tasks'] });
         queryClient.invalidateQueries({ queryKey: ['kanban-maintenance'] });
       }
+      queryClient.invalidateQueries({ queryKey: ['ai-executions', variables.item_id] });
+      queryClient.invalidateQueries({ queryKey: ['ai-executions', 'all'] });
     },
     onError: (error: Error) => {
       toast({
