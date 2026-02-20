@@ -1,3 +1,4 @@
+import React, { useCallback } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Dialog,
@@ -11,8 +12,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 interface ResponsiveFormDialogProps {
   open: boolean;
@@ -24,17 +23,23 @@ interface ResponsiveFormDialogProps {
 export function ResponsiveFormDialog({ open, onOpenChange, title, children }: ResponsiveFormDialogProps) {
   const isMobile = useIsMobile();
 
+  const handleFocus = useCallback((e: React.FocusEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
+      setTimeout(() => {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    }
+  }, []);
+
   if (isMobile) {
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="h-[95vh] flex flex-col p-0 rounded-t-xl">
-          <SheetHeader className="flex-shrink-0 flex flex-row items-center justify-between border-b px-4 py-3">
+        <SheetContent side="bottom" className="h-[95vh] flex flex-col p-0 rounded-t-xl [&>button:last-child]:hidden">
+          <SheetHeader className="flex-shrink-0 border-b px-4 py-3">
             <SheetTitle>{title}</SheetTitle>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onOpenChange(false)}>
-              <X className="h-4 w-4" />
-            </Button>
           </SheetHeader>
-          <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 pb-8">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 pb-8" onFocus={handleFocus}>
             {children}
           </div>
         </SheetContent>
