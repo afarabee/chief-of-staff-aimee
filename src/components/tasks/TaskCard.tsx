@@ -109,7 +109,7 @@ export function TaskCard({ task, onClick, showCheckbox = true }: TaskCardProps) 
         )}
         
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
+          <div className="flex items-start justify-between gap-2 min-w-0">
             <h3 className={cn(
               'font-medium text-foreground truncate',
               isComplete && 'line-through text-muted-foreground'

@@ -79,8 +79,8 @@ export function IdeaCard({ idea, onClick }: IdeaCardProps) {
         )}
         onClick={onClick}
       >
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="font-medium text-foreground truncate">{idea.title}</h3>
+        <div className="flex items-start justify-between gap-2 min-w-0">
+          <h3 className="font-medium text-foreground truncate min-w-0">{idea.title}</h3>
           <div className="flex items-center gap-1 shrink-0">
             <Badge variant="outline" className={cn('text-xs', statusColors[idea.status])}>
               {statusLabels[idea.status]}
