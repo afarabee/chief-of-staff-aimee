@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { CheckSquare } from 'lucide-react';
 import { EnrichWithAI } from '@/components/ai/EnrichWithAI';
 import { Idea, IdeaStatus } from '@/types';
@@ -42,6 +43,7 @@ const statusOptions: { value: IdeaStatus; label: string }[] = [
 
 export function IdeaForm({ idea, onClose }: IdeaFormProps) {
   const { addIdea, updateIdea, convertIdeaToTask } = useApp();
+  const isMobile = useIsMobile();
   const { data: categories = [] } = useCategories();
   const [title, setTitle] = useState(idea?.title || '');
   const [description, setDescription] = useState(idea?.description || '');
@@ -84,7 +86,7 @@ export function IdeaForm({ idea, onClose }: IdeaFormProps) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Enter idea title..."
-          autoFocus
+          autoFocus={!isMobile}
         />
       </div>
 

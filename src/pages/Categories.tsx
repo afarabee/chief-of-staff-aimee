@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate } from 'react-router-dom';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { Plus, Pencil, Trash2, Tags } from 'lucide-react';
@@ -27,6 +28,7 @@ export default function Categories() {
   const updateCategory = useUpdateCategory();
   const deleteCategory = useDeleteCategory();
 
+  const isMobile = useIsMobile();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [categoryName, setCategoryName] = useState('');
@@ -166,7 +168,7 @@ export default function Categories() {
               value={categoryName}
               onChange={(e) => setCategoryName(e.target.value)}
               placeholder="Category name (e.g., Home)"
-              autoFocus
+              autoFocus={!isMobile}
               className="flex-1"
             />
           </div>
