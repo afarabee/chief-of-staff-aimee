@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Dialog,
@@ -22,6 +22,7 @@ interface ResponsiveFormDialogProps {
 
 export function ResponsiveFormDialog({ open, onOpenChange, title, children }: ResponsiveFormDialogProps) {
   const isMobile = useIsMobile();
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const handleFocus = useCallback((e: React.FocusEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
@@ -32,6 +33,18 @@ export function ResponsiveFormDialog({ open, onOpenChange, title, children }: Re
     }
   }, []);
 
+  // Nuclear option: blur whatever Chrome auto-focused after a delay
+  useEffect(() => {
+    if (isMobile && open) {
+      const timer = setTimeout(() => {
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isMobile, open]);
+
   if (isMobile) {
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
@@ -39,7 +52,7 @@ export function ResponsiveFormDialog({ open, onOpenChange, title, children }: Re
           <SheetHeader className="flex-shrink-0 border-b px-4 py-3">
             <SheetTitle>{title}</SheetTitle>
           </SheetHeader>
-          <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 pb-8 box-border" onFocus={handleFocus}>
+          <div ref={containerRef} tabIndex={-1} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 pb-8 box-border outline-none" onFocus={handleFocus}>
             {children}
           </div>
         </SheetContent>
