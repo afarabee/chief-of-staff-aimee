@@ -7,12 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { ResponsiveFormDialog } from '@/components/ui/responsive-dialog';
 import { TaskForm } from '@/components/tasks/TaskForm';
 import { IdeaForm } from '@/components/ideas/IdeaForm';
 
@@ -42,23 +37,13 @@ export function QuickAdd() {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog open={openType === 'task'} onOpenChange={(open) => !open && setOpenType(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>New Task</DialogTitle>
-          </DialogHeader>
-          <TaskForm onClose={() => setOpenType(null)} />
-        </DialogContent>
-      </Dialog>
+      <ResponsiveFormDialog open={openType === 'task'} onOpenChange={(open) => !open && setOpenType(null)} title="New Task">
+        <TaskForm onClose={() => setOpenType(null)} />
+      </ResponsiveFormDialog>
 
-      <Dialog open={openType === 'idea'} onOpenChange={(open) => !open && setOpenType(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>New Idea</DialogTitle>
-          </DialogHeader>
-          <IdeaForm onClose={() => setOpenType(null)} />
-        </DialogContent>
-      </Dialog>
+      <ResponsiveFormDialog open={openType === 'idea'} onOpenChange={(open) => !open && setOpenType(null)} title="New Idea">
+        <IdeaForm onClose={() => setOpenType(null)} />
+      </ResponsiveFormDialog>
     </>
   );
 }
