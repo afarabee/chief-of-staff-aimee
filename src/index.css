@@ -156,11 +156,21 @@ All colors MUST be HSL.
 }
 
 @layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
   * {
     @apply border-border;
   }
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@media (max-width: 767px) {
+  input, textarea, select, button {
+    max-width: 100%;
   }
 }
