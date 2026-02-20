@@ -29,7 +29,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <AppSidebar />
-        <main className="flex-1 bg-background">
+        <main className="flex-1 min-w-0 bg-background overflow-hidden">
           <header className="flex h-14 items-center gap-4 border-b px-4 md:px-6">
             <SidebarTrigger className="-ml-2" />
             <Button

@@ -172,9 +172,9 @@ const Index = () => {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:gap-8 md:grid-cols-2">
+      <div className="grid gap-4 md:gap-8 md:grid-cols-2 min-w-0">
         {/* Overdue Tasks */}
-        <Card className="border-red-200 bg-red-50 dark:bg-red-950/30 shadow-md">
+        <Card className="border-red-200 bg-red-50 dark:bg-red-950/30 shadow-md min-w-0 overflow-hidden">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -199,7 +199,7 @@ const Index = () => {
                 No overdue tasks. You're all caught up! 🎉
               </p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-3 min-w-0">
                 {overdueTasks.map((task) => (
                   <TaskCard key={task.id} task={task} onClick={() => handleOpenTaskForm(task)} />
                 ))}
@@ -209,7 +209,7 @@ const Index = () => {
         </Card>
 
         {/* Tasks Due Today */}
-        <Card className="border-sky-200 bg-sky-50 dark:bg-sky-950/30 shadow-md">
+        <Card className="border-sky-200 bg-sky-50 dark:bg-sky-950/30 shadow-md min-w-0 overflow-hidden">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -234,7 +234,7 @@ const Index = () => {
                 No tasks due today. Plan ahead!
               </p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-3 min-w-0">
                 {todayTasks.map((task) => (
                   <TaskCard key={task.id} task={task} onClick={() => handleOpenTaskForm(task)} />
                 ))}
@@ -245,7 +245,7 @@ const Index = () => {
       </div>
 
       {/* Coming Up */}
-      <Card className="border-muted bg-muted/30 shadow-md">
+      <Card className="border-muted bg-muted/30 shadow-md min-w-0 overflow-hidden">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -270,7 +270,7 @@ const Index = () => {
               No upcoming tasks. Add some tasks to get started!
             </p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3 min-w-0">
               {comingUpTasks.map((task) => (
                 <TaskCard key={task.id} task={task} onClick={() => handleOpenTaskForm(task)} />
               ))}
@@ -280,7 +280,7 @@ const Index = () => {
       </Card>
 
       {/* In-Progress Ideas */}
-      <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/30 shadow-md">
+      <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/30 shadow-md min-w-0 overflow-hidden">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -305,7 +305,7 @@ const Index = () => {
               No ideas in progress. Time to start something new!
             </p>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 min-w-0">
               {inProgressIdeas.map((idea) => (
                 <IdeaCard key={idea.id} idea={idea} onClick={() => handleOpenIdeaForm(idea)} />
               ))}
