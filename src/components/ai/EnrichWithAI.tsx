@@ -101,7 +101,7 @@ export function EnrichWithAI({ itemType, item, existingSuggestions, itemTitle, c
   const handleCreateSubtask = (idx: number, suggestion: string) => {
     const title = itemTitle || item.title || item.name || 'Untitled';
     createSubtask.mutate(
-      { suggestion, parentTitle: title, categoryId },
+      { suggestion, parentTitle: title, categoryId, parentItemId: item.id, parentItemType: itemType },
       {
         onSuccess: () => {
           setCreatedSubtasks((prev) => new Set(prev).add(idx));

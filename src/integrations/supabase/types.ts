@@ -225,6 +225,7 @@ export type Database = {
           due_date: string | null
           id: string
           image_url: string | null
+          parent_task_id: string | null
           priority: string | null
           status: string | null
           title: string
@@ -239,6 +240,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           image_url?: string | null
+          parent_task_id?: string | null
           priority?: string | null
           status?: string | null
           title: string
@@ -253,6 +255,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           image_url?: string | null
+          parent_task_id?: string | null
           priority?: string | null
           status?: string | null
           title?: string
@@ -265,6 +268,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "cos_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cos_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "cos_tasks"
             referencedColumns: ["id"]
           },
         ]

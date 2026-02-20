@@ -22,6 +22,7 @@ export interface Task {
   completedAt: Date | null;
   imageUrl: string | null;
   aiSuggestions?: string | null;
+  parentTaskId?: string | null;
 }
 
 export interface Idea {
