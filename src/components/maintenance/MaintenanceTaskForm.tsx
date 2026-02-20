@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, DollarSign, Plus } from 'lucide-react';
+import { CalendarIcon, DollarSign, Plus, Trash2 } from 'lucide-react';
 import { EnrichWithAI } from '@/components/ai/EnrichWithAI';
 import { AiHistorySection } from '@/components/ai/AiHistorySection';
 import { cn } from '@/lib/utils';
@@ -24,7 +24,18 @@ import {
 } from '@/components/ui/popover';
 import { useAssets, useCreateAsset, useAssetCategories } from '@/hooks/useAssets';
 import { useProviders, useCreateProvider } from '@/hooks/useProviders';
-import { useCreateMaintenanceTask, useUpdateMaintenanceTask } from '@/hooks/useMaintenanceTasks';
+import { useCreateMaintenanceTask, useUpdateMaintenanceTask, useDeleteMaintenanceTask } from '@/hooks/useMaintenanceTasks';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { RECURRENCE_OPTIONS, RECURRENCE_UNITS, isPresetRecurrence } from '@/types/maintenance';
 import type { MaintenanceTask } from '@/types/maintenance';
 
@@ -83,6 +94,7 @@ export function MaintenanceTaskForm({ task, lockedAssetId, lockedProviderId, onC
   const { data: assetCategories = [] } = useAssetCategories();
   const createTask = useCreateMaintenanceTask();
   const updateTask = useUpdateMaintenanceTask();
+  const deleteTaskMutation = useDeleteMaintenanceTask();
   const createProvider = useCreateProvider();
   const createAsset = useCreateAsset();
   const isPending = createTask.isPending || updateTask.isPending;
@@ -431,13 +443,42 @@ export function MaintenanceTaskForm({ task, lockedAssetId, lockedProviderId, onC
         </>
       )}
 
-      <div className="flex gap-2 pt-2">
-        <Button type="submit" disabled={isPending || !name.trim()}>
-          {isPending ? 'Saving…' : 'Save'}
-        </Button>
-        <Button type="button" variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
+      <div className="flex justify-between pt-2">
+        {isEdit && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button type="button" variant="destructive" size="icon">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Reminder?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete "{task!.name}". This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    deleteTaskMutation.mutate(task!.id, { onSuccess: onClose });
+                  }}
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+        <div className="flex gap-2 ml-auto">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isPending || !name.trim()}>
+            {isPending ? 'Saving…' : 'Save'}
+          </Button>
+        </div>
       </div>
     </form>
   );

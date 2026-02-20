@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +19,18 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { useAssetCategories, useCreateAsset, useUpdateAsset } from '@/hooks/useAssets';
+import { useAssetCategories, useCreateAsset, useUpdateAsset, useDeleteAsset } from '@/hooks/useAssets';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import type { Asset } from '@/types/assets';
 
 interface AssetFormProps {
@@ -40,6 +51,7 @@ export function AssetForm({ asset, onClose }: AssetFormProps) {
   const { data: categories = [] } = useAssetCategories();
   const createAsset = useCreateAsset();
   const updateAsset = useUpdateAsset();
+  const deleteAssetMutation = useDeleteAsset();
   const isPending = createAsset.isPending || updateAsset.isPending;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -125,13 +137,42 @@ export function AssetForm({ asset, onClose }: AssetFormProps) {
         <Textarea id="asset-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
       </div>
 
-      <div className="flex gap-2 pt-2">
-        <Button type="submit" disabled={isPending || !name.trim()}>
-          {isPending ? 'Saving…' : 'Save'}
-        </Button>
-        <Button type="button" variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
+      <div className="flex justify-between pt-2">
+        {isEdit && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button type="button" variant="destructive" size="icon">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Asset?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete "{asset!.name}". This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    deleteAssetMutation.mutate(asset!.id, { onSuccess: onClose });
+                  }}
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+        <div className="flex gap-2 ml-auto">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isPending || !name.trim()}>
+            {isPending ? 'Saving…' : 'Save'}
+          </Button>
+        </div>
       </div>
     </form>
   );
