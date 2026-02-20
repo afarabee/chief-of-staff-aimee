@@ -87,7 +87,7 @@ export function TaskCard({ task, onClick, showCheckbox = true }: TaskCardProps) 
     <>
       <div
         className={cn(
-          'group flex items-start gap-3 rounded-lg border border-l-4 p-4 shadow-sm hover:shadow-md transition-all',
+          'group flex items-start gap-3 rounded-lg border border-l-4 p-4 shadow-sm hover:shadow-md transition-all overflow-hidden',
           priorityBackgrounds[task.priority] || 'bg-card',
           !priorityBackgrounds[task.priority] && 'hover:bg-accent/50',
           priorityBackgrounds[task.priority] && 'hover:brightness-95',
@@ -111,7 +111,7 @@ export function TaskCard({ task, onClick, showCheckbox = true }: TaskCardProps) 
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <h3 className={cn(
-              'font-medium text-foreground',
+              'font-medium text-foreground truncate',
               isComplete && 'line-through text-muted-foreground'
             )}>
               {task.title}

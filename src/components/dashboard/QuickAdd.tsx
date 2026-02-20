@@ -20,7 +20,7 @@ export function QuickAdd() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button size="lg" className="gap-2">
+          <Button size="lg" className="gap-2 min-h-[44px]">
             <Plus className="h-5 w-5" />
             Quick Add
           </Button>
