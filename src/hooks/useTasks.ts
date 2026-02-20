@@ -44,6 +44,7 @@ function dbTaskToTask(dbTask: DbTask): Task {
       : null,
     imageUrl: dbTask.image_url || null,
     aiSuggestions: dbTask.ai_suggestions || null,
+    parentTaskId: (dbTask as any).parent_task_id || null,
   };
 }
 
@@ -58,6 +59,7 @@ function taskToDbInsert(task: Omit<Task, 'id' | 'createdAt' | 'completedAt'>): T
     category_id: task.categoryId || null,
     image_url: task.imageUrl || null,
     ai_suggestions: task.aiSuggestions || null,
+    parent_task_id: (task as any).parentTaskId || null,
   };
 }
 
@@ -88,6 +90,7 @@ export function useTasks() {
       const { data, error } = await supabase
         .from('cos_tasks')
         .select('*')
+        .is('parent_task_id', null)
         .order('created_at', { ascending: false });
       
       if (error) throw error;

@@ -1,16 +1,21 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, Lightbulb } from 'lucide-react';
+import { CalendarIcon, Lightbulb, ListTree, Undo2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { EnrichWithAI } from '@/components/ai/EnrichWithAI';
 import { AiHistorySection } from '@/components/ai/AiHistorySection';
 import { Task, TaskStatus, TaskPriority } from '@/types';
 import { useApp } from '@/contexts/AppContext';
 import { useCategories } from '@/hooks/useCategories';
+import { useSubtasks } from '@/hooks/useSubtasks';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ImageUpload } from '@/components/ui/image-upload';
+import { Badge } from '@/components/ui/badge';
+import { ResponsiveFormDialog } from '@/components/ui/responsive-dialog';
 import {
   Select,
   SelectContent,
@@ -41,6 +46,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 interface TaskFormProps {
   task?: Task;
   onClose: () => void;
+  onOpenTask?: (taskId: string) => void;
 }
 
 const statusOptions: { value: TaskStatus; label: string }[] = [
@@ -58,7 +64,15 @@ const priorityOptions: { value: TaskPriority; label: string }[] = [
   { value: 'urgent', label: 'Urgent' },
 ];
 
-export function TaskForm({ task, onClose }: TaskFormProps) {
+const statusBadgeColors: Record<string, string> = {
+  backlog: 'bg-muted text-muted-foreground',
+  'to-do': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+  'in-progress': 'bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-300',
+  done: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+  blocked: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
+};
+
+export function TaskForm({ task, onClose, onOpenTask }: TaskFormProps) {
   const { addTask, updateTask, convertTaskToIdea } = useApp();
   const isMobile = useIsMobile();
   const { data: categories = [] } = useCategories();
@@ -69,211 +83,327 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
   const [priority, setPriority] = useState<TaskPriority>(task?.priority || 'medium');
   const [categoryId, setCategoryId] = useState<string | null>(task?.categoryId || null);
   const [imageUrl, setImageUrl] = useState<string | null>(task?.imageUrl || null);
+  const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
+
+  // Subtasks
+  const { data: subtasks = [] } = useSubtasks(task?.id);
+
+  // Parent task info
+  const { data: parentTask } = useQuery({
+    queryKey: ['parent-task', task?.parentTaskId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('cos_tasks')
+        .select('id, title')
+        .eq('id', task!.parentTaskId!)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!task?.parentTaskId,
+  });
+
+  // Full subtask data for nested editing
+  const { data: editingSubtaskData } = useQuery({
+    queryKey: ['subtask-detail', editingSubtaskId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('cos_tasks')
+        .select('*')
+        .eq('id', editingSubtaskId!)
+        .single();
+      if (error) throw error;
+
+      // Map to Task type
+      const normalizeStatus = (s: string | null): TaskStatus => {
+        if (!s) return 'to-do';
+        const lower = s.toLowerCase().replace(/\s+/g, '-');
+        const valid: TaskStatus[] = ['backlog', 'to-do', 'in-progress', 'blocked', 'done'];
+        return valid.includes(lower as TaskStatus) ? (lower as TaskStatus) : 'to-do';
+      };
+      const normalizePriority = (p: string | null): TaskPriority => {
+        if (!p) return 'medium';
+        const lower = p.toLowerCase();
+        const valid: TaskPriority[] = ['low', 'medium', 'high', 'urgent'];
+        return valid.includes(lower as TaskPriority) ? (lower as TaskPriority) : 'medium';
+      };
+
+      return {
+        id: data.id,
+        title: data.title,
+        description: data.description || '',
+        dueDate: data.due_date ? new Date(data.due_date) : null,
+        status: normalizeStatus(data.status),
+        priority: normalizePriority(data.priority),
+        categoryId: data.category_id || null,
+        createdAt: new Date(data.created_at || Date.now()),
+        completedAt: null,
+        imageUrl: data.image_url || null,
+        aiSuggestions: data.ai_suggestions || null,
+        parentTaskId: data.parent_task_id || null,
+      } as Task;
+    },
+    enabled: !!editingSubtaskId,
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!title.trim()) return;
 
     if (task) {
       updateTask(task.id, {
-        title,
-        description,
+        title, description,
         dueDate: dueDate || null,
-        status,
-        priority,
-        categoryId,
-        imageUrl,
+        status, priority, categoryId, imageUrl,
       });
     } else {
       addTask({
-        title,
-        description,
+        title, description,
         dueDate: dueDate || null,
-        status,
-        priority,
-        categoryId,
-        imageUrl,
+        status, priority, categoryId, imageUrl,
       });
     }
-    
     onClose();
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="title">Title</Label>
-        <Input
-          id="title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Enter task title..."
-          autoFocus={!isMobile}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Add a description..."
-          rows={6}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label>Attachment</Label>
-        <ImageUpload value={imageUrl} onChange={setImageUrl} />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Due Date</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  'w-full justify-start text-left font-normal',
-                  !dueDate && 'text-muted-foreground'
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {dueDate ? format(dueDate, 'PPP') : 'Pick a date'}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start" side="bottom" avoidCollisions={false}>
-              <Calendar
-                mode="single"
-                selected={dueDate}
-                onSelect={setDueDate}
-                initialFocus
-                className="p-3 pointer-events-auto"
-              />
-              {dueDate && (
-                <div className="border-t border-border p-2">
-                  <Button type="button" variant="ghost" size="sm" className="w-full text-xs" onClick={() => setDueDate(undefined)}>
-                    Clear date
-                  </Button>
-                </div>
-              )}
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Priority</Label>
-          <Select value={priority} onValueChange={(v) => setPriority(v as TaskPriority)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {priorityOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Status</Label>
-          <Select value={status} onValueChange={(v) => setStatus(v as TaskStatus)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {statusOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Category</Label>
-          <Select 
-            value={categoryId || 'none'} 
-            onValueChange={(v) => setCategoryId(v === 'none' ? null : v)}
+    <>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Parent breadcrumb */}
+        {task?.parentTaskId && parentTask && (
+          <button
+            type="button"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors"
+            onClick={() => {
+              onClose();
+              onOpenTask?.(parentTask.id);
+            }}
           >
-            <SelectTrigger>
-              <SelectValue placeholder="Select category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">No category</SelectItem>
-              {[...categories]
-                .sort((a, b) => a.name.localeCompare(b.name))
-                .map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                    {cat.icon && <span className="mr-1">{cat.icon}</span>}
-                    {cat.name}
+            <Undo2 className="h-3 w-3" />
+            Subtask of: {parentTask.title}
+          </button>
+        )}
+
+        <div className="space-y-2">
+          <Label htmlFor="title">Title</Label>
+          <Input
+            id="title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Enter task title..."
+            autoFocus={!isMobile}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="description">Description</Label>
+          <Textarea
+            id="description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Add a description..."
+            rows={6}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Attachment</Label>
+          <ImageUpload value={imageUrl} onChange={setImageUrl} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Due Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    'w-full justify-start text-left font-normal',
+                    !dueDate && 'text-muted-foreground'
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dueDate ? format(dueDate, 'PPP') : 'Pick a date'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start" side="bottom" avoidCollisions={false}>
+                <Calendar
+                  mode="single"
+                  selected={dueDate}
+                  onSelect={setDueDate}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+                {dueDate && (
+                  <div className="border-t border-border p-2">
+                    <Button type="button" variant="ghost" size="sm" className="w-full text-xs" onClick={() => setDueDate(undefined)}>
+                      Clear date
+                    </Button>
+                  </div>
+                )}
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Priority</Label>
+            <Select value={priority} onValueChange={(v) => setPriority(v as TaskPriority)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {priorityOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
                   </SelectItem>
                 ))}
-            </SelectContent>
-          </Select>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-      </div>
 
-      {task && (
-        <>
-          <EnrichWithAI
-            itemType="task"
-            item={{ id: task.id, title, description, status, priority, due_date: task.dueDate?.toISOString().split('T')[0] || null }}
-            existingSuggestions={task.aiSuggestions || null}
-            itemTitle={title}
-            categoryId={categoryId}
-          />
-          <AiHistorySection itemId={task.id} />
-        </>
-      )}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Status</Label>
+            <Select value={status} onValueChange={(v) => setStatus(v as TaskStatus)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {statusOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-      <div className="flex justify-between pt-4">
-        {task && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button type="button" variant="outline" className="gap-2">
-                <Lightbulb className="h-4 w-4" />
-                Convert to Idea
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Convert to Idea?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will convert "{task.title}" from a task to an idea. The task will be removed and a new idea will be created with the same details.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => {
-                    convertTaskToIdea(task.id);
-                    onClose();
-                  }}
-                >
-                  Convert
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <div className="space-y-2">
+            <Label>Category</Label>
+            <Select
+              value={categoryId || 'none'}
+              onValueChange={(v) => setCategoryId(v === 'none' ? null : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No category</SelectItem>
+                {[...categories]
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.icon && <span className="mr-1">{cat.icon}</span>}
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Subtasks section */}
+        {task && subtasks.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <ListTree className="h-4 w-4" />
+              Subtasks
+            </div>
+            <div className="space-y-1">
+              {subtasks.map((st) => {
+                const normStatus = (st.status || 'to-do').toLowerCase().replace(/\s+/g, '-');
+                return (
+                  <button
+                    key={st.id}
+                    type="button"
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-md border border-border/50 hover:bg-accent/50 transition-colors text-left"
+                    onClick={() => setEditingSubtaskId(st.id)}
+                  >
+                    <span className="text-sm flex-1 truncate">{st.title}</span>
+                    <Badge variant="secondary" className={cn('text-[10px] px-1.5 py-0 h-5 shrink-0', statusBadgeColors[normStatus] || '')}>
+                      {normStatus}
+                    </Badge>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         )}
-        <div className="flex gap-2 ml-auto">
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={!title.trim()}>
-            {task ? 'Update' : 'Create'} Task
-          </Button>
+
+        {task && (
+          <>
+            <EnrichWithAI
+              itemType="task"
+              item={{ id: task.id, title, description, status, priority, due_date: task.dueDate?.toISOString().split('T')[0] || null }}
+              existingSuggestions={task.aiSuggestions || null}
+              itemTitle={title}
+              categoryId={categoryId}
+            />
+            <AiHistorySection itemId={task.id} />
+          </>
+        )}
+
+        <div className="flex justify-between pt-4">
+          {task && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button type="button" variant="outline" className="gap-2">
+                  <Lightbulb className="h-4 w-4" />
+                  Convert to Idea
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Convert to Idea?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will convert "{task.title}" from a task to an idea. The task will be removed and a new idea will be created with the same details.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      convertTaskToIdea(task.id);
+                      onClose();
+                    }}
+                  >
+                    Convert
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          <div className="flex gap-2 ml-auto">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={!title.trim()}>
+              {task ? 'Update' : 'Create'} Task
+            </Button>
+          </div>
         </div>
-      </div>
-    </form>
+      </form>
+
+      {/* Nested subtask editing dialog */}
+      <ResponsiveFormDialog
+        open={!!editingSubtaskId && !!editingSubtaskData}
+        onOpenChange={(open) => { if (!open) setEditingSubtaskId(null); }}
+        title="Edit Subtask"
+      >
+        {editingSubtaskData && (
+          <TaskForm
+            task={editingSubtaskData}
+            onClose={() => setEditingSubtaskId(null)}
+            onOpenTask={(id) => {
+              setEditingSubtaskId(null);
+              // If navigating to parent, use the onOpenTask prop
+              onOpenTask?.(id);
+            }}
+          />
+        )}
+      </ResponsiveFormDialog>
+    </>
   );
 }
