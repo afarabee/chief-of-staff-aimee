@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, Lightbulb, ListTree, Undo2 } from 'lucide-react';
+import { CalendarIcon, Lightbulb, ListTree, Trash2, Undo2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { EnrichWithAI } from '@/components/ai/EnrichWithAI';
 import { AiHistorySection } from '@/components/ai/AiHistorySection';
@@ -73,7 +73,7 @@ const statusBadgeColors: Record<string, string> = {
 };
 
 export function TaskForm({ task, onClose, onOpenTask }: TaskFormProps) {
-  const { addTask, updateTask, convertTaskToIdea } = useApp();
+  const { addTask, updateTask, deleteTask, convertTaskToIdea } = useApp();
   const isMobile = useIsMobile();
   const { data: categories = [] } = useCategories();
   const [title, setTitle] = useState(task?.title || '');
@@ -346,35 +346,65 @@ export function TaskForm({ task, onClose, onOpenTask }: TaskFormProps) {
         )}
 
         <div className="flex justify-between pt-4">
-          {task && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button type="button" variant="outline" className="gap-2">
-                  <Lightbulb className="h-4 w-4" />
-                  Convert to Idea
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Convert to Idea?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will convert "{task.title}" from a task to an idea. The task will be removed and a new idea will be created with the same details.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => {
-                      convertTaskToIdea(task.id);
-                      onClose();
-                    }}
-                  >
-                    Convert
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
+          <div className="flex gap-2">
+            {task && (
+              <>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button type="button" variant="outline" className="gap-2">
+                      <Lightbulb className="h-4 w-4" />
+                      Convert to Idea
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Convert to Idea?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will convert "{task.title}" from a task to an idea. The task will be removed and a new idea will be created with the same details.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          convertTaskToIdea(task.id);
+                          onClose();
+                        }}
+                      >
+                        Convert
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button type="button" variant="destructive" size="icon">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Task?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete "{task.title}". This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          deleteTask(task.id);
+                          onClose();
+                        }}
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
+            )}
+          </div>
           <div className="flex gap-2 ml-auto">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel

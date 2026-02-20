@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { CheckSquare } from 'lucide-react';
+import { CheckSquare, Trash2 } from 'lucide-react';
 import { EnrichWithAI } from '@/components/ai/EnrichWithAI';
 import { AiHistorySection } from '@/components/ai/AiHistorySection';
 import { Idea, IdeaStatus } from '@/types';
@@ -43,7 +43,7 @@ const statusOptions: { value: IdeaStatus; label: string }[] = [
 ];
 
 export function IdeaForm({ idea, onClose }: IdeaFormProps) {
-  const { addIdea, updateIdea, convertIdeaToTask } = useApp();
+  const { addIdea, updateIdea, deleteIdea, convertIdeaToTask } = useApp();
   const isMobile = useIsMobile();
   const { data: categories = [] } = useCategories();
   const [title, setTitle] = useState(idea?.title || '');
@@ -162,35 +162,65 @@ export function IdeaForm({ idea, onClose }: IdeaFormProps) {
       )}
 
       <div className="flex justify-between pt-4">
-        {idea && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button type="button" variant="outline" className="gap-2">
-                <CheckSquare className="h-4 w-4" />
-                Convert to Task
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Convert to Task?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will convert "{idea.title}" from an idea to a task. The idea will be removed and a new task will be created with the same details.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => {
-                    convertIdeaToTask(idea.id);
-                    onClose();
-                  }}
-                >
-                  Convert
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
+        <div className="flex gap-2">
+          {idea && (
+            <>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button type="button" variant="outline" className="gap-2">
+                    <CheckSquare className="h-4 w-4" />
+                    Convert to Task
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Convert to Task?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will convert "{idea.title}" from an idea to a task. The idea will be removed and a new task will be created with the same details.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        convertIdeaToTask(idea.id);
+                        onClose();
+                      }}
+                    >
+                      Convert
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button type="button" variant="destructive" size="icon">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Idea?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete "{idea.title}". This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        deleteIdea(idea.id);
+                        onClose();
+                      }}
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
+          )}
+        </div>
         <div className="flex gap-2 ml-auto">
           <Button type="button" variant="outline" onClick={onClose}>
             Cancel
