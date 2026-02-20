@@ -57,6 +57,7 @@ function taskToDbInsert(task: Omit<Task, 'id' | 'createdAt' | 'completedAt'>): T
     priority: task.priority,
     category_id: task.categoryId || null,
     image_url: task.imageUrl || null,
+    ai_suggestions: task.aiSuggestions || null,
   };
 }
 

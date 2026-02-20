@@ -36,6 +36,7 @@ function ideaToDbInsert(idea: Omit<Idea, 'id' | 'createdAt'>): TablesInsert<'cos
     status: idea.status,
     category_id: idea.categoryId || null,
     image_url: idea.imageUrl || null,
+    ai_suggestions: idea.aiSuggestions || null,
   };
 }
 
