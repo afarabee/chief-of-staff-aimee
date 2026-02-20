@@ -1,58 +1,35 @@
 
+# Fix Dashboard Mobile Layout (below 768px)
 
-# Fix Mobile Modals on Real Phones
+## Issues Found
 
-## Root Causes Identified
-
-1. **Viewport meta tag is incomplete** -- `index.html` line 6 has `width=device-width, initial-scale=1.0` but is missing `maximum-scale=1.0, user-scalable=no`. Without these, mobile browsers may zoom in when focusing inputs, making the modal appear oversized and pushing buttons off-screen.
-
-2. **Sheet uses fixed `h-[95vh]` instead of dynamic viewport height** -- On real phones, `95vh` includes the browser chrome (address bar, toolbar), so the sheet extends behind it. The keyboard then covers even more. Using `dvh` (dynamic viewport height) solves this.
-
-3. **No global box-sizing or max-width constraint** -- Form elements inside the sheet can exceed the viewport width, causing horizontal overflow.
+1. **Page title + QuickAdd header** (line 147): `flex items-center gap-4` can overflow horizontally when the date text is long on a narrow screen
+2. **Task titles not truncating** (TaskCard line 113): Title `h3` has no `truncate` or `min-w-0` constraint, so long titles push content wider than the viewport
+3. **Idea titles not truncating** (IdeaCard line 83): Same issue
+4. **No overflow protection on page container**: The root `div` in Index.tsx has no `overflow-x-hidden`, allowing child content to cause horizontal scroll
+5. **Button touch targets**: Several buttons (like "View all", delete icons) are smaller than 44px on mobile
+6. **AppLayout padding**: Already `p-4 md:p-8` which is fine, but the content inside can still overflow
 
 ## Changes
 
-### 1. `index.html` -- Fix viewport meta tag
-Change line 6 from:
-```html
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-```
-to:
-```html
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-```
-This prevents the browser from zooming when the user taps an input, keeping the modal properly sized on screen.
+### 1. `src/pages/Index.tsx` -- Mobile-safe layout
+- Line 146: Add `overflow-x-hidden` to the root container div
+- Line 147-159: Change header from horizontal flex to stacked layout on mobile: `flex flex-col-reverse sm:flex-row sm:items-center gap-4`
+- Line 149: Make the title text responsive: `text-2xl sm:text-3xl`
+- Line 170: Make the "Save" button 44px tall on mobile: add `min-h-[44px]`
+- Lines 189, 224, 260, 295: Make "View all" buttons 44px tap targets on mobile: add `min-h-[44px]`
 
-### 2. `src/components/ui/responsive-dialog.tsx` -- Fix Sheet sizing
-Update the mobile Sheet branch:
-- Change `h-[95vh]` to `max-h-[90vh]` with a `dvh` fallback via inline style (`maxHeight: '90dvh'`)
-- Add `w-full` and `overflow-x-hidden` to SheetContent
-- Add `box-border` to the scrollable body div
-- These changes ensure the sheet fits within the visible viewport even when the browser chrome is present
+### 2. `src/components/tasks/TaskCard.tsx` -- Truncate titles
+- Line 113: Add `truncate` to the title `h3` so long task names get ellipsis instead of overflowing
+- Line 90: Add `overflow-hidden` to the card container
 
-### 3. `src/index.css` -- Add global mobile safety rules
-Add to the base layer:
-```css
-*, *::before, *::after {
-  box-sizing: border-box;
-}
-```
-And add a mobile-specific rule to prevent any element from exceeding viewport width:
-```css
-@media (max-width: 767px) {
-  input, textarea, select, button {
-    max-width: 100%;
-  }
-}
-```
+### 3. `src/components/ideas/IdeaCard.tsx` -- Truncate titles
+- Line 83: Add `truncate` to the title `h3`
+- Line 76: Add `overflow-hidden` to the card container
+
+### 4. `src/components/dashboard/QuickAdd.tsx` -- Touch-friendly button
+- Line 23: Ensure the Quick Add button meets 44px minimum height (already `size="lg"` which should be fine, but add `min-h-[44px]` explicitly)
 
 ## Technical Details
 
-| File | Change |
-|------|--------|
-| `index.html` | Add `maximum-scale=1.0, user-scalable=no` to viewport meta |
-| `src/components/ui/responsive-dialog.tsx` | Replace `h-[95vh]` with `max-h-[90vh]` + `dvh` fallback, add width/overflow constraints |
-| `src/index.css` | Add `box-sizing: border-box` globally and mobile max-width on form elements |
-
-## Risk
-Low -- viewport meta change prevents zoom on all pages (intentional for an app-like experience). The CSS changes are additive and scoped.
+All changes use Tailwind responsive prefixes (no prefix = mobile-first, `sm:` = 640px+, `md:` = 768px+) and are purely additive CSS class changes. No logic or structural changes needed.
