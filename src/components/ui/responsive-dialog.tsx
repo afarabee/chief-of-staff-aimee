@@ -35,11 +35,11 @@ export function ResponsiveFormDialog({ open, onOpenChange, title, children }: Re
   if (isMobile) {
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="h-[95vh] flex flex-col p-0 rounded-t-xl [&>button:last-child]:hidden">
+        <SheetContent side="bottom" className="max-h-[90vh] w-full flex flex-col p-0 rounded-t-xl overflow-x-hidden [&>button:last-child]:hidden" style={{ maxHeight: '90dvh' }}>
           <SheetHeader className="flex-shrink-0 border-b px-4 py-3">
             <SheetTitle>{title}</SheetTitle>
           </SheetHeader>
-          <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 pb-8" onFocus={handleFocus}>
+          <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 pb-8 box-border" onFocus={handleFocus}>
             {children}
           </div>
         </SheetContent>
