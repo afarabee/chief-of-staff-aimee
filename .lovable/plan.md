@@ -1,32 +1,58 @@
 
 
-# Fix Mobile Modals: Complete Coverage
+# Fix Mobile Modals on Real Phones
 
-## Current State
-The `ResponsiveFormDialog` component already exists and correctly renders a bottom Sheet on mobile and Dialog on desktop. It's used in most places -- but two components still use raw `Dialog` and will be broken on mobile.
+## Root Causes Identified
 
-## Changes Required
+1. **Viewport meta tag is incomplete** -- `index.html` line 6 has `width=device-width, initial-scale=1.0` but is missing `maximum-scale=1.0, user-scalable=no`. Without these, mobile browsers may zoom in when focusing inputs, making the modal appear oversized and pushing buttons off-screen.
 
-### 1. Convert `QuickAdd.tsx` to use `ResponsiveFormDialog`
-**File:** `src/components/dashboard/QuickAdd.tsx`
-- Replace the two raw `<Dialog>` + `<DialogContent>` wrappers with `<ResponsiveFormDialog>` for both the Task and Idea forms
-- This ensures the Quick Add dialogs on the dashboard work on mobile
+2. **Sheet uses fixed `h-[95vh]` instead of dynamic viewport height** -- On real phones, `95vh` includes the browser chrome (address bar, toolbar), so the sheet extends behind it. The keyboard then covers even more. Using `dvh` (dynamic viewport height) solves this.
 
-### 2. Convert `CreateTaskDialog.tsx` to use `ResponsiveFormDialog`
-**File:** `src/components/calendar/CreateTaskDialog.tsx`
-- Replace the raw `<Dialog>` + `<DialogContent>` with `<ResponsiveFormDialog>`
-- This is a small picker dialog (choose "Kanban Task" or "Reminder"), so it benefits from responsive treatment on mobile
+3. **No global box-sizing or max-width constraint** -- Form elements inside the sheet can exceed the viewport width, causing horizontal overflow.
 
-### 3. Add mobile keyboard scroll-into-view behavior
-**File:** `src/components/ui/responsive-dialog.tsx`
-- In the mobile (Sheet) branch, add an `onFocus` handler on the scrollable body `<div>` that calls `scrollIntoView({ behavior: 'smooth', block: 'center' })` on the focused input element
-- This ensures that when the on-screen keyboard opens, the active field scrolls into view instead of being hidden
+## Changes
 
-### 4. Fix duplicate close button in Sheet
-**File:** `src/components/ui/responsive-dialog.tsx`
-- The `SheetContent` component renders a default close X button (from the sheet primitive), and the `ResponsiveFormDialog` also renders a custom close Button in the header
-- This results in two close buttons on mobile; remove the custom one since `SheetContent` already provides one, OR suppress the default one and keep the custom header button for better positioning
+### 1. `index.html` -- Fix viewport meta tag
+Change line 6 from:
+```html
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+```
+to:
+```html
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+```
+This prevents the browser from zooming when the user taps an input, keeping the modal properly sized on screen.
 
-## No other changes needed
-All other form modals (TaskForm, IdeaForm, MaintenanceTaskForm, AssetForm, ProviderForm, Categories) already use `ResponsiveFormDialog`. The `AlertDialog` usages (delete confirmations, convert confirmations) are small confirmation dialogs that work fine as centered modals on all screen sizes.
+### 2. `src/components/ui/responsive-dialog.tsx` -- Fix Sheet sizing
+Update the mobile Sheet branch:
+- Change `h-[95vh]` to `max-h-[90vh]` with a `dvh` fallback via inline style (`maxHeight: '90dvh'`)
+- Add `w-full` and `overflow-x-hidden` to SheetContent
+- Add `box-border` to the scrollable body div
+- These changes ensure the sheet fits within the visible viewport even when the browser chrome is present
 
+### 3. `src/index.css` -- Add global mobile safety rules
+Add to the base layer:
+```css
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+```
+And add a mobile-specific rule to prevent any element from exceeding viewport width:
+```css
+@media (max-width: 767px) {
+  input, textarea, select, button {
+    max-width: 100%;
+  }
+}
+```
+
+## Technical Details
+
+| File | Change |
+|------|--------|
+| `index.html` | Add `maximum-scale=1.0, user-scalable=no` to viewport meta |
+| `src/components/ui/responsive-dialog.tsx` | Replace `h-[95vh]` with `max-h-[90vh]` + `dvh` fallback, add width/overflow constraints |
+| `src/index.css` | Add `box-sizing: border-box` globally and mobile max-width on form elements |
+
+## Risk
+Low -- viewport meta change prevents zoom on all pages (intentional for an app-like experience). The CSS changes are additive and scoped.
