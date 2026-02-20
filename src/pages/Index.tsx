@@ -143,11 +143,10 @@ const Index = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <QuickAdd />
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Today</h1>
+    <div className="space-y-6 overflow-x-hidden">
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Today</h1>
           <p className="text-muted-foreground">
             {new Date().toLocaleDateString('en-US', {
               weekday: 'long',
@@ -157,6 +156,7 @@ const Index = () => {
             })}
           </p>
         </div>
+        <QuickAdd />
       </div>
 
       <div className="flex gap-2">
@@ -167,7 +167,7 @@ const Index = () => {
           onKeyDown={(e) => e.key === 'Enter' && handleQuickCapture()}
           className="flex-1"
         />
-        <Button onClick={handleQuickCapture} disabled={!captureText.trim()}>
+        <Button onClick={handleQuickCapture} disabled={!captureText.trim()} className="min-h-[44px]">
           Save
         </Button>
       </div>
@@ -186,7 +186,7 @@ const Index = () => {
                   </span>
                 )}
               </div>
-              <Button variant="ghost" size="sm" asChild>
+              <Button variant="ghost" size="sm" className="min-h-[44px]" asChild>
                 <Link to="/tasks" className="gap-1">
                   View all <ArrowRight className="h-4 w-4" />
                 </Link>
@@ -221,7 +221,7 @@ const Index = () => {
                   </span>
                 )}
               </div>
-              <Button variant="ghost" size="sm" asChild>
+              <Button variant="ghost" size="sm" className="min-h-[44px]" asChild>
                 <Link to="/tasks" className="gap-1">
                   View all <ArrowRight className="h-4 w-4" />
                 </Link>
@@ -257,15 +257,15 @@ const Index = () => {
                 </span>
               )}
             </div>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/tasks" className="gap-1">
-                View all <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {comingUpTasks.length === 0 ? (
+              <Button variant="ghost" size="sm" className="min-h-[44px]" asChild>
+                <Link to="/tasks" className="gap-1">
+                  View all <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {comingUpTasks.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
               No upcoming tasks. Add some tasks to get started!
             </p>
@@ -292,11 +292,11 @@ const Index = () => {
                 </span>
               )}
             </div>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/ideas" className="gap-1">
-                View all <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
+              <Button variant="ghost" size="sm" className="min-h-[44px]" asChild>
+                <Link to="/ideas" className="gap-1">
+                  View all <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
           </div>
         </CardHeader>
         <CardContent>
