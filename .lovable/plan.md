@@ -1,25 +1,28 @@
 
-# Force Republish via Trivial Code Change
+# Bug Fix: AI Suggestions Lost During Conversion
 
-## Problem
-The Publish button is disabled because Lovable's deployment system believes the published URL is already in sync with the current codebase. This can happen when changes were applied incrementally without a final publish step, leaving the internal state marker showing "up to date."
+## Status of the Two Bugs
 
-## Solution
-Make a single, functionally harmless change to any source file — such as adding a comment line to `src/App.tsx` or `src/index.css`. This marks the project as "modified" relative to the last published snapshot, which re-enables the Publish button.
+### Fix 1: AI suggestions disappear after saving -- ALREADY FIXED
+The previous edit already resolved this. Both `taskToDbUpdate` and `ideaToDbUpdate` explicitly exclude `ai_suggestions` from the update payload, so saving a form no longer overwrites the AI suggestions column. No further changes needed.
 
-## What Will Change
+### Fix 2: Converting between types loses AI suggestions -- NEEDS FIX
+The conversion logic in `AppContext.tsx` correctly passes `aiSuggestions` to the create mutation. However, the **insert mapping functions** (`taskToDbInsert` in `useTasks.ts` and `ideaToDbInsert` in `useIdeas.ts`) strip it out -- they never include `ai_suggestions` in the database payload. So the value is silently dropped.
 
-### File: `src/App.tsx` (or `src/index.css`)
-- Add a single comment line at the top, e.g.:
-  ```ts
-  // v2 — mobile responsive, conversion fix, AI suggestions persistence
-  ```
-- This is purely cosmetic and has zero effect on runtime behavior.
+## Changes Required
 
-## Steps After the Change
-1. The Publish button in the top-right will become clickable again (globe icon turns blue/active).
-2. Click it to publish.
-3. Wait 30–60 seconds, then hard-refresh the published URL (`chief-of-staff-aimee.lovable.app`) with Ctrl+Shift+R (Windows/Linux) or Cmd+Shift+R (Mac) to bypass the browser cache.
+### 1. `src/hooks/useTasks.ts` -- `taskToDbInsert` function
+- Add `ai_suggestions: task.aiSuggestions || null` to the returned insert object
+- This ensures that when converting an Idea to a Task, the AI suggestions carry over to the new `cos_tasks` row
 
-## Risk
-None — a comment line has no effect on the compiled output or runtime behavior.
+### 2. `src/hooks/useIdeas.ts` -- `ideaToDbInsert` function
+- Add `ai_suggestions: idea.aiSuggestions || null` to the returned insert object
+- This ensures that when converting a Task to an Idea, the AI suggestions carry over to the new `cos_ideas` row
+
+## Why This Fixes Conversion
+The flow is: `convertIdeaToTask` calls `createTaskMutation.mutate({ ..., aiSuggestions })` which calls `taskToDbInsert()` to build the Supabase payload. Currently `taskToDbInsert` ignores `aiSuggestions`. After this fix, it will include `ai_suggestions` in the INSERT, and the data will persist in the new row.
+
+## What Won't Change
+- The update functions remain unchanged -- they correctly exclude `ai_suggestions` to prevent form saves from wiping them
+- The conversion logic in `AppContext.tsx` is already correct
+- Maintenance task hooks are unaffected (conversions to/from reminders are not yet implemented)
