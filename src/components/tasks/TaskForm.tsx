@@ -35,6 +35,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TaskFormProps {
   task?: Task;
@@ -58,6 +59,7 @@ const priorityOptions: { value: TaskPriority; label: string }[] = [
 
 export function TaskForm({ task, onClose }: TaskFormProps) {
   const { addTask, updateTask, convertTaskToIdea } = useApp();
+  const isMobile = useIsMobile();
   const { data: categories = [] } = useCategories();
   const [title, setTitle] = useState(task?.title || '');
   const [description, setDescription] = useState(task?.description || '');
@@ -106,7 +108,7 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Enter task title..."
-          autoFocus
+          autoFocus={!isMobile}
         />
       </div>
 
