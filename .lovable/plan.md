@@ -1,28 +1,32 @@
 
-# Bug Fix: AI Suggestions Lost During Conversion
 
-## Status of the Two Bugs
+# Fix Mobile Modals: Complete Coverage
 
-### Fix 1: AI suggestions disappear after saving -- ALREADY FIXED
-The previous edit already resolved this. Both `taskToDbUpdate` and `ideaToDbUpdate` explicitly exclude `ai_suggestions` from the update payload, so saving a form no longer overwrites the AI suggestions column. No further changes needed.
-
-### Fix 2: Converting between types loses AI suggestions -- NEEDS FIX
-The conversion logic in `AppContext.tsx` correctly passes `aiSuggestions` to the create mutation. However, the **insert mapping functions** (`taskToDbInsert` in `useTasks.ts` and `ideaToDbInsert` in `useIdeas.ts`) strip it out -- they never include `ai_suggestions` in the database payload. So the value is silently dropped.
+## Current State
+The `ResponsiveFormDialog` component already exists and correctly renders a bottom Sheet on mobile and Dialog on desktop. It's used in most places -- but two components still use raw `Dialog` and will be broken on mobile.
 
 ## Changes Required
 
-### 1. `src/hooks/useTasks.ts` -- `taskToDbInsert` function
-- Add `ai_suggestions: task.aiSuggestions || null` to the returned insert object
-- This ensures that when converting an Idea to a Task, the AI suggestions carry over to the new `cos_tasks` row
+### 1. Convert `QuickAdd.tsx` to use `ResponsiveFormDialog`
+**File:** `src/components/dashboard/QuickAdd.tsx`
+- Replace the two raw `<Dialog>` + `<DialogContent>` wrappers with `<ResponsiveFormDialog>` for both the Task and Idea forms
+- This ensures the Quick Add dialogs on the dashboard work on mobile
 
-### 2. `src/hooks/useIdeas.ts` -- `ideaToDbInsert` function
-- Add `ai_suggestions: idea.aiSuggestions || null` to the returned insert object
-- This ensures that when converting a Task to an Idea, the AI suggestions carry over to the new `cos_ideas` row
+### 2. Convert `CreateTaskDialog.tsx` to use `ResponsiveFormDialog`
+**File:** `src/components/calendar/CreateTaskDialog.tsx`
+- Replace the raw `<Dialog>` + `<DialogContent>` with `<ResponsiveFormDialog>`
+- This is a small picker dialog (choose "Kanban Task" or "Reminder"), so it benefits from responsive treatment on mobile
 
-## Why This Fixes Conversion
-The flow is: `convertIdeaToTask` calls `createTaskMutation.mutate({ ..., aiSuggestions })` which calls `taskToDbInsert()` to build the Supabase payload. Currently `taskToDbInsert` ignores `aiSuggestions`. After this fix, it will include `ai_suggestions` in the INSERT, and the data will persist in the new row.
+### 3. Add mobile keyboard scroll-into-view behavior
+**File:** `src/components/ui/responsive-dialog.tsx`
+- In the mobile (Sheet) branch, add an `onFocus` handler on the scrollable body `<div>` that calls `scrollIntoView({ behavior: 'smooth', block: 'center' })` on the focused input element
+- This ensures that when the on-screen keyboard opens, the active field scrolls into view instead of being hidden
 
-## What Won't Change
-- The update functions remain unchanged -- they correctly exclude `ai_suggestions` to prevent form saves from wiping them
-- The conversion logic in `AppContext.tsx` is already correct
-- Maintenance task hooks are unaffected (conversions to/from reminders are not yet implemented)
+### 4. Fix duplicate close button in Sheet
+**File:** `src/components/ui/responsive-dialog.tsx`
+- The `SheetContent` component renders a default close X button (from the sheet primitive), and the `ResponsiveFormDialog` also renders a custom close Button in the header
+- This results in two close buttons on mobile; remove the custom one since `SheetContent` already provides one, OR suppress the default one and keep the custom header button for better positioning
+
+## No other changes needed
+All other form modals (TaskForm, IdeaForm, MaintenanceTaskForm, AssetForm, ProviderForm, Categories) already use `ResponsiveFormDialog`. The `AlertDialog` usages (delete confirmations, convert confirmations) are small confirmation dialogs that work fine as centered modals on all screen sizes.
+
