@@ -1,99 +1,194 @@
 
-# Subtasks: Fix Create Button, Parent-Child Relationships, and UI
+
+# AI Enrichment Redesign: Move Suggestions to Dedicated Pages
 
 ## Overview
-
-Six changes: fix the broken Create Subtask button, wire up `parent_task_id`, update types/hooks, show subtasks on parent forms, hide subtasks from Kanban, and show parent links on subtask forms.
-
----
-
-## Part A: Fix Create Subtask Button
-
-The button currently works at the code level but may silently fail because `useCreateSubtask` references column names that need to match the DB exactly. The hook looks correct, but the Supabase types file doesn't include `parent_task_id` yet -- this will be addressed by regenerating types after we confirm the column exists.
-
-**Debug check**: The `useCreateSubtask` hook inserts with `status: 'Backlog'` and `priority: 'Low'` (capitalized). The DB defaults are `'To-Do'` and `'Medium'` (also capitalized), so this should work. The real issue may be a type mismatch or the mutation not firing. We will add console logging and verify end-to-end.
-
-**`src/hooks/useCreateSubtask.ts`** -- Rewrite to accept parent item info:
-- Add `parentItemId: string`, `parentItemType: 'task' | 'idea' | 'reminder'` to params
-- Set `parent_task_id` to `parentItemId` only when `parentItemType === 'task'`
-- Use default category ID `ecfc9834-8791-4199-9a2b-c4f49db9d` when none provided
-- Update description format: `"Subtask of: [title]\n\nFull suggestion: ...\n\nCreated by AI Enrichment"`
-- Invalidate `['subtasks', parentItemId]` on success
-
-**`src/components/ai/EnrichWithAI.tsx`** -- Update `handleCreateSubtask` call:
-- Pass `parentItemId: item.id` and `parentItemType: itemType` to the mutation
+Move all AI suggestion interaction out of edit modals into a dedicated enrichment record system. The `ai_enrichments` table stores enrichment sessions, and a new detail page at `/ai-activity/:id` provides full suggestion management (execute, dismiss, create subtask). Edit forms keep only a simple "Enrich with AI" button.
 
 ---
 
-## Part B: Update Types and Hooks
+## Part A: Remove AI Suggestion UI from Edit Modals
 
-**`src/types/index.ts`**
-- Add `parentTaskId: string | null` to the `Task` interface
+### `src/components/tasks/TaskForm.tsx`
+- Remove imports of `EnrichWithAI` and `AiHistorySection`
+- Remove the block rendering `<EnrichWithAI>` and `<AiHistorySection>` (lines 335-346)
+- Add a simple "Enrich with AI" button (Sparkles icon) that triggers the new enrichment flow (see Part B)
+- The button should appear in both create and edit modes
 
-**`src/hooks/useTasks.ts`**
-- In `dbTaskToTask`: map `(dbTask as any).parent_task_id || null` to `parentTaskId` (using `as any` since the generated types may not include it yet; it will work at runtime)
-- In `taskToDbInsert`: include `parent_task_id: task.parentTaskId || null`
-- In `taskToDbUpdate`: do NOT include `parent_task_id` (same exclusion pattern as `ai_suggestions`)
+### `src/components/ideas/IdeaForm.tsx`
+- Remove imports of `EnrichWithAI` and `AiHistorySection`
+- Remove the block rendering them
+- Add the same "Enrich with AI" button
 
-**`src/integrations/supabase/types.ts`** -- Will be auto-regenerated, but we cast where needed in the meantime.
-
----
-
-## Part C: New `useSubtasks` Hook
-
-**`src/hooks/useSubtasks.ts`** (new file)
-- `useSubtasks(parentTaskId: string | undefined)`
-- Query key: `['subtasks', parentTaskId]`
-- Fetches from `cos_tasks` where `parent_task_id` equals `parentTaskId`
-- Only selects `id, title, status` for lightweight display
-- Enabled only when `parentTaskId` is defined
+### `src/components/maintenance/MaintenanceTaskForm.tsx`
+- Same removal and replacement
 
 ---
 
-## Part D: Show Subtasks on Parent Task Form
+## Part B: New "Enrich with AI" Button Behavior
 
-**`src/components/tasks/TaskForm.tsx`**
-- Import `useSubtasks` and render a "Subtasks" section when editing and subtasks exist
-- Section header: ListTree icon + "Subtasks"
-- Each subtask as a compact row with:
-  - Title (clickable -- opens subtask in a nested `ResponsiveFormDialog`)
-  - Small colored status badge (backlog=gray, to-do=blue, in-progress=violet, done=green, blocked=orange)
-- Place this section between the description and the AI Suggestions section
-- When clicking a subtask, fetch the full task data and open a nested edit dialog
-- To handle nested editing: add state for `editingSubtask` and render a second `ResponsiveFormDialog` inside TaskForm
+### New hook: `src/hooks/useEnrichAndSave.ts`
+This hook orchestrates the full enrichment flow:
+
+1. **Auto-save the item first:**
+   - Accepts current form values + item type + optional existing item ID
+   - If new (no ID): calls the appropriate create mutation (`cos_tasks`, `cos_ideas`, or `tasks`) and captures the returned ID
+   - If existing: calls the appropriate update mutation silently
+
+2. **Call the `enrich-item` Edge Function** (existing) to get suggestions from Gemini
+
+3. **Insert into `ai_enrichments`** with:
+   - `item_type`, `item_id`, `item_title`
+   - `suggestions`: JSONB array with `{ suggestion, status: "pending", result: null }` for each
+
+4. **Toast sequence:**
+   - Loading toast: "AI is working on it..."
+   - Success toast with "View" action button navigating to `/ai-activity`
+   - Error toast on failure
+
+5. **Post-success behavior:**
+   - If new item: close the modal (call `onClose`)
+   - If existing: user stays in the form
+   - Invalidate `['ai-enrichments']` cache
+
+### Update `enrich-item` Edge Function
+- Stop writing suggestions to the item's `ai_suggestions` column (remove the DB update portion, lines 144-155)
+- Just return the generated suggestions array -- the frontend will save to `ai_enrichments` instead
+
+### Each form integration
+- Import `useEnrichAndSave` and `useNavigate`
+- Add state: `isEnriching`
+- Render button:
+  ```
+  <Button onClick={handleEnrich} disabled={isEnriching || !title.trim()}>
+    {isEnriching ? <Loader2 spinning /> : <Sparkles />}
+    {isEnriching ? "Enriching..." : "Enrich with AI"}
+  </Button>
+  ```
+- `handleEnrich` calls the hook, passing current form values
 
 ---
 
-## Part E: Hide Subtasks from Kanban Board
+## Part C: Update the AI Activity List Page
 
-**`src/hooks/useTasks.ts`** (or `src/contexts/AppContext.tsx`)
-- In the `useTasks` query, add `.is('parent_task_id', null)` filter to the Supabase query
-- This ensures subtasks never appear as standalone cards on the Kanban board
-- They remain accessible only through their parent task's edit form
+### `src/pages/AiActivity.tsx` -- Full rewrite
+- Fetch from `ai_enrichments` instead of `ai_executions`
+- Each card shows:
+  - Item type badge (Task=blue, Idea=purple, Reminder=orange)
+  - Item title
+  - Relative timestamp
+  - Suggestion summary: "5 suggestions (2 executed, 1 dismissed)"
+  - Click navigates to `/ai-activity/:id`
+- Filter tabs: "All", "Tasks", "Ideas", "Reminders"
+- Empty state preserved
+
+### New hook: `src/hooks/useAiEnrichments.ts`
+- `useAiEnrichments(filter?)` -- query key `['ai-enrichments', filter]`
+- Fetches from `ai_enrichments`, ordered by `created_at` desc, limit 50
+- Optional `item_type` filter
 
 ---
 
-## Part F: Parent Link on Subtask Form
+## Part D: Enrichment Detail Page
 
-**`src/components/tasks/TaskForm.tsx`**
-- When editing a task that has `parentTaskId` set:
-  - Fetch the parent task title using a simple query (inline `useQuery` or a small helper)
-  - Show a breadcrumb at the top: a muted-text link with arrow: "Subtask of: [Parent Title]"
-  - Clicking it calls `onClose()` and then opens the parent task for editing
-- To enable "open parent" behavior, add an optional `onOpenTask?: (taskId: string) => void` prop to `TaskForm`
-- Wire this prop from `Tasks.tsx` page to allow navigating between parent and child
+### New page: `src/pages/AiEnrichmentDetail.tsx`
+- Route: `/ai-activity/:id`
+- Back link: "Back to AI Activity"
+- Header: type badge + item title + timestamp
+- "View original [task/idea/reminder]" link -- navigates to the item's edit page
+
+**Suggestions list -- each as a card:**
+- Full suggestion text
+- Status: pending (gray), executed (green check), dismissed (hidden by default, toggle to show)
+- **Pending actions:**
+  - Execute (Zap): calls `execute-suggestion` Edge Function, updates suggestion status to "executed" and saves result in JSONB
+  - Create Subtask (ListPlus): creates `cos_tasks` with `parent_task_id` (if task), shows toast
+  - Dismiss (X): sets status to "dismissed" in JSONB
+- **Executed display:** result text in styled container + Copy button
+
+### New hook: `src/hooks/useAiEnrichment.ts`
+- `useAiEnrichment(id)` -- query key `['ai-enrichment', id]`
+- Single row fetch from `ai_enrichments`
+
+### New hook: `src/hooks/useUpdateEnrichmentSuggestion.ts`
+- Mutation that reads current `suggestions` JSONB, updates one by index, writes back
+- Invalidates `['ai-enrichment', enrichmentId]` and `['ai-enrichments']`
 
 ---
 
-## File Changes Summary
+## Part E: Router and Navigation Updates
+
+### `src/App.tsx`
+- Add route: `<Route path="/ai-activity/:id" element={<AiEnrichmentDetail />} />`
+- Keep existing `/ai-activity` route
+
+### Sidebar remains unchanged (already has AI Activity link)
+
+---
+
+## Part F: Clean Up Old Code
+
+### Remove or stop using:
+- `src/components/ai/EnrichWithAI.tsx` -- delete entirely (no longer rendered anywhere)
+- `src/components/ai/AiHistorySection.tsx` -- delete (history is now on the AI Activity page)
+- `src/hooks/useDismissSuggestion.ts` -- delete (dismissal now updates `ai_enrichments` JSONB)
+- `src/hooks/useEnrichItem.ts` -- keep but simplify (still calls the Edge Function, but no longer writes to item's `ai_suggestions`)
+- `src/hooks/useAiExecutions.ts` -- delete (replaced by enrichments-based views)
+- `src/hooks/useAllAiExecutions.ts` -- delete (replaced by `useAiEnrichments`)
+- `src/lib/parseSuggestions.ts` -- delete (no longer needed; suggestions are JSONB)
+
+### Keep:
+- `enrich-item` Edge Function (generates suggestions)
+- `execute-suggestion` Edge Function (executes suggestions + logs to `ai_executions`)
+- `ai_executions` table (append-only logging)
+- `useExecuteSuggestion` hook (reused in detail page)
+- `useCreateSubtask` hook (reused in detail page)
+
+### Stop reading/writing `ai_suggestions` column:
+- `useTasks.ts`: remove `aiSuggestions` from `dbTaskToTask` and `taskToDbInsert`
+- `useIdeas.ts`: same
+- `useMaintenanceTasks.ts`: remove `aiSuggestions` from `mapRow`
+- `src/types/index.ts`: remove `aiSuggestions` from `Task` and `Idea` interfaces
+- `src/types/maintenance.ts`: remove `aiSuggestions` from `MaintenanceTask` interface
+- `src/contexts/AppContext.tsx`: remove `aiSuggestions` from conversion functions
+
+---
+
+## New Files Summary
+
+| File | Purpose |
+|------|---------|
+| `src/hooks/useEnrichAndSave.ts` | Orchestrates save-then-enrich-then-store flow |
+| `src/hooks/useAiEnrichments.ts` | List all enrichments (for activity page) |
+| `src/hooks/useAiEnrichment.ts` | Fetch single enrichment (for detail page) |
+| `src/hooks/useUpdateEnrichmentSuggestion.ts` | Update a suggestion's status/result in JSONB |
+| `src/pages/AiEnrichmentDetail.tsx` | Full enrichment detail page with suggestion actions |
+
+## Modified Files Summary
 
 | File | Change |
 |------|--------|
-| `src/types/index.ts` | Add `parentTaskId` to Task interface |
-| `src/hooks/useTasks.ts` | Map `parent_task_id`, add to insert, filter from main query |
-| `src/hooks/useCreateSubtask.ts` | Accept parent info, set `parent_task_id`, invalidate subtasks cache |
-| `src/hooks/useSubtasks.ts` | New hook for fetching subtasks |
-| `src/components/ai/EnrichWithAI.tsx` | Pass parent ID/type to create subtask |
-| `src/components/tasks/TaskForm.tsx` | Add subtasks section, parent breadcrumb, nested edit dialog |
-| `src/pages/Tasks.tsx` | Pass `onOpenTask` callback to TaskForm |
-| `src/contexts/AppContext.tsx` | Update `addTask` type to accept `parentTaskId` |
+| `src/components/tasks/TaskForm.tsx` | Remove EnrichWithAI/AiHistory, add simple enrich button |
+| `src/components/ideas/IdeaForm.tsx` | Same |
+| `src/components/maintenance/MaintenanceTaskForm.tsx` | Same |
+| `src/pages/AiActivity.tsx` | Rewrite to show `ai_enrichments` records |
+| `src/App.tsx` | Add `/ai-activity/:id` route |
+| `supabase/functions/enrich-item/index.ts` | Remove DB update to `ai_suggestions` column |
+| `src/hooks/useTasks.ts` | Remove `aiSuggestions` mapping |
+| `src/hooks/useIdeas.ts` | Remove `aiSuggestions` mapping |
+| `src/hooks/useMaintenanceTasks.ts` | Remove `aiSuggestions` mapping |
+| `src/types/index.ts` | Remove `aiSuggestions` from interfaces |
+| `src/types/maintenance.ts` | Remove `aiSuggestions` from interface |
+| `src/contexts/AppContext.tsx` | Remove `aiSuggestions` from conversion |
+
+## Deleted Files
+
+| File | Reason |
+|------|--------|
+| `src/components/ai/EnrichWithAI.tsx` | Replaced by detail page |
+| `src/components/ai/AiHistorySection.tsx` | Replaced by AI Activity page |
+| `src/hooks/useDismissSuggestion.ts` | Replaced by `useUpdateEnrichmentSuggestion` |
+| `src/hooks/useAiExecutions.ts` | Replaced by `useAiEnrichments` |
+| `src/hooks/useAllAiExecutions.ts` | Replaced by `useAiEnrichments` |
+| `src/lib/parseSuggestions.ts` | No longer needed (JSONB native) |
+
