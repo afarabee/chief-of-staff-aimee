@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { CheckSquare, Trash2 } from 'lucide-react';
-import { EnrichWithAI } from '@/components/ai/EnrichWithAI';
-import { AiHistorySection } from '@/components/ai/AiHistorySection';
+import { CheckSquare, Loader2, Sparkles, Trash2 } from 'lucide-react';
+import { useEnrichAndSave } from '@/hooks/useEnrichAndSave';
 import { Idea, IdeaStatus } from '@/types';
 import { useApp } from '@/contexts/AppContext';
 import { useCategories } from '@/hooks/useCategories';
@@ -51,6 +50,7 @@ export function IdeaForm({ idea, onClose }: IdeaFormProps) {
   const [status, setStatus] = useState<IdeaStatus>(idea?.status || 'new');
   const [categoryId, setCategoryId] = useState<string | null>(idea?.categoryId || null);
   const [imageUrl, setImageUrl] = useState<string | null>(idea?.imageUrl || null);
+  const { enrich, isEnriching } = useEnrichAndSave();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -148,18 +148,37 @@ export function IdeaForm({ idea, onClose }: IdeaFormProps) {
         </div>
       </div>
 
-      {idea && (
-        <>
-          <EnrichWithAI
-            itemType="idea"
-            item={{ id: idea.id, title, description, status }}
-            existingSuggestions={idea.aiSuggestions || null}
-            itemTitle={title}
-            categoryId={categoryId}
-          />
-          <AiHistorySection itemId={idea.id} />
-        </>
-      )}
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full gap-2"
+        disabled={isEnriching || !title.trim()}
+        onClick={() => {
+          const itemData = { title, description, status };
+          enrich({
+            itemType: 'idea',
+            itemTitle: title,
+            itemData,
+            itemId: idea?.id,
+            onSaveNew: async () => {
+              const { data, error } = await (await import('@/integrations/supabase/client')).supabase
+                .from('cos_ideas')
+                .insert({ title, description, status, category_id: categoryId })
+                .select('id')
+                .single();
+              if (error) throw error;
+              return data.id;
+            },
+            onSaveExisting: async () => {
+              if (idea) updateIdea(idea.id, { title, description, status, categoryId, imageUrl });
+            },
+            onClose,
+          });
+        }}
+      >
+        {isEnriching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+        {isEnriching ? 'Enriching...' : 'Enrich with AI'}
+      </Button>
 
       <div className="flex justify-between pt-4">
         <div className="flex gap-2">

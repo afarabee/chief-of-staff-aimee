@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, DollarSign, Plus, Trash2 } from 'lucide-react';
-import { EnrichWithAI } from '@/components/ai/EnrichWithAI';
-import { AiHistorySection } from '@/components/ai/AiHistorySection';
+import { CalendarIcon, DollarSign, Loader2, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { useEnrichAndSave } from '@/hooks/useEnrichAndSave';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -98,6 +97,7 @@ export function MaintenanceTaskForm({ task, lockedAssetId, lockedProviderId, onC
   const createProvider = useCreateProvider();
   const createAsset = useCreateAsset();
   const isPending = createTask.isPending || updateTask.isPending;
+  const { enrich, isEnriching } = useEnrichAndSave();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -431,17 +431,58 @@ export function MaintenanceTaskForm({ task, lockedAssetId, lockedProviderId, onC
         <ImageUpload value={attachmentUrl} onChange={setAttachmentUrl} />
       </div>
 
-      {task && (
-        <>
-          <EnrichWithAI
-            itemType="reminder"
-            item={{ id: task.id, name, notes, status, next_due_date: task.nextDueDate, recurrence_rule: task.recurrenceRule }}
-            existingSuggestions={task.aiSuggestions || null}
-            itemTitle={name}
-          />
-          <AiHistorySection itemId={task.id} />
-        </>
-      )}
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full gap-2"
+        disabled={isEnriching || !name.trim()}
+        onClick={() => {
+          const itemData = { name, notes, status, next_due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null, recurrence_rule: recurrence || null };
+          enrich({
+            itemType: 'reminder',
+            itemTitle: name,
+            itemData,
+            itemId: task?.id,
+            onSaveNew: async () => {
+              const { data, error } = await (await import('@/integrations/supabase/client')).supabase
+                .from('tasks')
+                .insert({
+                  name: name.trim(),
+                  asset_id: assetId || null,
+                  provider_id: providerId || null,
+                  next_due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
+                  recurrence_rule: recurrence || null,
+                  status,
+                  notes: notes.trim() || null,
+                })
+                .select('id')
+                .single();
+              if (error) throw error;
+              return data.id;
+            },
+            onSaveExisting: async () => {
+              if (task) {
+                updateTask.mutate({
+                  id: task.id,
+                  name: name.trim(),
+                  asset_id: assetId || null,
+                  provider_id: providerId || null,
+                  next_due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
+                  recurrence_rule: recurrence || null,
+                  status,
+                  cost: cost ? parseFloat(cost) : null,
+                  notes: notes.trim() || null,
+                  attachment_url: attachmentUrl,
+                });
+              }
+            },
+            onClose,
+          });
+        }}
+      >
+        {isEnriching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+        {isEnriching ? 'Enriching...' : 'Enrich with AI'}
+      </Button>
 
       <div className="flex justify-between pt-2">
         {isEdit && (

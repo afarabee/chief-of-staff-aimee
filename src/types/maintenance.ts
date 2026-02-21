@@ -14,7 +14,6 @@ export interface MaintenanceTask {
   status: string | null;
   createdAt: string | null;
   updatedAt: string | null;
-  aiSuggestions?: string | null;
 }
 
 export const RECURRENCE_OPTIONS = [

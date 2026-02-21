@@ -125,35 +125,7 @@ Respond ONLY with a JSON array of objects. Each object has a single "suggestion"
     const suggestionsArray = parseGeminiJsonResponse(rawText);
     const suggestionsJson = JSON.stringify(suggestionsArray);
 
-    // Save to database
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const sb = createClient(supabaseUrl, supabaseKey);
-
-    let table: string;
-    if (item_type === "task") table = "cos_tasks";
-    else if (item_type === "idea") table = "cos_ideas";
-    else if (item_type === "reminder") table = "tasks";
-    else {
-      return new Response(JSON.stringify({ error: "Invalid item_type" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const { error: updateErr } = await sb
-      .from(table)
-      .update({ ai_suggestions: suggestionsJson })
-      .eq("id", item.id);
-
-    if (updateErr) {
-      console.error("DB update error:", updateErr);
-      return new Response(JSON.stringify({ error: "Failed to save suggestions" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
+    // Return suggestions to frontend — storage in ai_enrichments is handled client-side
     return new Response(JSON.stringify({ suggestions: suggestionsJson }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

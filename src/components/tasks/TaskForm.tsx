@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, Lightbulb, ListTree, Trash2, Undo2 } from 'lucide-react';
+import { CalendarIcon, Lightbulb, ListTree, Loader2, Sparkles, Trash2, Undo2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { EnrichWithAI } from '@/components/ai/EnrichWithAI';
-import { AiHistorySection } from '@/components/ai/AiHistorySection';
+import { useEnrichAndSave } from '@/hooks/useEnrichAndSave';
 import { Task, TaskStatus, TaskPriority } from '@/types';
 import { useApp } from '@/contexts/AppContext';
 import { useCategories } from '@/hooks/useCategories';
@@ -84,6 +83,7 @@ export function TaskForm({ task, onClose, onOpenTask }: TaskFormProps) {
   const [categoryId, setCategoryId] = useState<string | null>(task?.categoryId || null);
   const [imageUrl, setImageUrl] = useState<string | null>(task?.imageUrl || null);
   const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
+  const { enrich, isEnriching } = useEnrichAndSave();
 
   // Subtasks
   const { data: subtasks = [] } = useSubtasks(task?.id);
@@ -139,7 +139,6 @@ export function TaskForm({ task, onClose, onOpenTask }: TaskFormProps) {
         createdAt: new Date(data.created_at || Date.now()),
         completedAt: null,
         imageUrl: data.image_url || null,
-        aiSuggestions: data.ai_suggestions || null,
         parentTaskId: data.parent_task_id || null,
       } as Task;
     },
@@ -332,18 +331,37 @@ export function TaskForm({ task, onClose, onOpenTask }: TaskFormProps) {
           </div>
         )}
 
-        {task && (
-          <>
-            <EnrichWithAI
-              itemType="task"
-              item={{ id: task.id, title, description, status, priority, due_date: task.dueDate?.toISOString().split('T')[0] || null }}
-              existingSuggestions={task.aiSuggestions || null}
-              itemTitle={title}
-              categoryId={categoryId}
-            />
-            <AiHistorySection itemId={task.id} />
-          </>
-        )}
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full gap-2"
+          disabled={isEnriching || !title.trim()}
+          onClick={() => {
+            const itemData = { title, description, status, priority, due_date: dueDate?.toISOString().split('T')[0] || null };
+            enrich({
+              itemType: 'task',
+              itemTitle: title,
+              itemData,
+              itemId: task?.id,
+              onSaveNew: async () => {
+                const { data, error } = await (await import('@/integrations/supabase/client')).supabase
+                  .from('cos_tasks')
+                  .insert({ title, description, status, priority, due_date: dueDate?.toISOString().split('T')[0] || null, category_id: categoryId })
+                  .select('id')
+                  .single();
+                if (error) throw error;
+                return data.id;
+              },
+              onSaveExisting: async () => {
+                if (task) updateTask(task.id, { title, description, dueDate: dueDate || null, status, priority, categoryId, imageUrl });
+              },
+              onClose,
+            });
+          }}
+        >
+          {isEnriching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+          {isEnriching ? 'Enriching...' : 'Enrich with AI'}
+        </Button>
 
         <div className="flex justify-between pt-4">
           <div className="flex gap-2">

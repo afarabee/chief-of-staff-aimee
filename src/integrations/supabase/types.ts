@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_enrichments: {
+        Row: {
+          created_at: string | null
+          id: string
+          item_id: string
+          item_title: string
+          item_type: string
+          suggestions: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          item_id: string
+          item_title: string
+          item_type: string
+          suggestions?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          item_id?: string
+          item_title?: string
+          item_type?: string
+          suggestions?: Json | null
+        }
+        Relationships: []
+      }
       ai_executions: {
         Row: {
           created_at: string | null
