@@ -153,14 +153,14 @@ export function EnrichWithAI({ itemType, item, existingSuggestions, itemTitle, c
       </Button>
 
       {suggestions.length > 0 && (
-        <Card className="border-border/50">
+        <Card className="border-border/50 min-w-0 overflow-hidden">
           <CardHeader className="pb-2 pt-4 px-4">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
               AI Suggestions
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-4 pb-4 pt-0 space-y-2">
+          <CardContent className="px-4 pb-4 pt-0 space-y-2 min-w-0 overflow-hidden">
             <TooltipProvider>
               {suggestions.map((s) => {
                 const idx = s.originalIndex;
@@ -277,8 +277,8 @@ export function EnrichWithAI({ itemType, item, existingSuggestions, itemTitle, c
                               </Button>
                             </div>
                             <div
-                              className="text-sm text-foreground leading-relaxed prose-sm min-w-0 max-w-full"
-                              style={{ overflowWrap: 'break-word', wordBreak: 'break-word', whiteSpace: 'pre-wrap', overflowX: 'auto' }}
+                              className="ai-result-content text-sm text-foreground leading-relaxed prose-sm"
+                              style={{ width: 0, minWidth: '100%', overflow: 'hidden', overflowWrap: 'break-word', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}
                               dangerouslySetInnerHTML={{ __html: renderResultMarkdown(result!) }}
                             />
                           </div>

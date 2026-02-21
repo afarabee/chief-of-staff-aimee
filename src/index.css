@@ -174,3 +174,16 @@ All colors MUST be HSL.
     max-width: 100%;
   }
 }
+
+.ai-result-content table,
+.ai-result-content pre,
+.ai-result-content code {
+  max-width: 100%;
+  overflow-x: auto;
+  display: block;
+}
+
+.ai-result-content table {
+  table-layout: fixed;
+  word-break: break-word;
+}
