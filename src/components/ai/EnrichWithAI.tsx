@@ -125,7 +125,7 @@ export function EnrichWithAI({ itemType, item, existingSuggestions, itemTitle, c
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 overflow-hidden min-w-0 max-w-full">
       <Button
         type="button"
         variant="outline"
@@ -171,7 +171,7 @@ export function EnrichWithAI({ itemType, item, existingSuggestions, itemTitle, c
                 const isResultOpen = openResults.has(idx);
 
                 return (
-                  <div key={idx} className="relative border border-border/50 rounded-md p-3 space-y-2 min-w-0">
+                  <div key={idx} className="relative border border-border/50 rounded-md p-3 space-y-2 min-w-0 overflow-hidden max-w-full">
                     <div className="flex flex-col sm:flex-row sm:items-start gap-2 min-w-0">
                       <p className="text-sm text-foreground flex-1 leading-relaxed break-words min-w-0">
                         {s.suggestion}
@@ -263,7 +263,7 @@ export function EnrichWithAI({ itemType, item, existingSuggestions, itemTitle, c
                           </Button>
                         </CollapsibleTrigger>
                         <CollapsibleContent>
-                          <div className="mt-2 bg-muted/50 rounded-md p-3">
+                          <div className="mt-2 bg-muted/50 rounded-md p-3 min-w-0 max-w-full overflow-hidden">
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-xs font-medium text-muted-foreground">Result</span>
                               <Button
@@ -277,7 +277,8 @@ export function EnrichWithAI({ itemType, item, existingSuggestions, itemTitle, c
                               </Button>
                             </div>
                             <div
-                              className="text-sm text-foreground leading-relaxed prose-sm"
+                              className="text-sm text-foreground leading-relaxed prose-sm min-w-0 max-w-full"
+                              style={{ overflowWrap: 'break-word', wordBreak: 'break-word', whiteSpace: 'pre-wrap', overflowX: 'auto' }}
                               dangerouslySetInnerHTML={{ __html: renderResultMarkdown(result!) }}
                             />
                           </div>
