@@ -23,7 +23,6 @@ function mapRow(row: any): MaintenanceTask {
     status: row.status,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    aiSuggestions: row.ai_suggestions || null,
   };
 }
 

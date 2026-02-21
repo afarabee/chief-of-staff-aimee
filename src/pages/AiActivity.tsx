@@ -1,15 +1,12 @@
-import { useState } from 'react';
-import { Sparkles, Copy, ChevronDown, ChevronUp } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Sparkles } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { useAllAiExecutions } from '@/hooks/useAllAiExecutions';
+import { useAiEnrichments } from '@/hooks/useAiEnrichments';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { toast } from '@/hooks/use-toast';
+import { useState } from 'react';
 
 const typeBadge: Record<string, { label: string; className: string }> = {
   task: { label: 'Task', className: 'bg-primary/10 text-primary border-primary/20' },
@@ -20,23 +17,14 @@ const typeBadge: Record<string, { label: string; className: string }> = {
 export default function AiActivity() {
   usePageTitle('AI Activity');
   const [filter, setFilter] = useState('all');
-  const { data: executions = [], isLoading } = useAllAiExecutions(filter);
-  const [openItems, setOpenItems] = useState<Set<string>>(new Set());
-
-  const toggle = (id: string) => {
-    setOpenItems((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
+  const { data: enrichments = [], isLoading } = useAiEnrichments(filter);
+  const navigate = useNavigate();
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold">AI Activity</h1>
-        <p className="text-muted-foreground mt-1">History of all AI-executed suggestions</p>
+        <p className="text-muted-foreground mt-1">History of all AI enrichments</p>
       </div>
 
       <Tabs value={filter} onValueChange={setFilter}>
@@ -50,11 +38,11 @@ export default function AiActivity() {
 
       {isLoading ? (
         <p className="text-muted-foreground text-sm">Loading...</p>
-      ) : executions.length === 0 ? (
+      ) : enrichments.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <Sparkles className="h-10 w-10 text-muted-foreground/50 mb-4" />
-            <p className="text-muted-foreground">No AI suggestions have been executed yet.</p>
+            <p className="text-muted-foreground">No AI enrichments yet.</p>
             <p className="text-sm text-muted-foreground/70 mt-1">
               Use the "Enrich with AI" button on any task, idea, or reminder to get started.
             </p>
@@ -62,66 +50,37 @@ export default function AiActivity() {
         </Card>
       ) : (
         <div className="space-y-3">
-          <TooltipProvider>
-            {executions.map((exec) => {
-              const badge = typeBadge[exec.item_type] || typeBadge.task;
-              const isOpen = openItems.has(exec.id);
-              const preview = exec.result.length > 100 ? exec.result.slice(0, 100) + '…' : exec.result;
+          {enrichments.map((e) => {
+            const badge = typeBadge[e.item_type] || typeBadge.task;
+            const total = e.suggestions.length;
+            const executed = e.suggestions.filter((s) => s.status === 'executed').length;
+            const dismissed = e.suggestions.filter((s) => s.status === 'dismissed').length;
 
-              return (
-                <Card key={exec.id}>
-                  <CardContent className="p-4 space-y-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="outline" className={badge.className}>{badge.label}</Badge>
-                      <span className="text-sm font-medium">{exec.item_title}</span>
-                      <span className="text-xs text-muted-foreground ml-auto shrink-0">
-                        {formatDistanceToNow(new Date(exec.created_at!), { addSuffix: true })}
-                      </span>
-                    </div>
+            let summary = `${total} suggestion${total !== 1 ? 's' : ''}`;
+            const parts: string[] = [];
+            if (executed > 0) parts.push(`${executed} executed`);
+            if (dismissed > 0) parts.push(`${dismissed} dismissed`);
+            if (parts.length > 0) summary += ` (${parts.join(', ')})`;
 
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <p className="text-sm text-muted-foreground truncate">{exec.suggestion}</p>
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-sm">
-                        <p className="text-sm">{exec.suggestion}</p>
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <Collapsible open={isOpen} onOpenChange={() => toggle(exec.id)}>
-                      {!isOpen && (
-                        <p className="text-xs text-muted-foreground/70">{preview}</p>
-                      )}
-                      <CollapsibleTrigger asChild>
-                        <Button type="button" variant="ghost" size="sm" className="h-auto py-1 px-2 text-xs text-muted-foreground gap-1">
-                          {isOpen ? <><ChevronUp className="h-3 w-3" /> Hide</> : <><ChevronDown className="h-3 w-3" /> Show more</>}
-                        </Button>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <div className="mt-2 bg-muted/50 rounded-md p-3">
-                          <div className="flex items-center justify-end mb-1">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={() => {
-                                navigator.clipboard.writeText(exec.result);
-                                toast({ title: 'Copied to clipboard' });
-                              }}
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                          </div>
-                          <p className="text-sm text-foreground whitespace-pre-wrap">{exec.result}</p>
-                        </div>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </TooltipProvider>
+            return (
+              <Card
+                key={e.id}
+                className="cursor-pointer hover:bg-accent/50 transition-colors"
+                onClick={() => navigate(`/ai-activity/${e.id}`)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="outline" className={badge.className}>{badge.label}</Badge>
+                    <span className="text-sm font-medium flex-1 min-w-0 truncate">{e.item_title}</span>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {e.created_at ? formatDistanceToNow(new Date(e.created_at), { addSuffix: true }) : ''}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">{summary}</p>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

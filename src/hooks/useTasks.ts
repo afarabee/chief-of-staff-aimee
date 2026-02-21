@@ -43,7 +43,6 @@ function dbTaskToTask(dbTask: DbTask): Task {
       ? new Date(dbTask.updated_at) 
       : null,
     imageUrl: dbTask.image_url || null,
-    aiSuggestions: dbTask.ai_suggestions || null,
     parentTaskId: (dbTask as any).parent_task_id || null,
   };
 }
@@ -58,7 +57,6 @@ function taskToDbInsert(task: Omit<Task, 'id' | 'createdAt' | 'completedAt'>): T
     priority: task.priority,
     category_id: task.categoryId || null,
     image_url: task.imageUrl || null,
-    ai_suggestions: task.aiSuggestions || null,
     parent_task_id: (task as any).parentTaskId || null,
   };
 }

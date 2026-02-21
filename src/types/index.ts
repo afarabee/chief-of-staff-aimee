@@ -21,7 +21,6 @@ export interface Task {
   createdAt: Date;
   completedAt: Date | null;
   imageUrl: string | null;
-  aiSuggestions?: string | null;
   parentTaskId?: string | null;
 }
 
@@ -34,5 +33,4 @@ export interface Idea {
   categoryName?: string;
   createdAt: Date;
   imageUrl: string | null;
-  aiSuggestions?: string | null;
 }

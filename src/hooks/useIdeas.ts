@@ -24,7 +24,6 @@ function dbIdeaToIdea(dbIdea: DbIdea): Idea {
     categoryId: dbIdea.category_id || null,
     createdAt: new Date(dbIdea.created_at || Date.now()),
     imageUrl: (dbIdea as DbIdea & { image_url?: string | null }).image_url || null,
-    aiSuggestions: dbIdea.ai_suggestions || null,
   };
 }
 
@@ -36,7 +35,6 @@ function ideaToDbInsert(idea: Omit<Idea, 'id' | 'createdAt'>): TablesInsert<'cos
     status: idea.status,
     category_id: idea.categoryId || null,
     image_url: idea.imageUrl || null,
-    ai_suggestions: idea.aiSuggestions || null,
   };
 }
 

@@ -93,7 +93,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         priority: 'medium',
         dueDate: null,
         imageUrl: idea.imageUrl,
-        aiSuggestions: idea.aiSuggestions ?? null,
       },
       {
         onSuccess: () => {
@@ -126,7 +125,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         categoryId: task.categoryId,
         status: statusMap[task.status],
         imageUrl: task.imageUrl,
-        aiSuggestions: task.aiSuggestions ?? null,
       },
       {
         onSuccess: () => {
