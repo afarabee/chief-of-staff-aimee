@@ -125,7 +125,7 @@ export function EnrichWithAI({ itemType, item, existingSuggestions, itemTitle, c
   };
 
   return (
-    <div className="space-y-3 overflow-hidden min-w-0 max-w-full">
+    <div className="space-y-3">
       <Button
         type="button"
         variant="outline"
@@ -153,14 +153,14 @@ export function EnrichWithAI({ itemType, item, existingSuggestions, itemTitle, c
       </Button>
 
       {suggestions.length > 0 && (
-        <Card className="border-border/50 min-w-0 overflow-hidden">
+        <Card className="border-border/50">
           <CardHeader className="pb-2 pt-4 px-4">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
               AI Suggestions
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-4 pb-4 pt-0 space-y-2 min-w-0 overflow-hidden">
+          <CardContent className="px-4 pb-4 pt-0 space-y-2">
             <TooltipProvider>
               {suggestions.map((s) => {
                 const idx = s.originalIndex;
@@ -171,7 +171,7 @@ export function EnrichWithAI({ itemType, item, existingSuggestions, itemTitle, c
                 const isResultOpen = openResults.has(idx);
 
                 return (
-                  <div key={idx} className="relative border border-border/50 rounded-md p-3 space-y-2 min-w-0 overflow-hidden max-w-full">
+                  <div key={idx} className="relative border border-border/50 rounded-md p-3 space-y-2 min-w-0">
                     <div className="flex flex-col sm:flex-row sm:items-start gap-2 min-w-0">
                       <p className="text-sm text-foreground flex-1 leading-relaxed break-words min-w-0">
                         {s.suggestion}
@@ -263,7 +263,7 @@ export function EnrichWithAI({ itemType, item, existingSuggestions, itemTitle, c
                           </Button>
                         </CollapsibleTrigger>
                         <CollapsibleContent>
-                          <div className="mt-2 bg-muted/50 rounded-md p-3 min-w-0 max-w-full overflow-hidden">
+                          <div className="mt-2 bg-muted/50 rounded-md p-3">
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-xs font-medium text-muted-foreground">Result</span>
                               <Button
@@ -277,8 +277,7 @@ export function EnrichWithAI({ itemType, item, existingSuggestions, itemTitle, c
                               </Button>
                             </div>
                             <div
-                              className="ai-result-content text-sm text-foreground leading-relaxed prose-sm"
-                              style={{ width: 0, minWidth: '100%', overflow: 'hidden', overflowWrap: 'break-word', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}
+                              className="text-sm text-foreground leading-relaxed prose-sm"
                               dangerouslySetInnerHTML={{ __html: renderResultMarkdown(result!) }}
                             />
                           </div>

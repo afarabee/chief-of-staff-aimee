@@ -48,11 +48,11 @@ export function ResponsiveFormDialog({ open, onOpenChange, title, children }: Re
   if (isMobile) {
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="max-h-[90vh] w-full flex flex-col p-0 rounded-t-xl overflow-hidden [&>button:last-child]:hidden" style={{ maxHeight: '90dvh', maxWidth: '100vw' }} onOpenAutoFocus={(e) => e.preventDefault()}>
+        <SheetContent side="bottom" className="max-h-[90vh] w-full flex flex-col p-0 rounded-t-xl overflow-x-hidden [&>button:last-child]:hidden" style={{ maxHeight: '90dvh' }} onOpenAutoFocus={(e) => e.preventDefault()}>
           <SheetHeader className="flex-shrink-0 border-b px-4 py-3">
             <SheetTitle>{title}</SheetTitle>
           </SheetHeader>
-          <div ref={containerRef} tabIndex={-1} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 pb-8 box-border outline-none min-w-0" onFocus={handleFocus}>
+          <div ref={containerRef} tabIndex={-1} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 pb-8 box-border outline-none" onFocus={handleFocus}>
             {children}
           </div>
         </SheetContent>
@@ -62,7 +62,7 @@ export function ResponsiveFormDialog({ open, onOpenChange, title, children }: Re
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto overflow-hidden" style={{ maxWidth: '100vw' }}>
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
