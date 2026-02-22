@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Zap, ListPlus, X, Copy, Check, Loader2, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Zap, ListPlus, X, Copy, Check, Loader2, Eye, EyeOff, ChevronDown } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useAiEnrichment } from '@/hooks/useAiEnrichment';
 import { useUpdateEnrichmentSuggestion } from '@/hooks/useUpdateEnrichmentSuggestion';
@@ -10,6 +10,7 @@ import { usePageTitle } from '@/hooks/usePageTitle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from '@/hooks/use-toast';
 
 const typeBadge: Record<string, { label: string; className: string }> = {
@@ -178,18 +179,16 @@ export default function AiEnrichmentDetail() {
                       {isExecuting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
                       Execute
                     </Button>
-                    {enrichment.item_type === 'task' && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="gap-1.5"
-                        disabled={subtaskCreated}
-                        onClick={() => handleCreateSubtask(realIdx, s.suggestion)}
-                      >
-                        {subtaskCreated ? <Check className="h-3.5 w-3.5" /> : <ListPlus className="h-3.5 w-3.5" />}
-                        {subtaskCreated ? 'Created' : 'Subtask'}
-                      </Button>
-                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5"
+                      disabled={subtaskCreated}
+                      onClick={() => handleCreateSubtask(realIdx, s.suggestion)}
+                    >
+                      {subtaskCreated ? <Check className="h-3.5 w-3.5" /> : <ListPlus className="h-3.5 w-3.5" />}
+                      {subtaskCreated ? 'Created' : 'Create Task'}
+                    </Button>
                     <Button
                       size="sm"
                       variant="ghost"
@@ -202,29 +201,38 @@ export default function AiEnrichmentDetail() {
                   </div>
                 )}
 
-                {/* Executed result */}
+                {/* Executed result - collapsible */}
                 {s.status === 'executed' && s.result && (
-                  <div className="bg-muted/50 rounded-md p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-muted-foreground">Result</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => {
-                          navigator.clipboard.writeText(s.result!);
-                          toast({ title: 'Copied to clipboard' });
-                        }}
-                      >
-                        <Copy className="h-3 w-3" />
+                  <Collapsible>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground px-2 h-7">
+                        <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
+                        View result
                       </Button>
-                    </div>
-                    <div
-                      className="text-sm text-foreground leading-relaxed prose-sm"
-                      dangerouslySetInnerHTML={{ __html: renderResultMarkdown(s.result) }}
-                    />
-                  </div>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-2">
+                      <div className="bg-muted/50 rounded-md p-3 space-y-2">
+                        <div className="flex items-center justify-end">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => {
+                              navigator.clipboard.writeText(s.result!);
+                              toast({ title: 'Copied to clipboard' });
+                            }}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <div
+                          className="text-sm text-foreground leading-relaxed prose-sm"
+                          dangerouslySetInnerHTML={{ __html: renderResultMarkdown(s.result) }}
+                        />
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
                 )}
               </CardContent>
             </Card>

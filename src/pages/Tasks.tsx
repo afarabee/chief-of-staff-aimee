@@ -215,13 +215,6 @@ export default function Tasks() {
         <TaskForm
           task={editingTask}
           onClose={handleCloseForm}
-          onOpenTask={(taskId) => {
-            handleCloseForm();
-            const t = tasks.find((t) => t.id === taskId);
-            if (t) {
-              setTimeout(() => handleOpenForm(t), 100);
-            }
-          }}
         />
       </ResponsiveFormDialog>
 
