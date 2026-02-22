@@ -57,7 +57,6 @@ function taskToDbInsert(task: Omit<Task, 'id' | 'createdAt' | 'completedAt'>): T
     priority: task.priority,
     category_id: task.categoryId || null,
     image_url: task.imageUrl || null,
-    parent_task_id: (task as any).parentTaskId || null,
   };
 }
 
@@ -88,7 +87,6 @@ export function useTasks() {
       const { data, error } = await supabase
         .from('cos_tasks')
         .select('*')
-        .is('parent_task_id', null)
         .order('created_at', { ascending: false });
       
       if (error) throw error;

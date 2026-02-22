@@ -1,20 +1,15 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, Lightbulb, ListTree, Loader2, Sparkles, Trash2, Undo2 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { CalendarIcon, Lightbulb, Loader2, Sparkles, Trash2 } from 'lucide-react';
 import { useEnrichAndSave } from '@/hooks/useEnrichAndSave';
 import { Task, TaskStatus, TaskPriority } from '@/types';
 import { useApp } from '@/contexts/AppContext';
 import { useCategories } from '@/hooks/useCategories';
-import { useSubtasks } from '@/hooks/useSubtasks';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ImageUpload } from '@/components/ui/image-upload';
-import { Badge } from '@/components/ui/badge';
-import { ResponsiveFormDialog } from '@/components/ui/responsive-dialog';
 import {
   Select,
   SelectContent,
@@ -45,7 +40,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 interface TaskFormProps {
   task?: Task;
   onClose: () => void;
-  onOpenTask?: (taskId: string) => void;
 }
 
 const statusOptions: { value: TaskStatus; label: string }[] = [
@@ -71,7 +65,7 @@ const statusBadgeColors: Record<string, string> = {
   blocked: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
 };
 
-export function TaskForm({ task, onClose, onOpenTask }: TaskFormProps) {
+export function TaskForm({ task, onClose }: TaskFormProps) {
   const { addTask, updateTask, deleteTask, convertTaskToIdea } = useApp();
   const isMobile = useIsMobile();
   const { data: categories = [] } = useCategories();
@@ -82,68 +76,7 @@ export function TaskForm({ task, onClose, onOpenTask }: TaskFormProps) {
   const [priority, setPriority] = useState<TaskPriority>(task?.priority || 'medium');
   const [categoryId, setCategoryId] = useState<string | null>(task?.categoryId || null);
   const [imageUrl, setImageUrl] = useState<string | null>(task?.imageUrl || null);
-  const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   const { enrich, isEnriching } = useEnrichAndSave();
-
-  // Subtasks
-  const { data: subtasks = [] } = useSubtasks(task?.id);
-
-  // Parent task info
-  const { data: parentTask } = useQuery({
-    queryKey: ['parent-task', task?.parentTaskId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('cos_tasks')
-        .select('id, title')
-        .eq('id', task!.parentTaskId!)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!task?.parentTaskId,
-  });
-
-  // Full subtask data for nested editing
-  const { data: editingSubtaskData } = useQuery({
-    queryKey: ['subtask-detail', editingSubtaskId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('cos_tasks')
-        .select('*')
-        .eq('id', editingSubtaskId!)
-        .single();
-      if (error) throw error;
-
-      // Map to Task type
-      const normalizeStatus = (s: string | null): TaskStatus => {
-        if (!s) return 'to-do';
-        const lower = s.toLowerCase().replace(/\s+/g, '-');
-        const valid: TaskStatus[] = ['backlog', 'to-do', 'in-progress', 'blocked', 'done'];
-        return valid.includes(lower as TaskStatus) ? (lower as TaskStatus) : 'to-do';
-      };
-      const normalizePriority = (p: string | null): TaskPriority => {
-        if (!p) return 'medium';
-        const lower = p.toLowerCase();
-        const valid: TaskPriority[] = ['low', 'medium', 'high', 'urgent'];
-        return valid.includes(lower as TaskPriority) ? (lower as TaskPriority) : 'medium';
-      };
-
-      return {
-        id: data.id,
-        title: data.title,
-        description: data.description || '',
-        dueDate: data.due_date ? new Date(data.due_date) : null,
-        status: normalizeStatus(data.status),
-        priority: normalizePriority(data.priority),
-        categoryId: data.category_id || null,
-        createdAt: new Date(data.created_at || Date.now()),
-        completedAt: null,
-        imageUrl: data.image_url || null,
-        parentTaskId: data.parent_task_id || null,
-      } as Task;
-    },
-    enabled: !!editingSubtaskId,
-  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -165,23 +98,8 @@ export function TaskForm({ task, onClose, onOpenTask }: TaskFormProps) {
     onClose();
   };
 
-  return (
-    <>
+    return (
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Parent breadcrumb */}
-        {task?.parentTaskId && parentTask && (
-          <button
-            type="button"
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors"
-            onClick={() => {
-              onClose();
-              onOpenTask?.(parentTask.id);
-            }}
-          >
-            <Undo2 className="h-3 w-3" />
-            Subtask of: {parentTask.title}
-          </button>
-        )}
 
         <div className="space-y-2">
           <Label htmlFor="title">Title</Label>
@@ -303,34 +221,6 @@ export function TaskForm({ task, onClose, onOpenTask }: TaskFormProps) {
           </div>
         </div>
 
-        {/* Subtasks section */}
-        {task && subtasks.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <ListTree className="h-4 w-4" />
-              Subtasks
-            </div>
-            <div className="space-y-1">
-              {subtasks.map((st) => {
-                const normStatus = (st.status || 'to-do').toLowerCase().replace(/\s+/g, '-');
-                return (
-                  <button
-                    key={st.id}
-                    type="button"
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-md border border-border/50 hover:bg-accent/50 transition-colors text-left"
-                    onClick={() => setEditingSubtaskId(st.id)}
-                  >
-                    <span className="text-sm flex-1 truncate">{st.title}</span>
-                    <Badge variant="secondary" className={cn('text-[10px] px-1.5 py-0 h-5 shrink-0', statusBadgeColors[normStatus] || '')}>
-                      {normStatus}
-                    </Badge>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         <Button
           type="button"
           variant="outline"
@@ -433,25 +323,5 @@ export function TaskForm({ task, onClose, onOpenTask }: TaskFormProps) {
           </div>
         </div>
       </form>
-
-      {/* Nested subtask editing dialog */}
-      <ResponsiveFormDialog
-        open={!!editingSubtaskId && !!editingSubtaskData}
-        onOpenChange={(open) => { if (!open) setEditingSubtaskId(null); }}
-        title="Edit Subtask"
-      >
-        {editingSubtaskData && (
-          <TaskForm
-            task={editingSubtaskData}
-            onClose={() => setEditingSubtaskId(null)}
-            onOpenTask={(id) => {
-              setEditingSubtaskId(null);
-              // If navigating to parent, use the onOpenTask prop
-              onOpenTask?.(id);
-            }}
-          />
-        )}
-      </ResponsiveFormDialog>
-    </>
   );
 }

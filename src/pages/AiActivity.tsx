@@ -1,11 +1,26 @@
 import { useNavigate } from 'react-router-dom';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAiEnrichments } from '@/hooks/useAiEnrichments';
 import { usePageTitle } from '@/hooks/usePageTitle';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { toast } from '@/hooks/use-toast';
 import { useState } from 'react';
 
 const typeBadge: Record<string, { label: string; className: string }> = {
@@ -14,11 +29,29 @@ const typeBadge: Record<string, { label: string; className: string }> = {
   reminder: { label: 'Reminder', className: 'bg-chart-2/20 text-chart-2 border-chart-2/30' },
 };
 
+function useDeleteEnrichment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('ai_enrichments').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ai-enrichments'] });
+      toast({ title: 'Enrichment deleted' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Failed to delete', description: error.message, variant: 'destructive' });
+    },
+  });
+}
+
 export default function AiActivity() {
   usePageTitle('AI Activity');
   const [filter, setFilter] = useState('all');
   const { data: enrichments = [], isLoading } = useAiEnrichments(filter);
   const navigate = useNavigate();
+  const deleteEnrichment = useDeleteEnrichment();
 
   return (
     <div className="space-y-6">
@@ -75,6 +108,32 @@ export default function AiActivity() {
                     <span className="text-xs text-muted-foreground shrink-0">
                       {e.created_at ? formatDistanceToNow(new Date(e.created_at), { addSuffix: true }) : ''}
                     </span>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                          onClick={(ev) => ev.stopPropagation()}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent onClick={(ev) => ev.stopPropagation()}>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete this enrichment?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently remove this enrichment record and all its suggestions.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => deleteEnrichment.mutate(e.id)}>
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">{summary}</p>
                 </CardContent>
