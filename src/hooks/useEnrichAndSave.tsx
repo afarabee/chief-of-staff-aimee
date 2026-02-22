@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 
 interface EnrichAndSaveParams {
   itemType: 'task' | 'idea' | 'reminder';
@@ -86,6 +87,7 @@ export function useEnrichAndSave() {
       toast({
         title: 'Enrichment complete!',
         description: `${formattedSuggestions.length} suggestions generated`,
+        action: <ToastAction altText="View AI Activity" onClick={() => { window.location.href = '/ai-activity'; }}>View</ToastAction>,
       });
 
       // Close modal if new item
