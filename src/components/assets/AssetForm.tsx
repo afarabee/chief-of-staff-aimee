@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, Trash2 } from 'lucide-react';
+import { CalendarIcon, Loader2, Sparkles, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,8 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { useAssetCategories, useCreateAsset, useUpdateAsset, useDeleteAsset } from '@/hooks/useAssets';
+import { useEnrichAndSave } from '@/hooks/useEnrichAndSave';
+import { supabase } from '@/integrations/supabase/client';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,6 +54,7 @@ export function AssetForm({ asset, onClose }: AssetFormProps) {
   const createAsset = useCreateAsset();
   const updateAsset = useUpdateAsset();
   const deleteAssetMutation = useDeleteAsset();
+  const { enrich, isEnriching } = useEnrichAndSave();
   const isPending = createAsset.isPending || updateAsset.isPending;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -136,6 +139,61 @@ export function AssetForm({ asset, onClose }: AssetFormProps) {
         <Label htmlFor="asset-notes">Notes</Label>
         <Textarea id="asset-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
       </div>
+
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full gap-2"
+        disabled={isEnriching || !name.trim()}
+        onClick={() => {
+          const categoryObj = categories.find((c) => c.id === categoryId);
+          const itemData = {
+            name: name.trim(),
+            description: description.trim() || null,
+            category: categoryObj?.name || null,
+            purchase_date: purchaseDate ? format(purchaseDate, 'yyyy-MM-dd') : null,
+            notes: notes.trim() || null,
+          };
+          enrich({
+            itemType: 'asset',
+            itemTitle: name.trim(),
+            itemData,
+            itemId: asset?.id,
+            onSaveNew: async () => {
+              const payload = {
+                name: name.trim(),
+                category_id: categoryId || null,
+                description: description.trim() || null,
+                purchase_date: purchaseDate ? format(purchaseDate, 'yyyy-MM-dd') : null,
+                notes: notes.trim() || null,
+              };
+              const { data, error } = await supabase
+                .from('assets')
+                .insert(payload)
+                .select('id')
+                .single();
+              if (error) throw error;
+              return data.id;
+            },
+            onSaveExisting: async () => {
+              if (asset) {
+                updateAsset.mutate({
+                  id: asset.id,
+                  name: name.trim(),
+                  category_id: categoryId || null,
+                  description: description.trim() || null,
+                  purchase_date: purchaseDate ? format(purchaseDate, 'yyyy-MM-dd') : null,
+                  notes: notes.trim() || null,
+                });
+              }
+            },
+            onClose,
+          });
+        }}
+      >
+        {isEnriching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+        {isEnriching ? 'Enriching...' : 'Enrich with AI'}
+      </Button>
 
       <div className="flex justify-between pt-2">
         {isEdit && (

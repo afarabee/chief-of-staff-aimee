@@ -27,6 +27,7 @@ const typeBadge: Record<string, { label: string; className: string }> = {
   task: { label: 'Task', className: 'bg-primary/10 text-primary border-primary/20' },
   idea: { label: 'Idea', className: 'bg-chart-4/20 text-chart-4 border-chart-4/30' },
   reminder: { label: 'Reminder', className: 'bg-chart-2/20 text-chart-2 border-chart-2/30' },
+  asset: { label: 'Asset', className: 'bg-chart-1/20 text-chart-1 border-chart-1/30' },
 };
 
 function useDeleteEnrichment() {
@@ -66,6 +67,7 @@ export default function AiActivity() {
           <TabsTrigger value="task">Tasks</TabsTrigger>
           <TabsTrigger value="idea">Ideas</TabsTrigger>
           <TabsTrigger value="reminder">Reminders</TabsTrigger>
+          <TabsTrigger value="asset">Assets</TabsTrigger>
         </TabsList>
       </Tabs>
 
