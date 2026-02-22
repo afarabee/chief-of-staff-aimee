@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,8 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-function parseGeminiJsonResponse(text: string): Array<{ suggestion: string }> {
-  // Strip markdown code fences if present
+function parseGeminiJsonResponse(text: string): Array<Record<string, any>> {
   let cleaned = text.trim();
   cleaned = cleaned.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "");
 
@@ -21,7 +19,6 @@ function parseGeminiJsonResponse(text: string): Array<{ suggestion: string }> {
     // Fall back to splitting numbered lines
   }
 
-  // Fallback: split by numbered lines
   const lines = text.split(/\n/).filter((l) => l.trim());
   const suggestions: Array<{ suggestion: string }> = [];
   for (const line of lines) {
@@ -31,6 +28,76 @@ function parseGeminiJsonResponse(text: string): Array<{ suggestion: string }> {
     }
   }
   return suggestions.length > 0 ? suggestions : [{ suggestion: text.trim() }];
+}
+
+function buildAssetPrompt(item: Record<string, any>): string {
+  const name = item.title || item.name || "Untitled";
+  const category = item.category || "None";
+  const description = item.description || "None";
+  const notes = item.notes || "None";
+  const purchaseDate = item.purchase_date || "Unknown";
+  const providers = item.linked_providers || "None";
+  const existingTasks = item.existing_tasks || "None";
+  const today = new Date().toISOString().split("T")[0];
+
+  return `You are a home and property maintenance expert. Given an asset, suggest specific maintenance tasks with recommended frequencies and due dates. Only suggest things that have a recurring schedule or a deadline. Do NOT suggest general advice or tips. Each suggestion must be a specific actionable maintenance event.
+
+Asset name: ${name}
+Category: ${category}
+Description: ${description}
+Notes: ${notes}
+Purchase date: ${purchaseDate}
+Linked service providers: ${providers}
+Existing maintenance tasks: ${existingTasks}
+
+Format each suggestion as a JSON object with:
+- "suggestion": what to do (specific maintenance action)
+- "frequency": how often (e.g. "Every 3 years", "Annually", "Every 6 months")
+- "recommended_due_date": next due date in YYYY-MM-DD format, starting from today's date which is ${today}
+
+Return 3-7 suggestions depending on the asset type. Return ONLY a JSON array, no other text.
+
+Example:
+[
+  { "suggestion": "Pump septic tank", "frequency": "Every 3 years", "recommended_due_date": "2026-06-01" },
+  { "suggestion": "Inspect septic tank baffles", "frequency": "Annually", "recommended_due_date": "2026-09-01" }
+]`;
+}
+
+function buildDefaultPrompt(item_type: string, item: Record<string, any>): string {
+  const title = item.title || item.name || "Untitled";
+  const description = item.description || item.notes || "None";
+  const status = item.status || "None";
+  const priority = item.priority || "None";
+  const dueDate = item.due_date || item.next_due_date || "None";
+  const recurrence = item.recurrence_rule || "None";
+
+  return `You are a personal AI assistant helping someone manage their life. You've been given a single item from their task/idea/reminder list. Your job is to suggest 3-5 specific, actionable things that an AI assistant (like Claude) could do RIGHT NOW to help them complete or advance this item.
+
+Item type: ${item_type}
+Title: ${title}
+Description: ${description}
+Status: ${status}
+Priority: ${priority}
+Due date: ${dueDate}
+Recurrence: ${recurrence}
+
+Each suggestion should:
+- Start with a clear action verb (Draft, Research, Create, Compare, Summarize, Find, Write, Build, Outline, Calculate, etc.)
+- Be specific to THIS item, not generic advice
+- Describe something an AI can actually do (not physical tasks)
+- Be 1-2 sentences max
+
+Do NOT include:
+- Generic suggestions like "Set a reminder" or "Break this into subtasks" (they already have a task system)
+- Physical actions the AI can't do
+- Suggestions to use other apps or tools
+
+Respond ONLY with a JSON array of objects. Each object has a single "suggestion" field containing the suggestion text. Example:
+[
+  { "suggestion": "Draft a comparison table of the top 3 pet insurance providers with monthly costs, coverage limits, and exclusions." },
+  { "suggestion": "Write a cancellation email template for the n8n subscription, including a request for confirmation." }
+]`;
 }
 
 serve(async (req) => {
@@ -57,39 +124,9 @@ serve(async (req) => {
       });
     }
 
-    const title = item.title || item.name || "Untitled";
-    const description = item.description || item.notes || "None";
-    const status = item.status || "None";
-    const priority = item.priority || "None";
-    const dueDate = item.due_date || item.next_due_date || "None";
-    const recurrence = item.recurrence_rule || "None";
-
-    const prompt = `You are a personal AI assistant helping someone manage their life. You've been given a single item from their task/idea/reminder list. Your job is to suggest 3-5 specific, actionable things that an AI assistant (like Claude) could do RIGHT NOW to help them complete or advance this item.
-
-Item type: ${item_type}
-Title: ${title}
-Description: ${description}
-Status: ${status}
-Priority: ${priority}
-Due date: ${dueDate}
-Recurrence: ${recurrence}
-
-Each suggestion should:
-- Start with a clear action verb (Draft, Research, Create, Compare, Summarize, Find, Write, Build, Outline, Calculate, etc.)
-- Be specific to THIS item, not generic advice
-- Describe something an AI can actually do (not physical tasks)
-- Be 1-2 sentences max
-
-Do NOT include:
-- Generic suggestions like "Set a reminder" or "Break this into subtasks" (they already have a task system)
-- Physical actions the AI can't do
-- Suggestions to use other apps or tools
-
-Respond ONLY with a JSON array of objects. Each object has a single "suggestion" field containing the suggestion text. Example:
-[
-  { "suggestion": "Draft a comparison table of the top 3 pet insurance providers with monthly costs, coverage limits, and exclusions." },
-  { "suggestion": "Write a cancellation email template for the n8n subscription, including a request for confirmation." }
-]`;
+    const prompt = item_type === "asset"
+      ? buildAssetPrompt(item)
+      : buildDefaultPrompt(item_type, item);
 
     const geminiRes = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
@@ -125,7 +162,6 @@ Respond ONLY with a JSON array of objects. Each object has a single "suggestion"
     const suggestionsArray = parseGeminiJsonResponse(rawText);
     const suggestionsJson = JSON.stringify(suggestionsArray);
 
-    // Return suggestions to frontend — storage in ai_enrichments is handled client-side
     return new Response(JSON.stringify({ suggestions: suggestionsJson }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

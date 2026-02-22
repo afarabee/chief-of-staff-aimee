@@ -16,7 +16,7 @@ export function useAiEnrichment(id: string | undefined) {
       return {
         ...data,
         suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
-      } as AiEnrichmentRow;
+      } as unknown as AiEnrichmentRow;
     },
   });
 }

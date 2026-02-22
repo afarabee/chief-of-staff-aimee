@@ -4,10 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface UpdateParams {
   enrichmentId: string;
   suggestionIndex: number;
-  updates: {
-    status?: 'pending' | 'executed' | 'dismissed';
-    result?: string | null;
-  };
+  updates: Record<string, any>;
 }
 
 export function useUpdateEnrichmentSuggestion() {

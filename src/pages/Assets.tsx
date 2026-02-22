@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { format, parseISO, isPast, isToday } from 'date-fns';
 import { icons } from 'lucide-react';
-import { ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, Circle, Package, Pencil, Plus, Repeat, Trash2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, Circle, Loader2, Package, Pencil, Plus, Repeat, Sparkles, Trash2 } from 'lucide-react';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useAssets, useDeleteAsset, useUpdateAsset } from '@/hooks/useAssets';
 import { useAssetMaintenanceTasks, useCompleteMaintenanceTask } from '@/hooks/useMaintenanceTasks';
@@ -31,6 +31,8 @@ import type { Asset } from '@/types/assets';
 import { useEffect } from 'react';
 import type { MaintenanceTask } from '@/types/maintenance';
 import { LinkedProvidersSection } from '@/components/links/LinkedProvidersSection';
+import { useEnrichAndSave } from '@/hooks/useEnrichAndSave';
+import { useAssetProviders } from '@/hooks/useAssetProviders';
 
 function AssetTasksSection({ assetId, showOnKanban }: { assetId: string; showOnKanban: boolean }) {
   const { data: tasks = [] } = useAssetMaintenanceTasks(assetId);
@@ -173,6 +175,29 @@ export default function Assets() {
   }, {});
   const groups = Object.values(grouped).sort((a, b) => a.name.localeCompare(b.name));
 
+  const { enrich, isEnriching } = useEnrichAndSave();
+  const { data: linkedProviders = [] } = useAssetProviders(view === 'detail' && selectedAsset ? selectedAsset.id : undefined);
+  const { data: maintenanceTasks = [] } = useAssetMaintenanceTasks(view === 'detail' && selectedAsset ? selectedAsset.id : undefined);
+
+  const handleEnrichAsset = (asset: Asset) => {
+    const providerNames = linkedProviders.map((p) => p.name).join(', ') || 'None';
+    const taskNames = maintenanceTasks.map((t) => t.name).join(', ') || 'None';
+    enrich({
+      itemType: 'asset',
+      itemTitle: asset.name,
+      itemId: asset.id,
+      itemData: {
+        name: asset.name,
+        category: asset.categoryName || 'None',
+        description: asset.description || '',
+        notes: asset.notes || '',
+        purchase_date: asset.purchaseDate || 'Unknown',
+        linked_providers: providerNames,
+        existing_tasks: taskNames,
+      },
+    });
+  };
+
   if (view === 'detail' && selectedAsset) {
     const fresh = assets.find((a) => a.id === selectedAsset.id) ?? selectedAsset;
     return (
@@ -185,6 +210,16 @@ export default function Assets() {
             <h1 className="text-2xl font-bold text-foreground">{fresh.name}</h1>
           </div>
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              disabled={isEnriching}
+              onClick={() => handleEnrichAsset(fresh)}
+            >
+              {isEnriching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {isEnriching ? 'Enriching...' : 'Enrich with AI'}
+            </Button>
             <Button variant="outline" size="icon" onClick={() => openEdit(fresh)}>
               <Pencil className="h-4 w-4" />
             </Button>
