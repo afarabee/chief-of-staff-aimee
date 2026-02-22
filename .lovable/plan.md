@@ -1,194 +1,128 @@
 
 
-# AI Enrichment Redesign: Move Suggestions to Dedicated Pages
+# Add AI Enrichment to Assets
 
 ## Overview
-Move all AI suggestion interaction out of edit modals into a dedicated enrichment record system. The `ai_enrichments` table stores enrichment sessions, and a new detail page at `/ai-activity/:id` provides full suggestion management (execute, dismiss, create subtask). Edit forms keep only a simple "Enrich with AI" button.
+Add asset-specific AI enrichment that generates maintenance schedules with frequencies and due dates, displayed differently from task/idea enrichments on the detail page.
 
 ---
 
-## Part A: Remove AI Suggestion UI from Edit Modals
+## Part A: "Enrich with AI" button on asset detail view
 
-### `src/components/tasks/TaskForm.tsx`
-- Remove imports of `EnrichWithAI` and `AiHistorySection`
-- Remove the block rendering `<EnrichWithAI>` and `<AiHistorySection>` (lines 335-346)
-- Add a simple "Enrich with AI" button (Sparkles icon) that triggers the new enrichment flow (see Part B)
-- The button should appear in both create and edit modes
+### `src/pages/Assets.tsx`
+- Add a Sparkles button next to the Edit and Delete buttons in the detail view header (line 187-210)
+- Use the `useEnrichAndSave` hook (or a simplified version since assets don't need auto-save -- they already exist)
+- Show loading state ("Enriching...") with Loader2 spinner
+- The button calls the enrich flow with `item_type: "asset"` and passes full asset context (category, notes, purchase date, description)
+- Fetch linked providers and maintenance tasks to include in the enrichment context
+- Toast: "AI is analyzing this asset..." while working, success toast with "View" action
 
-### `src/components/ideas/IdeaForm.tsx`
-- Remove imports of `EnrichWithAI` and `AiHistorySection`
-- Remove the block rendering them
-- Add the same "Enrich with AI" button
+### New hook or inline logic
+Since assets are always enriched from the detail view (they already exist in DB, no auto-save needed), the flow is simpler:
+1. Call `enrich-item` edge function with `item_type: "asset"` and full context
+2. Parse returned suggestions (which now include `frequency` and `recommended_due_date`)
+3. Insert into `ai_enrichments` with formatted suggestions
+4. Show toast with "View" action
 
-### `src/components/maintenance/MaintenanceTaskForm.tsx`
-- Same removal and replacement
+This can reuse `useEnrichAndSave` by passing `itemId` (existing asset) with no `onSaveExisting` (skip the save step), or we can create a small `useEnrichAsset` wrapper. The simplest approach: call `useEnrichAndSave.enrich()` with `itemType: 'asset'`, `itemId: asset.id`, and no save callbacks.
 
----
-
-## Part B: New "Enrich with AI" Button Behavior
-
-### New hook: `src/hooks/useEnrichAndSave.ts`
-This hook orchestrates the full enrichment flow:
-
-1. **Auto-save the item first:**
-   - Accepts current form values + item type + optional existing item ID
-   - If new (no ID): calls the appropriate create mutation (`cos_tasks`, `cos_ideas`, or `tasks`) and captures the returned ID
-   - If existing: calls the appropriate update mutation silently
-
-2. **Call the `enrich-item` Edge Function** (existing) to get suggestions from Gemini
-
-3. **Insert into `ai_enrichments`** with:
-   - `item_type`, `item_id`, `item_title`
-   - `suggestions`: JSONB array with `{ suggestion, status: "pending", result: null }` for each
-
-4. **Toast sequence:**
-   - Loading toast: "AI is working on it..."
-   - Success toast with "View" action button navigating to `/ai-activity`
-   - Error toast on failure
-
-5. **Post-success behavior:**
-   - If new item: close the modal (call `onClose`)
-   - If existing: user stays in the form
-   - Invalidate `['ai-enrichments']` cache
-
-### Update `enrich-item` Edge Function
-- Stop writing suggestions to the item's `ai_suggestions` column (remove the DB update portion, lines 144-155)
-- Just return the generated suggestions array -- the frontend will save to `ai_enrichments` instead
-
-### Each form integration
-- Import `useEnrichAndSave` and `useNavigate`
-- Add state: `isEnriching`
-- Render button:
-  ```
-  <Button onClick={handleEnrich} disabled={isEnriching || !title.trim()}>
-    {isEnriching ? <Loader2 spinning /> : <Sparkles />}
-    {isEnriching ? "Enriching..." : "Enrich with AI"}
-  </Button>
-  ```
-- `handleEnrich` calls the hook, passing current form values
+**Update `useEnrichAndSave.tsx`:**
+- Expand `itemType` union to include `'asset'`
+- Make `onSaveNew` and `onSaveExisting` optional (already are)
+- For assets, skip auto-save step when no callbacks are provided and `itemId` exists
+- Change loading toast for assets: "AI is analyzing this asset..."
+- When formatting suggestions for assets, preserve `frequency` and `recommended_due_date` fields
 
 ---
 
-## Part C: Update the AI Activity List Page
+## Part B: Asset-specific enrichment in `useEnrichAndSave`
 
-### `src/pages/AiActivity.tsx` -- Full rewrite
-- Fetch from `ai_enrichments` instead of `ai_executions`
-- Each card shows:
-  - Item type badge (Task=blue, Idea=purple, Reminder=orange)
-  - Item title
-  - Relative timestamp
-  - Suggestion summary: "5 suggestions (2 executed, 1 dismissed)"
-  - Click navigates to `/ai-activity/:id`
-- Filter tabs: "All", "Tasks", "Ideas", "Reminders"
-- Empty state preserved
-
-### New hook: `src/hooks/useAiEnrichments.ts`
-- `useAiEnrichments(filter?)` -- query key `['ai-enrichments', filter]`
-- Fetches from `ai_enrichments`, ordered by `created_at` desc, limit 50
-- Optional `item_type` filter
+### `src/hooks/useEnrichAndSave.tsx`
+- Change `itemType` type from `'task' | 'idea' | 'reminder'` to `'task' | 'idea' | 'reminder' | 'asset'`
+- When `itemType === 'asset'`, use a different loading toast message
+- When formatting suggestions, detect asset suggestions (they have `frequency`/`recommended_due_date`) and preserve those fields in the JSONB
 
 ---
 
-## Part D: Enrichment Detail Page
+## Part C: Update `enrich-item` Edge Function
 
-### New page: `src/pages/AiEnrichmentDetail.tsx`
-- Route: `/ai-activity/:id`
-- Back link: "Back to AI Activity"
-- Header: type badge + item title + timestamp
-- "View original [task/idea/reminder]" link -- navigates to the item's edit page
+### `supabase/functions/enrich-item/index.ts`
+- Add a branch: when `item_type === "asset"`, use a different Gemini prompt
+- The asset prompt asks for maintenance tasks with `frequency` and `recommended_due_date`
+- Update `parseGeminiJsonResponse` to also handle asset-format responses (objects with `suggestion`, `frequency`, `recommended_due_date`)
+- Return the raw parsed array (the frontend handles formatting)
 
-**Suggestions list -- each as a card:**
-- Full suggestion text
-- Status: pending (gray), executed (green check), dismissed (hidden by default, toggle to show)
-- **Pending actions:**
-  - Execute (Zap): calls `execute-suggestion` Edge Function, updates suggestion status to "executed" and saves result in JSONB
-  - Create Subtask (ListPlus): creates `cos_tasks` with `parent_task_id` (if task), shows toast
-  - Dismiss (X): sets status to "dismissed" in JSONB
-- **Executed display:** result text in styled container + Copy button
+Asset prompt (simplified):
+```
+You are a home and property maintenance expert. Given an asset, suggest specific 
+maintenance tasks with recommended frequencies and due dates. Only suggest things 
+that have a recurring schedule or deadline. Each suggestion must be a specific 
+actionable maintenance event. Format as JSON with: "suggestion", "frequency" 
+(e.g. "Every 3 years"), and "recommended_due_date" (YYYY-MM-DD). Return 3-7 
+suggestions. Return ONLY a JSON array.
+```
 
-### New hook: `src/hooks/useAiEnrichment.ts`
-- `useAiEnrichment(id)` -- query key `['ai-enrichment', id]`
-- Single row fetch from `ai_enrichments`
-
-### New hook: `src/hooks/useUpdateEnrichmentSuggestion.ts`
-- Mutation that reads current `suggestions` JSONB, updates one by index, writes back
-- Invalidates `['ai-enrichment', enrichmentId]` and `['ai-enrichments']`
+The item context will include: asset name, category, description, notes, purchase date, linked provider names, and existing maintenance task names.
 
 ---
 
-## Part E: Router and Navigation Updates
+## Part D: Asset enrichment detail page
 
-### `src/App.tsx`
-- Add route: `<Route path="/ai-activity/:id" element={<AiEnrichmentDetail />} />`
-- Keep existing `/ai-activity` route
+### `src/pages/AiEnrichmentDetail.tsx`
+- Add `asset` to the `typeBadge` map with a green style
+- When `enrichment.item_type === 'asset'`, render suggestion cards differently:
+  - Bold suggestion text (maintenance task name)
+  - Frequency badge (e.g., "Every 3 years")
+  - Formatted recommended due date (e.g., "Jun 1, 2026")
+  - Status: pending (gray), accepted (green check), dismissed (hidden)
+- Action buttons for asset suggestions:
+  - **Edit** (Pencil icon): Makes suggestion text, frequency, and date editable inline. Save/Cancel buttons. Updates JSONB on save.
+  - **Accept** (Check icon): Sets status to "accepted" in JSONB
+  - **Dismiss** (X icon): Sets status to "dismissed"
+  - NO Execute button, NO Create Task button
+- For non-asset enrichments, keep existing behavior (Execute, Create Task, Dismiss)
 
-### Sidebar remains unchanged (already has AI Activity link)
-
----
-
-## Part F: Clean Up Old Code
-
-### Remove or stop using:
-- `src/components/ai/EnrichWithAI.tsx` -- delete entirely (no longer rendered anywhere)
-- `src/components/ai/AiHistorySection.tsx` -- delete (history is now on the AI Activity page)
-- `src/hooks/useDismissSuggestion.ts` -- delete (dismissal now updates `ai_enrichments` JSONB)
-- `src/hooks/useEnrichItem.ts` -- keep but simplify (still calls the Edge Function, but no longer writes to item's `ai_suggestions`)
-- `src/hooks/useAiExecutions.ts` -- delete (replaced by enrichments-based views)
-- `src/hooks/useAllAiExecutions.ts` -- delete (replaced by `useAiEnrichments`)
-- `src/lib/parseSuggestions.ts` -- delete (no longer needed; suggestions are JSONB)
-
-### Keep:
-- `enrich-item` Edge Function (generates suggestions)
-- `execute-suggestion` Edge Function (executes suggestions + logs to `ai_executions`)
-- `ai_executions` table (append-only logging)
-- `useExecuteSuggestion` hook (reused in detail page)
-- `useCreateSubtask` hook (reused in detail page)
-
-### Stop reading/writing `ai_suggestions` column:
-- `useTasks.ts`: remove `aiSuggestions` from `dbTaskToTask` and `taskToDbInsert`
-- `useIdeas.ts`: same
-- `useMaintenanceTasks.ts`: remove `aiSuggestions` from `mapRow`
-- `src/types/index.ts`: remove `aiSuggestions` from `Task` and `Idea` interfaces
-- `src/types/maintenance.ts`: remove `aiSuggestions` from `MaintenanceTask` interface
-- `src/contexts/AppContext.tsx`: remove `aiSuggestions` from conversion functions
+### Inline editing state
+- Track `editingIdx` state (which suggestion index is being edited)
+- When editing, show Input fields for suggestion text, frequency, and a date picker for due date
+- Save button calls `useUpdateEnrichmentSuggestion` to update the suggestion object
+- Cancel reverts to read-only
 
 ---
 
-## New Files Summary
+## Part E: Update AI Activity list page
 
-| File | Purpose |
+### `src/pages/AiActivity.tsx`
+- Add "Assets" tab to the filter TabsList
+- Add `asset` to the `typeBadge` map with green styling
+- For asset enrichments, the summary should show "accepted" count instead of "executed"
+
+---
+
+## Technical Details
+
+### Files to modify:
+| File | Changes |
 |------|---------|
-| `src/hooks/useEnrichAndSave.ts` | Orchestrates save-then-enrich-then-store flow |
-| `src/hooks/useAiEnrichments.ts` | List all enrichments (for activity page) |
-| `src/hooks/useAiEnrichment.ts` | Fetch single enrichment (for detail page) |
-| `src/hooks/useUpdateEnrichmentSuggestion.ts` | Update a suggestion's status/result in JSONB |
-| `src/pages/AiEnrichmentDetail.tsx` | Full enrichment detail page with suggestion actions |
+| `supabase/functions/enrich-item/index.ts` | Add asset-specific prompt branch and context handling |
+| `src/hooks/useEnrichAndSave.tsx` | Expand type union to include 'asset', handle asset-specific toast text, preserve frequency/date fields |
+| `src/pages/Assets.tsx` | Add Sparkles button to detail view, wire up enrichment flow |
+| `src/pages/AiEnrichmentDetail.tsx` | Add asset badge, asset-specific card rendering with frequency/date, inline editing, Accept button |
+| `src/pages/AiActivity.tsx` | Add "Assets" filter tab and badge |
+| `src/hooks/useAiEnrichments.ts` | No changes needed (already generic) |
+| `src/hooks/useUpdateEnrichmentSuggestion.ts` | No changes needed (already updates arbitrary fields in suggestion objects) |
 
-## Modified Files Summary
+### Suggestion JSONB format for assets:
+```json
+{
+  "suggestion": "Pump septic tank",
+  "frequency": "Every 3 years",
+  "recommended_due_date": "2026-06-01",
+  "status": "pending",
+  "result": null
+}
+```
 
-| File | Change |
-|------|--------|
-| `src/components/tasks/TaskForm.tsx` | Remove EnrichWithAI/AiHistory, add simple enrich button |
-| `src/components/ideas/IdeaForm.tsx` | Same |
-| `src/components/maintenance/MaintenanceTaskForm.tsx` | Same |
-| `src/pages/AiActivity.tsx` | Rewrite to show `ai_enrichments` records |
-| `src/App.tsx` | Add `/ai-activity/:id` route |
-| `supabase/functions/enrich-item/index.ts` | Remove DB update to `ai_suggestions` column |
-| `src/hooks/useTasks.ts` | Remove `aiSuggestions` mapping |
-| `src/hooks/useIdeas.ts` | Remove `aiSuggestions` mapping |
-| `src/hooks/useMaintenanceTasks.ts` | Remove `aiSuggestions` mapping |
-| `src/types/index.ts` | Remove `aiSuggestions` from interfaces |
-| `src/types/maintenance.ts` | Remove `aiSuggestions` from interface |
-| `src/contexts/AppContext.tsx` | Remove `aiSuggestions` from conversion |
-
-## Deleted Files
-
-| File | Reason |
-|------|--------|
-| `src/components/ai/EnrichWithAI.tsx` | Replaced by detail page |
-| `src/components/ai/AiHistorySection.tsx` | Replaced by AI Activity page |
-| `src/hooks/useDismissSuggestion.ts` | Replaced by `useUpdateEnrichmentSuggestion` |
-| `src/hooks/useAiExecutions.ts` | Replaced by `useAiEnrichments` |
-| `src/hooks/useAllAiExecutions.ts` | Replaced by `useAiEnrichments` |
-| `src/lib/parseSuggestions.ts` | No longer needed (JSONB native) |
+### No database changes required
+The `ai_enrichments` table already supports this -- `suggestions` is JSONB and `item_type` is text, so storing "asset" and extra fields in the suggestion objects works without schema changes.
 
