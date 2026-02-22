@@ -5,11 +5,11 @@ import { toast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 
 interface EnrichAndSaveParams {
-  itemType: 'task' | 'idea' | 'reminder';
+  itemType: 'task' | 'idea' | 'reminder' | 'asset';
   itemTitle: string;
   itemData: Record<string, any>;
   itemId?: string;
-  onSaveNew?: () => Promise<string>; // returns new ID
+  onSaveNew?: () => Promise<string>;
   onSaveExisting?: () => Promise<void>;
   onClose?: () => void;
 }
@@ -29,12 +29,12 @@ export function useEnrichAndSave() {
   }: EnrichAndSaveParams) => {
     setIsEnriching(true);
     const loadingToastId = toast({
-      title: 'AI is working on it...',
-      description: 'Generating suggestions',
+      title: itemType === 'asset' ? 'AI is analyzing this asset...' : 'AI is working on it...',
+      description: itemType === 'asset' ? 'Generating maintenance suggestions' : 'Generating suggestions',
     });
 
     try {
-      // Step 1: Auto-save
+      // Step 1: Auto-save (skip for assets — they already exist)
       let resolvedId = itemId;
       if (!resolvedId && onSaveNew) {
         resolvedId = await onSaveNew();
@@ -62,10 +62,13 @@ export function useEnrichAndSave() {
         ? JSON.parse(data.suggestions)
         : data.suggestions;
 
-      const formattedSuggestions = (rawSuggestions as Array<{ suggestion: string }>).map((s) => ({
+      // Format suggestions — preserve asset-specific fields
+      const formattedSuggestions = (rawSuggestions as Array<Record<string, any>>).map((s) => ({
         suggestion: s.suggestion,
         status: 'pending' as const,
         result: null as string | null,
+        ...(s.frequency ? { frequency: s.frequency } : {}),
+        ...(s.recommended_due_date ? { recommended_due_date: s.recommended_due_date } : {}),
       }));
 
       // Step 3: Insert into ai_enrichments
@@ -81,7 +84,6 @@ export function useEnrichAndSave() {
       // Step 4: Invalidate & toast
       queryClient.invalidateQueries({ queryKey: ['ai-enrichments'] });
 
-      // Dismiss loading toast
       loadingToastId.dismiss?.();
 
       toast({

@@ -1,16 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface AiEnrichmentSuggestion {
+  suggestion: string;
+  status: 'pending' | 'executed' | 'dismissed' | 'accepted';
+  result: string | null;
+  frequency?: string;
+  recommended_due_date?: string;
+}
+
 export interface AiEnrichmentRow {
   id: string;
   item_type: string;
   item_id: string;
   item_title: string;
-  suggestions: Array<{
-    suggestion: string;
-    status: 'pending' | 'executed' | 'dismissed';
-    result: string | null;
-  }>;
+  suggestions: AiEnrichmentSuggestion[];
   created_at: string | null;
 }
 
@@ -33,7 +37,7 @@ export function useAiEnrichments(filter?: string) {
       return (data ?? []).map((row) => ({
         ...row,
         suggestions: Array.isArray(row.suggestions) ? row.suggestions : [],
-      })) as AiEnrichmentRow[];
+      })) as unknown as AiEnrichmentRow[];
     },
   });
 }

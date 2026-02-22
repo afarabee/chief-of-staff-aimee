@@ -27,6 +27,7 @@ const typeBadge: Record<string, { label: string; className: string }> = {
   task: { label: 'Task', className: 'bg-primary/10 text-primary border-primary/20' },
   idea: { label: 'Idea', className: 'bg-chart-4/20 text-chart-4 border-chart-4/30' },
   reminder: { label: 'Reminder', className: 'bg-chart-2/20 text-chart-2 border-chart-2/30' },
+  asset: { label: 'Asset', className: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/25' },
 };
 
 function useDeleteEnrichment() {
@@ -66,6 +67,7 @@ export default function AiActivity() {
           <TabsTrigger value="task">Tasks</TabsTrigger>
           <TabsTrigger value="idea">Ideas</TabsTrigger>
           <TabsTrigger value="reminder">Reminders</TabsTrigger>
+          <TabsTrigger value="asset">Assets</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -87,11 +89,13 @@ export default function AiActivity() {
             const badge = typeBadge[e.item_type] || typeBadge.task;
             const total = e.suggestions.length;
             const executed = e.suggestions.filter((s) => s.status === 'executed').length;
+            const accepted = e.suggestions.filter((s) => s.status === 'accepted').length;
             const dismissed = e.suggestions.filter((s) => s.status === 'dismissed').length;
 
             let summary = `${total} suggestion${total !== 1 ? 's' : ''}`;
             const parts: string[] = [];
             if (executed > 0) parts.push(`${executed} executed`);
+            if (accepted > 0) parts.push(`${accepted} accepted`);
             if (dismissed > 0) parts.push(`${dismissed} dismissed`);
             if (parts.length > 0) summary += ` (${parts.join(', ')})`;
 
