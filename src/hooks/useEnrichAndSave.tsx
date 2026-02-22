@@ -5,7 +5,7 @@ import { toast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 
 interface EnrichAndSaveParams {
-  itemType: 'task' | 'idea' | 'reminder' | 'asset';
+  itemType: 'task' | 'idea' | 'reminder';
   itemTitle: string;
   itemData: Record<string, any>;
   itemId?: string;

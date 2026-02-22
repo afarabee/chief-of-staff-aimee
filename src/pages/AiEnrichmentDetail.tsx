@@ -17,7 +17,6 @@ const typeBadge: Record<string, { label: string; className: string }> = {
   task: { label: 'Task', className: 'bg-primary/10 text-primary border-primary/20' },
   idea: { label: 'Idea', className: 'bg-chart-4/20 text-chart-4 border-chart-4/30' },
   reminder: { label: 'Reminder', className: 'bg-chart-2/20 text-chart-2 border-chart-2/30' },
-  asset: { label: 'Asset', className: 'bg-chart-1/20 text-chart-1 border-chart-1/30' },
 };
 
 function renderResultMarkdown(text: string) {
@@ -72,7 +71,7 @@ export default function AiEnrichmentDetail() {
     try {
       const result = await executeSuggestion.mutateAsync({
         suggestion,
-        item_type: enrichment.item_type as 'task' | 'idea' | 'reminder' | 'asset',
+        item_type: enrichment.item_type as 'task' | 'idea' | 'reminder',
         item_title: enrichment.item_title,
         item_description: '',
         item_id: enrichment.item_id,
@@ -105,7 +104,7 @@ export default function AiEnrichmentDetail() {
         suggestion,
         parentTitle: enrichment.item_title,
         parentItemId: enrichment.item_id,
-        parentItemType: enrichment.item_type as 'task' | 'idea' | 'reminder' | 'asset',
+        parentItemType: enrichment.item_type as 'task' | 'idea' | 'reminder',
       },
       {
         onSuccess: () => {

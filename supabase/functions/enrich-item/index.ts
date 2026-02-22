@@ -63,38 +63,8 @@ serve(async (req) => {
     const priority = item.priority || "None";
     const dueDate = item.due_date || item.next_due_date || "None";
     const recurrence = item.recurrence_rule || "None";
-    const category = item.category || "None";
 
-    let prompt: string;
-
-    if (item_type === "asset") {
-      prompt = `You are a personal AI assistant helping someone manage their household/personal assets. You've been given a single asset from their inventory. Your job is to suggest 3-5 specific, actionable things that an AI assistant could do RIGHT NOW to help them maintain, protect, or get more value from this asset.
-
-Asset name: ${title}
-Description: ${description}
-Category: ${category}
-Purchase date: ${dueDate}
-Notes: ${item.notes || "None"}
-
-Each suggestion should:
-- Start with a clear action verb (Draft, Research, Create, Compare, Summarize, Find, Write, Build, Outline, Calculate, etc.)
-- Be specific to THIS asset, not generic advice
-- Describe something an AI can actually do (not physical tasks)
-- Be 1-2 sentences max
-- Focus on: maintenance schedules, inspection/replacement timelines, cost-saving tips, seasonal considerations, common issues to watch for
-
-Do NOT include:
-- Generic suggestions like "Set a reminder" (they already have a task system)
-- Physical actions the AI can't do
-- Suggestions to use other apps or tools
-
-Respond ONLY with a JSON array of objects. Each object has a single "suggestion" field containing the suggestion text. Example:
-[
-  { "suggestion": "Create a recommended annual maintenance schedule with seasonal tasks and estimated costs." },
-  { "suggestion": "Research the average lifespan and replacement timeline for this type of asset based on usage patterns." }
-]`;
-    } else {
-      prompt = `You are a personal AI assistant helping someone manage their life. You've been given a single item from their task/idea/reminder list. Your job is to suggest 3-5 specific, actionable things that an AI assistant (like Claude) could do RIGHT NOW to help them complete or advance this item.
+    const prompt = `You are a personal AI assistant helping someone manage their life. You've been given a single item from their task/idea/reminder list. Your job is to suggest 3-5 specific, actionable things that an AI assistant (like Claude) could do RIGHT NOW to help them complete or advance this item.
 
 Item type: ${item_type}
 Title: ${title}
@@ -120,7 +90,6 @@ Respond ONLY with a JSON array of objects. Each object has a single "suggestion"
   { "suggestion": "Draft a comparison table of the top 3 pet insurance providers with monthly costs, coverage limits, and exclusions." },
   { "suggestion": "Write a cancellation email template for the n8n subscription, including a request for confirmation." }
 ]`;
-    }
 
     const geminiRes = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,

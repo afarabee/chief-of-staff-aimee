@@ -4,7 +4,7 @@ import { toast } from '@/hooks/use-toast';
 
 interface ExecuteSuggestionParams {
   suggestion: string;
-  item_type: 'task' | 'idea' | 'reminder' | 'asset';
+  item_type: 'task' | 'idea' | 'reminder';
   item_title: string;
   item_description: string;
   item_id: string;

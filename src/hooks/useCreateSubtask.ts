@@ -8,7 +8,7 @@ interface CreateTaskFromSuggestionParams {
   suggestion: string;
   parentTitle: string;
   parentItemId: string;
-  parentItemType: 'task' | 'idea' | 'reminder' | 'asset';
+  parentItemType: 'task' | 'idea' | 'reminder';
   categoryId?: string | null;
 }
 
