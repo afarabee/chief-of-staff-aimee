@@ -25,6 +25,7 @@ export function useAiEnrichments(filter?: string) {
       let query = supabase
         .from('ai_enrichments')
         .select('*')
+        .neq('item_type', 'asset')
         .order('created_at', { ascending: false })
         .limit(50);
 

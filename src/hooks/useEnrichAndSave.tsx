@@ -89,11 +89,18 @@ export function useEnrichAndSave() {
 
       loadingToastId.dismiss?.();
 
-      toast({
-        title: 'Enrichment complete!',
-        description: `${formattedSuggestions.length} suggestions generated`,
-        action: <ToastAction altText="View AI Activity" onClick={() => { window.location.href = '/ai-activity'; }}>View</ToastAction>,
-      });
+      if (itemType === 'asset') {
+        toast({
+          title: 'Maintenance schedule generated!',
+          description: `${formattedSuggestions.length} suggestions generated`,
+        });
+      } else {
+        toast({
+          title: 'Enrichment complete!',
+          description: `${formattedSuggestions.length} suggestions generated`,
+          action: <ToastAction altText="View AI Activity" onClick={() => { window.location.href = '/ai-activity'; }}>View</ToastAction>,
+        });
+      }
 
       // Close modal if new item
       if (!itemId && onClose) {
