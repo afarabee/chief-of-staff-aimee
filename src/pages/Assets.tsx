@@ -33,6 +33,8 @@ import type { MaintenanceTask } from '@/types/maintenance';
 import { LinkedProvidersSection } from '@/components/links/LinkedProvidersSection';
 import { useEnrichAndSave } from '@/hooks/useEnrichAndSave';
 import { useAssetProviders } from '@/hooks/useAssetProviders';
+import { useAssetEnrichment } from '@/hooks/useAssetEnrichment';
+import { AssetSuggestionsSection } from '@/components/assets/AssetSuggestionsSection';
 
 function AssetTasksSection({ assetId, showOnKanban }: { assetId: string; showOnKanban: boolean }) {
   const { data: tasks = [] } = useAssetMaintenanceTasks(assetId);
@@ -176,8 +178,10 @@ export default function Assets() {
   const groups = Object.values(grouped).sort((a, b) => a.name.localeCompare(b.name));
 
   const { enrich, isEnriching } = useEnrichAndSave();
-  const { data: linkedProviders = [] } = useAssetProviders(view === 'detail' && selectedAsset ? selectedAsset.id : undefined);
-  const { data: maintenanceTasks = [] } = useAssetMaintenanceTasks(view === 'detail' && selectedAsset ? selectedAsset.id : undefined);
+  const activeAssetId = view === 'detail' && selectedAsset ? selectedAsset.id : undefined;
+  const { data: linkedProviders = [] } = useAssetProviders(activeAssetId);
+  const { data: maintenanceTasks = [] } = useAssetMaintenanceTasks(activeAssetId);
+  const { data: assetEnrichment } = useAssetEnrichment(activeAssetId);
 
   const handleEnrichAsset = (asset: Asset) => {
     const providerNames = linkedProviders.map((p) => p.name).join(', ') || 'None';
@@ -273,6 +277,17 @@ export default function Assets() {
         </div>
 
         <LinkedProvidersSection assetId={fresh.id} onNavigateToProvider={(providerId) => navigate(`/providers?detail=${providerId}`)} />
+
+        {/* Maintenance Schedule from AI Enrichment */}
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold text-foreground">Maintenance Schedule</h2>
+          {assetEnrichment ? (
+            <AssetSuggestionsSection enrichment={assetEnrichment} />
+          ) : (
+            <p className="text-sm text-muted-foreground">No maintenance schedule yet. Click "Enrich with AI" to generate one.</p>
+          )}
+        </div>
+
         <AssetTasksSection assetId={fresh.id} showOnKanban={fresh.showOnKanban} />
 
         <ResponsiveFormDialog open={isFormOpen} onOpenChange={setIsFormOpen} title={editingAsset ? 'Edit Asset' : 'Add Asset'}>
