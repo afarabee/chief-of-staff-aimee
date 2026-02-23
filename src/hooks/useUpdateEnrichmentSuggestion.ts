@@ -36,6 +36,7 @@ export function useUpdateEnrichmentSuggestion() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['ai-enrichment', variables.enrichmentId] });
       queryClient.invalidateQueries({ queryKey: ['ai-enrichments'] });
+      queryClient.invalidateQueries({ queryKey: ['ai-enrichment-for-asset'] });
     },
   });
 }

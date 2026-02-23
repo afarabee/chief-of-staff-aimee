@@ -83,6 +83,9 @@ export function useEnrichAndSave() {
 
       // Step 4: Invalidate & toast
       queryClient.invalidateQueries({ queryKey: ['ai-enrichments'] });
+      if (itemType === 'asset' && resolvedId) {
+        queryClient.invalidateQueries({ queryKey: ['ai-enrichment-for-asset', resolvedId] });
+      }
 
       loadingToastId.dismiss?.();
 
