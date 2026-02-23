@@ -52,15 +52,15 @@ Existing maintenance tasks: ${existingTasks}
 
 Format each suggestion as a JSON object with:
 - "suggestion": what to do (specific maintenance action)
-- "frequency": how often (e.g. "Every 3 years", "Annually", "Every 6 months")
+- "frequency": a JSON object with "interval" (number) and "unit" (one of: "days", "weeks", "months", "years"). For example: {"interval": 3, "unit": "years"} for every 3 years, {"interval": 6, "unit": "months"} for every 6 months, {"interval": 1, "unit": "years"} for annually.
 - "recommended_due_date": next due date in YYYY-MM-DD format, starting from today's date which is ${today}
 
 Return 3-7 suggestions depending on the asset type. Return ONLY a JSON array, no other text.
 
 Example:
 [
-  { "suggestion": "Pump septic tank", "frequency": "Every 3 years", "recommended_due_date": "2026-06-01" },
-  { "suggestion": "Inspect septic tank baffles", "frequency": "Annually", "recommended_due_date": "2026-09-01" }
+  { "suggestion": "Pump septic tank", "frequency": {"interval": 3, "unit": "years"}, "recommended_due_date": "2026-06-01" },
+  { "suggestion": "Inspect septic tank baffles", "frequency": {"interval": 1, "unit": "years"}, "recommended_due_date": "2026-09-01" }
 ]`;
 }
 

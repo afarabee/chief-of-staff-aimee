@@ -7,6 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  type StructuredFrequency,
+  FREQUENCY_PRESETS,
+  frequencyToLabel,
+  findPresetKey,
+  parseStringFrequency,
+} from '@/utils/frequency';
 
 interface Props {
   enrichment: AiEnrichmentRow;
@@ -16,7 +24,10 @@ export function AssetSuggestionsSection({ enrichment }: Props) {
   const updateSuggestion = useUpdateEnrichmentSuggestion();
   const [showDismissed, setShowDismissed] = useState(false);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState({ suggestion: '', frequency: '', recommended_due_date: '' });
+  const [editForm, setEditForm] = useState({ suggestion: '', recommended_due_date: '' });
+  const [freqPreset, setFreqPreset] = useState('');
+  const [customInterval, setCustomInterval] = useState(1);
+  const [customUnit, setCustomUnit] = useState<StructuredFrequency['unit']>('months');
 
   const suggestions = enrichment.suggestions || [];
   const visibleSuggestions = showDismissed
@@ -44,10 +55,27 @@ export function AssetSuggestionsSection({ enrichment }: Props) {
     const s = suggestions[idx];
     setEditForm({
       suggestion: s.suggestion,
-      frequency: s.frequency || '',
       recommended_due_date: s.recommended_due_date || '',
     });
+    const key = findPresetKey(s.frequency);
+    setFreqPreset(key);
+    if (key === 'custom') {
+      const freq: StructuredFrequency =
+        typeof s.frequency === 'object' && s.frequency
+          ? (s.frequency as StructuredFrequency)
+          : parseStringFrequency(typeof s.frequency === 'string' ? s.frequency : '') || { interval: 1, unit: 'months' };
+      setCustomInterval(freq.interval);
+      setCustomUnit(freq.unit);
+    }
     setEditingIdx(idx);
+  };
+
+  const getFrequencyValue = (): StructuredFrequency => {
+    if (freqPreset === 'custom') {
+      return { interval: customInterval, unit: customUnit };
+    }
+    const idx = parseInt(freqPreset, 10);
+    return FREQUENCY_PRESETS[idx]?.value || { interval: 1, unit: 'months' };
   };
 
   const saveEdit = async () => {
@@ -57,7 +85,7 @@ export function AssetSuggestionsSection({ enrichment }: Props) {
       suggestionIndex: editingIdx,
       updates: {
         suggestion: editForm.suggestion,
-        frequency: editForm.frequency,
+        frequency: getFrequencyValue(),
         recommended_due_date: editForm.recommended_due_date,
       },
     });
@@ -93,12 +121,17 @@ export function AssetSuggestionsSection({ enrichment }: Props) {
                     placeholder="Maintenance task"
                   />
                   <div className="flex gap-2">
-                    <Input
-                      value={editForm.frequency}
-                      onChange={(e) => setEditForm({ ...editForm, frequency: e.target.value })}
-                      placeholder="Frequency (e.g. Every 3 years)"
-                      className="flex-1"
-                    />
+                    <Select value={freqPreset} onValueChange={setFreqPreset}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Frequency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FREQUENCY_PRESETS.map((p, i) => (
+                          <SelectItem key={i} value={String(i)}>{p.label}</SelectItem>
+                        ))}
+                        <SelectItem value="custom">Custom...</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <Input
                       type="date"
                       value={editForm.recommended_due_date}
@@ -106,6 +139,30 @@ export function AssetSuggestionsSection({ enrichment }: Props) {
                       className="flex-1"
                     />
                   </div>
+                  {freqPreset === 'custom' && (
+                    <div className="flex gap-2 items-center">
+                      <span className="text-sm text-muted-foreground">Every</span>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={99}
+                        value={customInterval}
+                        onChange={(e) => setCustomInterval(Math.max(1, Math.min(99, parseInt(e.target.value) || 1)))}
+                        className="w-20"
+                      />
+                      <Select value={customUnit} onValueChange={(v) => setCustomUnit(v as StructuredFrequency['unit'])}>
+                        <SelectTrigger className="w-28">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="days">Days</SelectItem>
+                          <SelectItem value="weeks">Weeks</SelectItem>
+                          <SelectItem value="months">Months</SelectItem>
+                          <SelectItem value="years">Years</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   <div className="flex gap-2">
                     <Button size="sm" onClick={saveEdit} disabled={updateSuggestion.isPending}>
                       {updateSuggestion.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Save'}
@@ -120,7 +177,9 @@ export function AssetSuggestionsSection({ enrichment }: Props) {
                       <p className="text-sm font-semibold">{s.suggestion}</p>
                       <div className="flex flex-wrap items-center gap-2">
                         {s.frequency && (
-                          <Badge variant="secondary" className="text-xs">{s.frequency}</Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            {frequencyToLabel(s.frequency as StructuredFrequency | string)}
+                          </Badge>
                         )}
                         {s.recommended_due_date && (
                           <span className="text-xs text-muted-foreground flex items-center gap-1">
