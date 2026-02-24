@@ -40,13 +40,25 @@ export function useScheduleToCalendar() {
       if (readErr) throw readErr;
 
       const suggestions = Array.isArray(row.suggestions) ? [...(row.suggestions as any[])] : [];
-      if (suggestions[suggestionIndex]) {
+      if (suggestionIndex >= 0 && suggestions[suggestionIndex]) {
+        // Update existing suggestion
         suggestions[suggestionIndex] = {
           ...suggestions[suggestionIndex],
           status: 'scheduled',
           calendar_event_id: data.eventId,
           calendar_link: data.htmlLink,
         };
+      } else if (suggestionIndex < 0) {
+        // Manual add — append a new suggestion entry
+        suggestions.push({
+          suggestion: summary,
+          status: 'scheduled',
+          result: null,
+          frequency: frequency || null,
+          recommended_due_date: startDate,
+          calendar_event_id: data.eventId,
+          calendar_link: data.htmlLink,
+        });
       }
 
       const { error: writeErr } = await supabase
