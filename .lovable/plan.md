@@ -1,45 +1,49 @@
 
 
-# Fix Asset Enrichment Flow
+# Purge Done Tasks and Ideas
 
 ## Overview
-Three changes to keep asset enrichments self-contained on the asset detail page and out of the AI Activity hub.
+Add a "Purge Done" button to both the Tasks and Ideas pages that bulk-deletes all items with "done" status, with a confirmation dialog to prevent accidents.
 
 ---
 
-## Change 1: Asset-specific success toast (no navigation)
+## Tasks Page (`src/pages/Tasks.tsx`)
 
-**File: `src/hooks/useEnrichAndSave.tsx`** (lines 92-96)
+In the filter/toolbar row (around line 168), add a "Purge Done" button (destructive variant, with `Trash2` icon) that:
+- Only appears when there are done tasks (`tasksByStatus.done.length > 0`)
+- Opens an `AlertDialog` confirming: "This will permanently delete **X** completed tasks. This cannot be undone."
+- On confirm, loops through all done tasks and calls `deleteTask(id)` for each, then shows a success toast
 
-Replace the single toast block with a conditional:
-- If `itemType === 'asset'`: show a simple toast with title "Maintenance schedule generated!" and description showing suggestion count. No action button, no navigation.
-- Otherwise: keep the existing toast with the "View" action button navigating to `/ai-activity`.
+## Ideas Page (`src/pages/Ideas.tsx`)
 
----
-
-## Change 2: Exclude assets from AI Activity page
-
-**File: `src/hooks/useAiEnrichments.ts`** (lines 25-33)
-
-After building the base query, always add `.neq('item_type', 'asset')` to filter out asset enrichment records. This ensures no asset records appear on the AI Activity list regardless of the selected filter tab.
-
-**File: `src/pages/AiActivity.tsx`** (line 70)
-
-Remove the `<TabsTrigger value="asset">Assets</TabsTrigger>` tab and the `asset` entry from the `typeBadge` map (line 30).
+In the filter/toolbar row (around line 113), add a matching "Purge Done" button that:
+- Only appears when there are done ideas (`ideasByStatus.done.length > 0`)
+- Opens an `AlertDialog` confirming: "This will permanently delete **X** completed ideas. This cannot be undone."
+- On confirm, loops through all done ideas and calls `deleteIdea(id)` for each, then shows a success toast
 
 ---
 
-## Change 3: Verify asset detail page (already implemented)
+## Technical Details
 
-The Maintenance Schedule section, `useAssetEnrichment` hook, and `AssetSuggestionsSection` component are already in place from the previous implementation. The query invalidation in `useEnrichAndSave.tsx` (line 87) already refreshes the asset page after enrichment. No changes needed here.
+### Tasks Page Changes
+- Import `Trash2` from lucide-react, `AlertDialog` components, and `toast`
+- Add `deleteTask` to the destructured `useApp()` call
+- Add state: `const [showPurgeDialog, setShowPurgeDialog] = useState(false)`
+- Add handler that iterates `tasksByStatus.done` and calls `deleteTask(t.id)` for each
+- Place button in the filter bar area, right-aligned (near the Reminders switch)
 
----
+### Ideas Page Changes
+- Import `Trash2` from lucide-react, `AlertDialog` components, and `toast`
+- Add `deleteIdea` to the destructured `useApp()` call
+- Add state: `const [showPurgeDialog, setShowPurgeDialog] = useState(false)`
+- Add handler that iterates `ideasByStatus.done` and calls `deleteIdea(i.id)` for each
+- Place button in the filter bar, right-aligned
 
-## Technical Summary
-
+### Files Modified
 | File | Change |
 |------|--------|
-| `src/hooks/useEnrichAndSave.tsx` | Conditional toast: simple message for assets, "View" action for others |
-| `src/hooks/useAiEnrichments.ts` | Add `.neq('item_type', 'asset')` filter to exclude asset records |
-| `src/pages/AiActivity.tsx` | Remove "Assets" tab and badge entry |
+| `src/pages/Tasks.tsx` | Add purge done button + confirmation dialog |
+| `src/pages/Ideas.tsx` | Add purge done button + confirmation dialog |
+
+No database or schema changes needed -- uses existing delete mutations.
 
