@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface AiEnrichmentSuggestion {
   suggestion: string;
-  status: 'pending' | 'executed' | 'dismissed' | 'accepted';
+  status: 'pending' | 'executed' | 'dismissed' | 'accepted' | 'scheduled';
   result: string | null;
   frequency?: string;
   recommended_due_date?: string;

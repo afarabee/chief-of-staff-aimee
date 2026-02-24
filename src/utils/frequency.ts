@@ -62,3 +62,18 @@ export function parseStringFrequency(s: string): StructuredFrequency | null {
   }
   return null;
 }
+
+/** Convert structured frequency to Google Calendar RRULE string */
+export function frequencyToRRule(freq: StructuredFrequency): string {
+  const unitMap: Record<string, string> = {
+    days: 'DAILY',
+    weeks: 'WEEKLY',
+    months: 'MONTHLY',
+    years: 'YEARLY',
+  };
+  const rruleFreq = unitMap[freq.unit] || 'MONTHLY';
+  if (freq.interval === 1) {
+    return `RRULE:FREQ=${rruleFreq}`;
+  }
+  return `RRULE:FREQ=${rruleFreq};INTERVAL=${freq.interval}`;
+}
