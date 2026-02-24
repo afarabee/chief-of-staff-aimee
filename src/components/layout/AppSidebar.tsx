@@ -18,9 +18,9 @@ const navItems = [
   { title: 'Calendar', url: '/calendar', icon: Calendar },
   { title: 'Tasks', url: '/tasks', icon: CheckSquare },
   { title: 'Ideas', url: '/ideas', icon: Lightbulb },
-  { title: 'Maintenance', url: '/maintenance', icon: CalendarCheck },
   { title: 'Categories', url: '/categories', icon: Tags },
   { title: 'Assets', url: '/assets', icon: Package },
+  { title: 'Maintenance', url: '/maintenance', icon: CalendarCheck },
   { title: 'Providers', url: '/providers', icon: Wrench },
   { title: 'AI Activity', url: '/ai-activity', icon: Sparkles },
 ];
