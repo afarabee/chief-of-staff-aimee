@@ -186,7 +186,7 @@ export default function Assets() {
         <div className="space-y-3">
           <h2 className="text-lg font-semibold text-foreground">Maintenance Schedule</h2>
           {assetEnrichment ? (
-            <AssetSuggestionsSection enrichment={assetEnrichment} assetName={fresh.name} />
+            <AssetSuggestionsSection enrichment={assetEnrichment} assetName={fresh.name} assetId={fresh.id} />
           ) : (
             <p className="text-sm text-muted-foreground">No maintenance schedule yet. Click "Enrich with AI" to generate one.</p>
           )}

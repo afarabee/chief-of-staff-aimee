@@ -9,6 +9,8 @@ interface ScheduleParams {
   description: string;
   startDate: string;
   frequency?: { interval: number; unit: string };
+  providerName?: string;
+  providerId?: string;
 }
 
 export function useScheduleToCalendar() {
@@ -16,7 +18,7 @@ export function useScheduleToCalendar() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ enrichmentId, suggestionIndex, summary, description, startDate, frequency }: ScheduleParams) => {
+    mutationFn: async ({ enrichmentId, suggestionIndex, summary, description, startDate, frequency, providerName, providerId }: ScheduleParams) => {
       // Call the Edge Function
       const { data, error } = await supabase.functions.invoke('create-calendar-event', {
         body: {
@@ -47,6 +49,7 @@ export function useScheduleToCalendar() {
           status: 'scheduled',
           calendar_event_id: data.eventId,
           calendar_link: data.htmlLink,
+          ...(providerName ? { provider_name: providerName, provider_id: providerId } : {}),
         };
       } else if (suggestionIndex < 0) {
         // Manual add — append a new suggestion entry
@@ -58,6 +61,7 @@ export function useScheduleToCalendar() {
           recommended_due_date: startDate,
           calendar_event_id: data.eventId,
           calendar_link: data.htmlLink,
+          ...(providerName ? { provider_name: providerName, provider_id: providerId } : {}),
         });
       }
 
@@ -74,6 +78,8 @@ export function useScheduleToCalendar() {
       toast({ title: 'Scheduled to Google Calendar!' });
       queryClient.invalidateQueries({ queryKey: ['ai-enrichment-for-asset'] });
       queryClient.invalidateQueries({ queryKey: ['ai-enrichments'] });
+      queryClient.invalidateQueries({ queryKey: ['all-maintenance-events'] });
+      queryClient.invalidateQueries({ queryKey: ['calendar-maintenance-tasks'] });
     },
     onError: (err: Error) => {
       toast({

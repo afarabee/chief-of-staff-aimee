@@ -120,6 +120,8 @@ export function useAllMaintenanceEvents() {
             calendarEventId: s.calendar_event_id || null,
             lastCompleted,
             status,
+            bundledItems: Array.isArray(s.bundled_items) ? s.bundled_items : undefined,
+            providerName: s.provider_name || undefined,
           });
         });
       }

@@ -51,16 +51,19 @@ Linked service providers: ${providers}
 Existing maintenance tasks: ${existingTasks}
 
 Format each suggestion as a JSON object with:
-- "suggestion": what to do (specific maintenance action)
+- "suggestion": what to do (specific maintenance action, or a group title if bundling multiple tasks)
 - "frequency": a JSON object with "interval" (number) and "unit" (one of: "days", "weeks", "months", "years"). For example: {"interval": 3, "unit": "years"} for every 3 years, {"interval": 6, "unit": "months"} for every 6 months, {"interval": 1, "unit": "years"} for annually.
 - "recommended_due_date": next due date in YYYY-MM-DD format, starting from today's date which is ${today}
+- "bundled_items": (optional) an array of strings listing individual tasks. Use this when multiple related tasks share the same frequency and due date. The "suggestion" field becomes the group title.
+
+IMPORTANT: If multiple tasks share the same frequency AND the same recommended due date, you MUST bundle them into a single suggestion. Give the bundle a descriptive group title (e.g., "Spring HVAC maintenance", "Annual water heater service") and list the individual tasks in "bundled_items". Only keep tasks as separate suggestions if they have different frequencies or different due dates.
 
 Return 3-7 suggestions depending on the asset type. Return ONLY a JSON array, no other text.
 
 Example:
 [
-  { "suggestion": "Pump septic tank", "frequency": {"interval": 3, "unit": "years"}, "recommended_due_date": "2026-06-01" },
-  { "suggestion": "Inspect septic tank baffles", "frequency": {"interval": 1, "unit": "years"}, "recommended_due_date": "2026-09-01" }
+  { "suggestion": "Annual septic system service", "frequency": {"interval": 1, "unit": "years"}, "recommended_due_date": "2026-09-01", "bundled_items": ["Inspect septic tank baffles", "Check drain field for wet spots", "Measure sludge and scum levels"] },
+  { "suggestion": "Pump septic tank", "frequency": {"interval": 3, "unit": "years"}, "recommended_due_date": "2026-06-01" }
 ]`;
 }
 

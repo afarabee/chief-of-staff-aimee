@@ -62,6 +62,16 @@ function MaintenanceEventCard({ event, onComplete }: { event: MaintenanceEvent; 
               {event.name}
             </p>
             <p className="text-xs text-muted-foreground">{event.assetName}</p>
+            {event.bundledItems && event.bundledItems.length > 0 && (
+              <ul className="ml-1 space-y-0.5 mt-1">
+                {event.bundledItems.map((item, i) => (
+                  <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
+                    <span className="mt-1.5 h-1 w-1 rounded-full bg-muted-foreground shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            )}
             <div className="flex flex-wrap items-center gap-2">
               {event.frequency && (
                 <Badge variant="secondary" className="text-xs">
@@ -73,6 +83,11 @@ function MaintenanceEventCard({ event, onComplete }: { event: MaintenanceEvent; 
                   <CalendarDays className="h-3 w-3" />
                   {format(parseISO(event.nextDueDate), 'MMM d, yyyy')}
                 </span>
+              )}
+              {event.providerName && (
+                <Badge variant="outline" className="text-xs">
+                  {event.providerName}
+                </Badge>
               )}
               {event.lastCompleted && (
                 <span className="text-xs text-muted-foreground">

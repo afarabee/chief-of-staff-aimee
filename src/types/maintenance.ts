@@ -11,6 +11,8 @@ export interface MaintenanceEvent {
   calendarEventId: string | null;
   lastCompleted: string | null;
   status: 'overdue' | 'upcoming' | 'scheduled' | 'completed';
+  bundledItems?: string[];
+  providerName?: string;
 }
 
 export interface MaintenanceCompletion {
