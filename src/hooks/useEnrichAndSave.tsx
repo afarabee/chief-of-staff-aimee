@@ -67,9 +67,10 @@ export function useEnrichAndSave() {
         suggestion: s.suggestion,
         status: 'pending' as const,
         result: null as string | null,
-        ...(s.frequency ? { frequency: s.frequency } : {}),
-        ...(s.recommended_due_date ? { recommended_due_date: s.recommended_due_date } : {}),
-      }));
+      ...(s.frequency ? { frequency: s.frequency } : {}),
+      ...(s.recommended_due_date ? { recommended_due_date: s.recommended_due_date } : {}),
+      ...(s.bundled_items ? { bundled_items: s.bundled_items } : {}),
+    }));
 
       // Step 3: Insert into ai_enrichments
       const { error: insertErr } = await supabase.from('ai_enrichments').insert({
