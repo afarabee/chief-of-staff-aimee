@@ -103,6 +103,63 @@ Respond ONLY with a JSON array of objects. Each object has a single "suggestion"
 ]`;
 }
 
+/**
+ * Groups unbundled suggestions that share the same frequency + due date into bundles.
+ * Leaves already-bundled suggestions and unique ones untouched.
+ */
+function autoBundleSuggestions(suggestions: Array<Record<string, any>>): Array<Record<string, any>> {
+  const groups = new Map<string, Array<Record<string, any>>>();
+  const result: Array<Record<string, any>> = [];
+
+  for (const s of suggestions) {
+    // Already bundled — keep as-is
+    if (Array.isArray(s.bundled_items) && s.bundled_items.length > 0) {
+      result.push(s);
+      continue;
+    }
+
+    const freq = s.frequency;
+    const date = s.recommended_due_date;
+    if (!freq || !date) {
+      result.push(s);
+      continue;
+    }
+
+    const key = `${freq.interval}|${freq.unit}|${date}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(s);
+  }
+
+  for (const [, items] of groups) {
+    if (items.length === 1) {
+      result.push(items[0]);
+    } else {
+      // Create a bundle from multiple same-schedule items
+      const first = items[0];
+      const freq = first.frequency;
+      const unit = freq.unit as string;
+      const interval = freq.interval as number;
+
+      // Build a descriptive title
+      let title: string;
+      if (interval === 1 && unit === "years") title = "Annual maintenance";
+      else if (interval === 6 && unit === "months") title = "Semi-annual maintenance";
+      else if (interval === 3 && unit === "months") title = "Quarterly maintenance";
+      else if (interval === 1 && unit === "months") title = "Monthly maintenance";
+      else title = `Every ${interval} ${unit} maintenance`;
+
+      result.push({
+        suggestion: title,
+        frequency: first.frequency,
+        recommended_due_date: first.recommended_due_date,
+        bundled_items: items.map((i) => i.suggestion),
+      });
+    }
+  }
+
+  return result;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -163,7 +220,10 @@ serve(async (req) => {
     }
 
     const suggestionsArray = parseGeminiJsonResponse(rawText);
-    const suggestionsJson = JSON.stringify(suggestionsArray);
+
+    // Post-process: auto-bundle suggestions that share the same frequency + due date
+    const bundled = autoBundleSuggestions(suggestionsArray);
+    const suggestionsJson = JSON.stringify(bundled);
 
     return new Response(JSON.stringify({ suggestions: suggestionsJson }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
