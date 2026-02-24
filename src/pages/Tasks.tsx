@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { usePageTitle } from '@/hooks/usePageTitle';
-import { Plus, Filter } from 'lucide-react';
+import { Plus, Filter, Trash2 } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { Task, TaskStatus, TaskPriority } from '@/types';
 import { KanbanColumn } from '@/components/tasks/KanbanColumn';
@@ -21,13 +21,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { toast } from '@/hooks/use-toast';
 import type { MaintenanceTask } from '@/types/maintenance';
 
 const statusOrder: TaskStatus[] = ['backlog', 'to-do', 'in-progress', 'blocked', 'done'];
 
 export default function Tasks() {
   usePageTitle('Tasks');
-  const { tasks, updateTask, isLoading } = useApp();
+  const { tasks, updateTask, deleteTask, isLoading } = useApp();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>();
@@ -35,6 +46,7 @@ export default function Tasks() {
   const [showMaintenance, setShowMaintenance] = useState(true);
   const [editingMaintenanceTask, setEditingMaintenanceTask] = useState<MaintenanceTask | undefined>();
   const [isMaintenanceFormOpen, setIsMaintenanceFormOpen] = useState(false);
+  const [showPurgeDialog, setShowPurgeDialog] = useState(false);
 
   const { data: maintenanceTasks = [] } = useKanbanMaintenanceTasks();
 
@@ -188,6 +200,13 @@ export default function Tasks() {
           <Switch id="show-maintenance" checked={showMaintenance} onCheckedChange={setShowMaintenance} />
           <Label htmlFor="show-maintenance" className="text-sm text-muted-foreground">Reminders</Label>
         </div>
+
+        {tasksByStatus.done.length > 0 && (
+          <Button variant="destructive" size="sm" className="gap-2" onClick={() => setShowPurgeDialog(true)}>
+            <Trash2 className="h-4 w-4" />
+            Purge Done ({tasksByStatus.done.length})
+          </Button>
+        )}
       </div>
 
       <DragDropContext onDragEnd={handleDragEnd}>
@@ -225,6 +244,30 @@ export default function Tasks() {
       >
         <MaintenanceTaskForm task={editingMaintenanceTask} onClose={() => setIsMaintenanceFormOpen(false)} />
       </ResponsiveFormDialog>
+
+      <AlertDialog open={showPurgeDialog} onOpenChange={setShowPurgeDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Purge completed tasks?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <strong>{tasksByStatus.done.length}</strong> completed task{tasksByStatus.done.length !== 1 ? 's' : ''}. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                const count = tasksByStatus.done.length;
+                tasksByStatus.done.forEach((t) => deleteTask(t.id));
+                toast({ title: `${count} completed task${count !== 1 ? 's' : ''} deleted` });
+              }}
+            >
+              Delete All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

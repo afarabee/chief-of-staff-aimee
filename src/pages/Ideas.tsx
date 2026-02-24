@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Filter } from 'lucide-react';
+import { Plus, Filter, Trash2 } from 'lucide-react';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useApp } from '@/contexts/AppContext';
 import { Idea, IdeaStatus } from '@/types';
@@ -16,14 +16,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { toast } from '@/hooks/use-toast';
 
 export default function Ideas() {
   usePageTitle('Ideas');
-  const { ideas, isLoading } = useApp();
+  const { ideas, isLoading, deleteIdea } = useApp();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingIdea, setEditingIdea] = useState<Idea | undefined>();
   const [statusFilter, setStatusFilter] = useState<IdeaStatus | 'all'>('all');
+  const [showPurgeDialog, setShowPurgeDialog] = useState(false);
 
   // Auto-open edit dialog from search param
   useEffect(() => {
@@ -128,6 +140,13 @@ export default function Ideas() {
             <SelectItem value="done">Done</SelectItem>
           </SelectContent>
         </Select>
+
+        {ideasByStatus.done.length > 0 && (
+          <Button variant="destructive" size="sm" className="gap-2 ml-auto" onClick={() => setShowPurgeDialog(true)}>
+            <Trash2 className="h-4 w-4" />
+            Purge Done ({ideasByStatus.done.length})
+          </Button>
+        )}
       </div>
 
       {filteredIdeas.length === 0 ? (
@@ -168,6 +187,30 @@ export default function Ideas() {
       >
         <IdeaForm idea={editingIdea} onClose={handleCloseForm} />
       </ResponsiveFormDialog>
+
+      <AlertDialog open={showPurgeDialog} onOpenChange={setShowPurgeDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Purge completed ideas?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <strong>{ideasByStatus.done.length}</strong> completed idea{ideasByStatus.done.length !== 1 ? 's' : ''}. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                const count = ideasByStatus.done.length;
+                ideasByStatus.done.forEach((i) => deleteIdea(i.id));
+                toast({ title: `${count} completed idea${count !== 1 ? 's' : ''} deleted` });
+              }}
+            >
+              Delete All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
