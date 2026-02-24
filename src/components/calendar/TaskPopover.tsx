@@ -40,8 +40,6 @@ export function TaskPopover({ item, onEdit, children, open, onOpenChange }: Task
         <div className="text-xs text-muted-foreground space-y-1">
           <p>Due: {format(parseISO(item.date), 'PPP')}</p>
           {item.assetName && <p>Asset: {item.assetName}</p>}
-          {item.providerName && <p>Provider: {item.providerName}</p>}
-          {item.recurrenceRule && <p>Recurrence: {item.recurrenceRule}</p>}
         </div>
 
         {item.description && (

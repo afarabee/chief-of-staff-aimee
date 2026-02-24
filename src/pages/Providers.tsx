@@ -2,14 +2,10 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { icons } from 'lucide-react';
 import { ArrowLeft, Globe, Mail, MapPin, Pencil, Phone, Plus, Trash2, Wrench } from 'lucide-react';
-import { isPast, parseISO } from 'date-fns';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useProviders, useDeleteProvider } from '@/hooks/useProviders';
-import { useProviderMaintenanceTasks, useCompleteMaintenanceTask } from '@/hooks/useMaintenanceTasks';
 import { ProviderCard } from '@/components/providers/ProviderCard';
 import { ProviderForm } from '@/components/providers/ProviderForm';
-import { MaintenanceTaskCard } from '@/components/maintenance/MaintenanceTaskCard';
-import { MaintenanceTaskForm } from '@/components/maintenance/MaintenanceTaskForm';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ResponsiveFormDialog } from '@/components/ui/responsive-dialog';
@@ -25,7 +21,6 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import type { Provider } from '@/types/providers';
-import type { MaintenanceTask } from '@/types/maintenance';
 import { LinkedAssetsSection } from '@/components/links/LinkedAssetsSection';
 
 function DynamicIcon({ name, className }: { name: string; className?: string }) {
@@ -45,12 +40,6 @@ export default function Providers() {
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProvider, setEditingProvider] = useState<Provider | undefined>(undefined);
-  const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<MaintenanceTask | undefined>(undefined);
-
-  const { data: providerTasks = [] } = useProviderMaintenanceTasks(selectedProvider?.id);
-  const completeTask = useCompleteMaintenanceTask();
-
   const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => {
     const editId = searchParams.get('edit');
@@ -160,47 +149,8 @@ export default function Providers() {
 
         <LinkedAssetsSection providerId={fresh.id} onNavigateToAsset={(assetId) => navigate(`/assets?detail=${assetId}`)} />
 
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold text-foreground">Reminders</h2>
-              {providerTasks.length > 0 && <Badge variant="secondary">{providerTasks.length}</Badge>}
-            </div>
-            <Button size="sm" variant="outline" onClick={() => { setEditingTask(undefined); setIsTaskFormOpen(true); }}>
-              <Plus className="h-4 w-4" />
-              Add Reminder
-            </Button>
-          </div>
-          {providerTasks.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No reminders for this provider</p>
-          ) : (
-            <div className="space-y-2">
-              {providerTasks.map((task) => {
-                const variant: 'overdue' | 'attention' | 'upcoming' | 'completed' =
-                  task.status === 'completed' ? 'completed'
-                    : task.status === 'needs_attention' ? 'attention'
-                      : task.nextDueDate && isPast(parseISO(task.nextDueDate)) ? 'overdue'
-                        : 'upcoming';
-                return (
-                  <MaintenanceTaskCard
-                    key={task.id}
-                    task={task}
-                    variant={variant}
-                    onComplete={variant !== 'completed' ? () => completeTask.mutate(task) : undefined}
-                    onClick={() => { setEditingTask(task); setIsTaskFormOpen(true); }}
-                  />
-                );
-              })}
-            </div>
-          )}
-        </div>
-
         <ResponsiveFormDialog open={isFormOpen} onOpenChange={setIsFormOpen} title={editingProvider ? 'Edit Provider' : 'Add Provider'}>
           <ProviderForm provider={editingProvider} onClose={closeForm} />
-        </ResponsiveFormDialog>
-
-        <ResponsiveFormDialog open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen} title={editingTask ? 'Edit Reminder' : 'Add Reminder'}>
-          <MaintenanceTaskForm task={editingTask} lockedProviderId={fresh.id} onClose={() => setIsTaskFormOpen(false)} />
         </ResponsiveFormDialog>
       </div>
     );

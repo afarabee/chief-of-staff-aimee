@@ -29,11 +29,11 @@ function truncate(str: string | null | undefined, len: number): string {
 }
 
 async function fetchChatContext(): Promise<ChatContext> {
-  const [assetsRes, tasksRes, ideasRes, maintenanceRes, providersRes, categoriesRes, cosCategoriesRes] = await Promise.all([
+  const [assetsRes, tasksRes, ideasRes, enrichmentsRes, providersRes, categoriesRes, cosCategoriesRes] = await Promise.all([
     supabase.from('assets').select('*, categories(name)').order('name'),
     supabase.from('cos_tasks').select('*, cos_categories(name)').order('created_at', { ascending: false }),
     supabase.from('cos_ideas').select('*').order('created_at', { ascending: false }),
-    supabase.from('tasks').select('*, assets(name), service_providers(name)').order('next_due_date', { ascending: true }),
+    supabase.from('ai_enrichments').select('*').eq('item_type', 'asset'),
     supabase.from('service_providers').select('*, categories(name)').order('name'),
     supabase.from('categories').select('id, name, icon').order('name'),
     supabase.from('cos_categories').select('id, name').order('name'),
@@ -70,18 +70,21 @@ async function fetchChatContext(): Promise<ChatContext> {
     description: truncate(i.description, 100),
   }));
 
-  const allMaint = maintenanceRes.data ?? [];
-  const activeMaint = allMaint.filter((t: any) => t.status !== 'completed');
-  const completedMaint = allMaint.filter((t: any) => t.status === 'completed').slice(0, 10);
-  const maintenance_tasks = [...activeMaint, ...completedMaint].map((t: any) => ({
-    id: t.id,
-    name: t.name,
-    status: t.status,
-    nextDueDate: t.next_due_date,
-    recurrenceRule: t.recurrence_rule,
-    assetName: t.assets?.name,
-    providerName: t.service_providers?.name,
-  }));
+  // Flatten scheduled maintenance events from ai_enrichments
+  const maintenance_tasks: any[] = [];
+  for (const enrichment of enrichmentsRes.data ?? []) {
+    const suggestions = Array.isArray(enrichment.suggestions) ? enrichment.suggestions : [];
+    suggestions.forEach((s: any) => {
+      if (s.status !== 'scheduled') return;
+      maintenance_tasks.push({
+        name: s.suggestion,
+        assetName: enrichment.item_title,
+        frequency: s.frequency || null,
+        nextDueDate: s.recommended_due_date || null,
+        status: 'scheduled',
+      });
+    });
+  }
 
   const providers = (providersRes.data ?? []).map((p: any) => ({
     id: p.id,

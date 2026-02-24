@@ -89,8 +89,6 @@ export function DailyView({ currentDate, items, onAddTask, onEditItem }: DailyVi
                   </div>
                   <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-xs text-muted-foreground">
                     {item.assetName && <span>Asset: {item.assetName}</span>}
-                    {item.providerName && <span>Provider: {item.providerName}</span>}
-                    {item.recurrenceRule && <span>Recurrence: {item.recurrenceRule}</span>}
                   </div>
                   </button>
                 </TaskPopover>

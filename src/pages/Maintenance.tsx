@@ -1,16 +1,15 @@
 import { useState, useMemo } from 'react';
-import { parseISO, isPast, isToday } from 'date-fns';
-import { ClipboardCheck, Plus, ChevronDown } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
+import { CalendarCheck, CalendarDays, ChevronDown, Circle, CheckCircle2, ExternalLink } from 'lucide-react';
 import { usePageTitle } from '@/hooks/usePageTitle';
-import { useMaintenanceTasks, useCompleteMaintenanceTask } from '@/hooks/useMaintenanceTasks';
-import { MaintenanceTaskCard } from '@/components/maintenance/MaintenanceTaskCard';
-import { MaintenanceTaskForm } from '@/components/maintenance/MaintenanceTaskForm';
-import { Button } from '@/components/ui/button';
+import { useAllMaintenanceEvents } from '@/hooks/useAllMaintenanceEvents';
+import { useCompleteMaintenanceEvent } from '@/hooks/useMaintenanceTasks';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ResponsiveFormDialog } from '@/components/ui/responsive-dialog';
 import { cn } from '@/lib/utils';
-import type { MaintenanceTask } from '@/types/maintenance';
+import { frequencyToLabel } from '@/utils/frequency';
+import type { MaintenanceEvent } from '@/types/maintenance';
 
 interface SectionProps {
   title: string;
@@ -36,130 +35,150 @@ function Section({ title, count, accentClass, defaultOpen = true, children }: Se
   );
 }
 
+function MaintenanceEventCard({ event, onComplete }: { event: MaintenanceEvent; onComplete: () => void }) {
+  const isCompleted = event.status === 'completed';
+
+  return (
+    <Card className={isCompleted ? 'opacity-60' : ''}>
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          <button
+            onClick={(e) => { e.stopPropagation(); if (!isCompleted) onComplete(); }}
+            className={cn(
+              'mt-0.5 shrink-0 transition-colors',
+              isCompleted ? 'text-emerald-500' : 'text-muted-foreground hover:text-emerald-500'
+            )}
+            disabled={isCompleted}
+          >
+            {isCompleted ? (
+              <CheckCircle2 className="h-5 w-5" />
+            ) : (
+              <Circle className="h-5 w-5" />
+            )}
+          </button>
+
+          <div className="flex-1 min-w-0 space-y-1">
+            <p className={cn('text-sm font-semibold', isCompleted && 'line-through text-muted-foreground')}>
+              {event.name}
+            </p>
+            <p className="text-xs text-muted-foreground">{event.assetName}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              {event.frequency && (
+                <Badge variant="secondary" className="text-xs">
+                  {frequencyToLabel(event.frequency as any)}
+                </Badge>
+              )}
+              {event.nextDueDate && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <CalendarDays className="h-3 w-3" />
+                  {format(parseISO(event.nextDueDate), 'MMM d, yyyy')}
+                </span>
+              )}
+              {event.lastCompleted && (
+                <span className="text-xs text-muted-foreground">
+                  Last done: {format(parseISO(event.lastCompleted), 'MMM d, yyyy')}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {event.calendarLink && (
+            <a
+              href={event.calendarLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:text-blue-600 shrink-0"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Maintenance() {
-  usePageTitle('Reminders');
-  const { data: tasks = [], isLoading } = useMaintenanceTasks();
-  const completeTask = useCompleteMaintenanceTask();
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<MaintenanceTask | undefined>();
+  usePageTitle('Maintenance');
+  const { data: events = [], isLoading } = useAllMaintenanceEvents();
+  const completeMutation = useCompleteMaintenanceEvent();
 
-  const { overdue, attention, inProgress, upcoming, completed } = useMemo(() => {
-    const overdue: MaintenanceTask[] = [];
-    const attention: MaintenanceTask[] = [];
-    const inProgress: MaintenanceTask[] = [];
-    const upcoming: MaintenanceTask[] = [];
-    const completed: MaintenanceTask[] = [];
+  const { overdue, upcoming, scheduled, completed } = useMemo(() => {
+    const overdue: MaintenanceEvent[] = [];
+    const upcoming: MaintenanceEvent[] = [];
+    const scheduled: MaintenanceEvent[] = [];
+    const completed: MaintenanceEvent[] = [];
 
-    tasks.forEach((t) => {
-      if (t.status === 'completed') {
-        completed.push(t);
-      } else if (t.status === 'needs_attention') {
-        attention.push(t);
-      } else if (t.status === 'in_progress') {
-        inProgress.push(t);
-      } else if (t.status === 'overdue') {
-        overdue.push(t);
-      } else if (t.status === 'pending' && t.nextDueDate) {
-        const d = parseISO(t.nextDueDate);
-        if (isPast(d) && !isToday(d)) {
-          overdue.push(t);
-        } else {
-          upcoming.push(t);
-        }
-      } else if (t.status === 'pending') {
-        upcoming.push(t);
+    events.forEach((e) => {
+      switch (e.status) {
+        case 'overdue': overdue.push(e); break;
+        case 'upcoming': upcoming.push(e); break;
+        case 'completed': completed.push(e); break;
+        default: scheduled.push(e);
       }
     });
 
-    overdue.sort((a, b) => (a.nextDueDate ?? '').localeCompare(b.nextDueDate ?? ''));
-    attention.sort((a, b) => (a.nextDueDate ?? '9').localeCompare(b.nextDueDate ?? '9'));
-    inProgress.sort((a, b) => (a.nextDueDate ?? '9').localeCompare(b.nextDueDate ?? '9'));
-    upcoming.sort((a, b) => (a.nextDueDate ?? '9').localeCompare(b.nextDueDate ?? '9'));
-    completed.sort((a, b) => (b.dateCompleted ?? '').localeCompare(a.dateCompleted ?? ''));
+    return { overdue, upcoming, scheduled, completed };
+  }, [events]);
 
-    return { overdue, attention, inProgress, upcoming, completed: completed.slice(0, 20) };
-  }, [tasks]);
+  const handleComplete = (event: MaintenanceEvent) => {
+    completeMutation.mutate({ name: event.name, assetId: event.assetId });
+  };
 
-  const openAdd = () => { setEditingTask(undefined); setIsFormOpen(true); };
-  const openEdit = (t: MaintenanceTask) => { setEditingTask(t); setIsFormOpen(true); };
-  const closeForm = () => setIsFormOpen(false);
-
-  const isEmpty = tasks.length === 0 && !isLoading;
+  const isEmpty = events.length === 0 && !isLoading;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground">Reminders</h1>
-        <Button onClick={openAdd}>
-          <Plus className="h-4 w-4" />
-          Add Reminder
-        </Button>
+        <h1 className="text-2xl font-bold text-foreground">Maintenance</h1>
       </div>
 
       {isLoading ? (
-        <p className="text-muted-foreground">Loading…</p>
+        <p className="text-muted-foreground">Loading...</p>
       ) : isEmpty ? (
         <div className="flex flex-col items-center gap-4 py-16 text-center">
-          <ClipboardCheck className="h-12 w-12 text-muted-foreground" />
-          <p className="text-muted-foreground">No reminders yet. Add a reminder or generate a maintenance plan from an asset.</p>
-          <Button onClick={openAdd}>
-            <Plus className="h-4 w-4" />
-            Add Reminder
-          </Button>
+          <CalendarCheck className="h-12 w-12 text-muted-foreground" />
+          <p className="text-muted-foreground">No maintenance events scheduled yet.</p>
+          <p className="text-sm text-muted-foreground">Open an asset and click "Enrich with AI" to generate a maintenance schedule, then schedule events to Google Calendar.</p>
         </div>
       ) : (
         <div className="space-y-6">
           {overdue.length > 0 && (
             <Section title="Overdue" count={overdue.length} accentClass="text-destructive">
-              {overdue.map((t) => (
-                <MaintenanceTaskCard key={t.id} task={t} variant="overdue" onComplete={() => completeTask.mutate(t)} onClick={() => openEdit(t)} />
-              ))}
-            </Section>
-          )}
-
-          {attention.length > 0 && (
-            <Section title="Needs Attention" count={attention.length} accentClass="text-amber-500">
-              {attention.map((t) => (
-                <MaintenanceTaskCard key={t.id} task={t} variant="attention" onComplete={() => completeTask.mutate(t)} onClick={() => openEdit(t)} />
-              ))}
-            </Section>
-          )}
-
-          {inProgress.length > 0 && (
-            <Section title="In Progress" count={inProgress.length} accentClass="text-violet-500">
-              {inProgress.map((t) => (
-                <MaintenanceTaskCard key={t.id} task={t} variant="upcoming" onComplete={() => completeTask.mutate(t)} onClick={() => openEdit(t)} />
+              {overdue.map((e, i) => (
+                <MaintenanceEventCard key={`${e.enrichmentId}-${e.suggestionIndex}`} event={e} onComplete={() => handleComplete(e)} />
               ))}
             </Section>
           )}
 
           <Section title="Upcoming" count={upcoming.length} accentClass="text-blue-500">
             {upcoming.length === 0 ? (
-              <p className="text-sm text-muted-foreground pl-6">No upcoming reminders</p>
+              <p className="text-sm text-muted-foreground pl-6">No upcoming maintenance</p>
             ) : (
-              upcoming.map((t) => (
-                <MaintenanceTaskCard key={t.id} task={t} variant="upcoming" onComplete={() => completeTask.mutate(t)} onClick={() => openEdit(t)} />
+              upcoming.map((e) => (
+                <MaintenanceEventCard key={`${e.enrichmentId}-${e.suggestionIndex}`} event={e} onComplete={() => handleComplete(e)} />
               ))
             )}
           </Section>
 
+          {scheduled.length > 0 && (
+            <Section title="Scheduled" count={scheduled.length} accentClass="text-muted-foreground">
+              {scheduled.map((e) => (
+                <MaintenanceEventCard key={`${e.enrichmentId}-${e.suggestionIndex}`} event={e} onComplete={() => handleComplete(e)} />
+              ))}
+            </Section>
+          )}
+
           {completed.length > 0 && (
-            <Section title="Completed" count={completed.length} accentClass="text-emerald-500" defaultOpen={false}>
-              {completed.map((t) => (
-                <MaintenanceTaskCard key={t.id} task={t} variant="completed" onClick={() => openEdit(t)} />
+            <Section title="Recently Completed" count={completed.length} accentClass="text-emerald-500" defaultOpen={false}>
+              {completed.map((e) => (
+                <MaintenanceEventCard key={`${e.enrichmentId}-${e.suggestionIndex}`} event={e} onComplete={() => handleComplete(e)} />
               ))}
             </Section>
           )}
         </div>
       )}
-
-      <ResponsiveFormDialog
-        open={isFormOpen}
-        onOpenChange={setIsFormOpen}
-        title={editingTask ? 'Edit Reminder' : 'Add Reminder'}
-      >
-        <MaintenanceTaskForm task={editingTask} onClose={closeForm} />
-      </ResponsiveFormDialog>
     </div>
   );
 }

@@ -73,39 +73,6 @@ const toolDeclarations = [
     },
   },
   {
-    name: "create_maintenance_task",
-    description: "Create a reminder (tasks table) linked to an asset.",
-    parameters: {
-      type: "object",
-      properties: {
-        name: { type: "string", description: "Task name" },
-        asset_id: { type: "string" },
-        provider_id: { type: "string" },
-        next_due_date: { type: "string", description: "YYYY-MM-DD (optional)" },
-        recurrence_rule: { type: "string", description: "e.g. 7d, 30d, 3m, 6m, 1y" },
-        notes: { type: "string" },
-        status: { type: "string", enum: ["pending", "needs_attention", "completed"], description: "Default 'pending'" },
-      },
-      required: ["name"],
-    },
-  },
-  {
-    name: "update_maintenance_task",
-    description: "Update an existing reminder (tasks table).",
-    parameters: {
-      type: "object",
-      properties: {
-        id: { type: "string", description: "The task's UUID" },
-        name: { type: "string" },
-        status: { type: "string", enum: ["pending", "needs_attention", "completed"] },
-        next_due_date: { type: "string" },
-        notes: { type: "string" },
-        date_completed: { type: "string", description: "YYYY-MM-DD" },
-      },
-      required: ["id"],
-    },
-  },
-  {
     name: "create_asset",
     description: "Create a new asset (assets table).",
     parameters: {
@@ -191,33 +158,6 @@ async function executeFunctionCall(name: string, args: any, sb: any): Promise<{ 
         if (error) return { success: false, error: error.message };
         return { success: true, record: data };
       }
-      case "create_maintenance_task": {
-        const row: any = { name: args.name, status: args.status || "pending" };
-        if (args.asset_id) row.asset_id = args.asset_id;
-        if (args.provider_id) row.provider_id = args.provider_id;
-        if (args.next_due_date) row.next_due_date = args.next_due_date;
-        if (args.recurrence_rule) row.recurrence_rule = args.recurrence_rule;
-        if (args.notes) row.notes = args.notes;
-        const { data, error } = await sb.from("tasks").insert(row).select().single();
-        if (error) return { success: false, error: error.message };
-        return { success: true, record: data };
-      }
-      case "update_maintenance_task": {
-        const updates: any = {};
-        if (args.name !== undefined) updates.name = args.name;
-        if (args.status !== undefined) {
-          updates.status = args.status;
-          if (args.status === "completed" && !args.date_completed) {
-            updates.date_completed = new Date().toISOString().split("T")[0];
-          }
-        }
-        if (args.date_completed !== undefined) updates.date_completed = args.date_completed;
-        if (args.next_due_date !== undefined) updates.next_due_date = args.next_due_date === "" ? null : args.next_due_date;
-        if (args.notes !== undefined) updates.notes = args.notes;
-        const { data, error } = await sb.from("tasks").update(updates).eq("id", args.id).select().single();
-        if (error) return { success: false, error: error.message };
-        return { success: true, record: data };
-      }
       case "create_asset": {
         const row: any = { name: args.name };
         if (args.category_id) row.category_id = args.category_id;
@@ -285,17 +225,17 @@ function buildIdeaSection(ideas: any[]): string {
   return `\nIDEAS:\n${lines.join("\n")}`;
 }
 
-function buildMaintenanceSection(tasks: any[]): string {
-  if (!tasks?.length) return "";
-  const lines = tasks.map((t) => {
-    const parts = [`- [${t.id}] ${t.name} [Status: ${t.status || "pending"}]`];
-    if (t.assetName) parts.push(`Asset: ${t.assetName}`);
-    if (t.nextDueDate) parts.push(`Due: ${t.nextDueDate}`);
-    if (t.recurrenceRule) parts.push(`Recurrence: ${t.recurrenceRule}`);
-    if (t.providerName) parts.push(`Provider: ${t.providerName}`);
+function buildMaintenanceSection(events: any[]): string {
+  if (!events?.length) return "";
+  const lines = events.map((e) => {
+    const parts = [`- ${e.name}`];
+    if (e.assetName) parts.push(`Asset: ${e.assetName}`);
+    if (e.nextDueDate) parts.push(`Due: ${e.nextDueDate}`);
+    if (e.frequency) parts.push(`Every ${e.frequency.interval} ${e.frequency.unit}`);
+    if (e.status) parts.push(`[${e.status}]`);
     return parts.join(" ");
   });
-  return `\nREMINDERS (asset-related recurring/scheduled reminders):\n${lines.join("\n")}`;
+  return `\nMAINTENANCE EVENTS (scheduled from AI enrichments):\n${lines.join("\n")}`;
 }
 
 function buildProviderSection(providers: any[]): string {
@@ -371,7 +311,7 @@ ${dataSections}
 When answering:
 - NEVER include UUIDs, database IDs, or internal identifiers in your responses. Only show human-readable information like titles, names, dates, statuses, and priorities. IDs are for internal use only.
 - Reference specific items by name when relevant
-- If asked about tasks, distinguish between Kanban tasks (personal/ad-hoc) and reminders (asset-related maintenance reminders)
+- If asked about tasks, distinguish between Kanban tasks (personal/ad-hoc) and maintenance events (asset-related scheduled maintenance from AI enrichments)
 - For task counts or summaries, give accurate numbers based on the data
 - For overdue items, compare due dates against today's date (${today})
 - If asked to find something, search across all data types

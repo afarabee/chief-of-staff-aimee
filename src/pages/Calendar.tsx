@@ -10,9 +10,7 @@ import { useCalendarTasks, CalendarItem, isItemCompleted } from '@/hooks/useCale
 import { MonthlyView } from '@/components/calendar/MonthlyView';
 import { WeeklyView } from '@/components/calendar/WeeklyView';
 import { DailyView } from '@/components/calendar/DailyView';
-import { CreateTaskDialog } from '@/components/calendar/CreateTaskDialog';
 import { TaskForm } from '@/components/tasks/TaskForm';
-import { MaintenanceTaskForm } from '@/components/maintenance/MaintenanceTaskForm';
 import { usePageTitle } from '@/hooks/usePageTitle';
 
 type ViewMode = 'monthly' | 'weekly' | 'daily';
@@ -30,8 +28,6 @@ export default function CalendarPage() {
   }, [items, showCompleted]);
 
   const [createDate, setCreateDate] = useState<Date | null>(null);
-  const [createType, setCreateType] = useState<'kanban' | 'maintenance' | null>(null);
-  const [showCreateNoDate, setShowCreateNoDate] = useState(false);
   const [editItem, setEditItem] = useState<CalendarItem | null>(null);
 
   const navigate = useCallback((dir: 1 | -1) => {
@@ -54,10 +50,12 @@ export default function CalendarPage() {
 
   const handleDayClick = (date: Date) => { setCurrentDate(date); setView('daily'); };
   const handleEmptyDayClick = (date: Date) => { setCreateDate(date); };
-  const handleSelectCreateType = (type: 'kanban' | 'maintenance') => { setCreateType(type); };
-  const handleEditItem = (item: CalendarItem) => { setEditItem(item); };
+  const handleEditItem = (item: CalendarItem) => {
+    // Only kanban tasks are editable from the calendar; maintenance events are managed on asset pages
+    if (item.type === 'kanban') setEditItem(item);
+  };
 
-  const closeCreate = () => { setCreateDate(null); setCreateType(null); setShowCreateNoDate(false); };
+  const closeCreate = () => { setCreateDate(null); };
   const closeEdit = () => { setEditItem(null); };
 
   return (
@@ -91,13 +89,13 @@ export default function CalendarPage() {
         </span>
         <span className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-orange-500" />
-          Reminders
+          Maintenance
         </span>
         <span className="hidden sm:inline text-muted-foreground">Double-click a day to add a task</span>
         <div className="flex items-center gap-2 ml-auto">
           <Switch id="show-completed" checked={showCompleted} onCheckedChange={setShowCompleted} />
           <Label htmlFor="show-completed" className="text-xs cursor-pointer">Show completed</Label>
-          <Button variant="outline" size="icon" className="h-7 w-7 ml-1" onClick={() => setShowCreateNoDate(true)}>
+          <Button variant="outline" size="icon" className="h-7 w-7 ml-1" onClick={() => setCreateDate(new Date())}>
             <Plus className="h-4 w-4" />
           </Button>
         </div>
@@ -113,34 +111,16 @@ export default function CalendarPage() {
         </>
       )}
 
-      <CreateTaskDialog
-        open={(!!createDate || showCreateNoDate) && !createType}
-        onOpenChange={(open) => { if (!open) closeCreate(); }}
-        onSelectType={handleSelectCreateType}
-        date={createDate}
-      />
-
-      <ResponsiveFormDialog open={createType === 'kanban'} onOpenChange={(open) => { if (!open) closeCreate(); }} title="New Kanban Task">
+      <ResponsiveFormDialog open={!!createDate} onOpenChange={(open) => { if (!open) closeCreate(); }} title={createDate ? `New Task for ${format(createDate, 'MMM d, yyyy')}` : 'New Task'}>
         <TaskForm task={{ dueDate: createDate ?? undefined } as any} onClose={closeCreate} />
       </ResponsiveFormDialog>
 
-      <ResponsiveFormDialog open={createType === 'maintenance'} onOpenChange={(open) => { if (!open) closeCreate(); }} title="New Reminder">
-        <MaintenanceTaskForm task={{ nextDueDate: createDate ? format(createDate, 'yyyy-MM-dd') : undefined } as any} onClose={closeCreate} />
-      </ResponsiveFormDialog>
-
       {editItem && (
-        <ResponsiveFormDialog open={!!editItem} onOpenChange={(open) => { if (!open) closeEdit(); }} title={`Edit ${editItem.type === 'kanban' ? 'Kanban Task' : 'Reminder'}`}>
-          {editItem.type === 'kanban' ? (
-            <TaskForm
-              task={{ id: editItem.id, title: editItem.title, description: editItem.description ?? '', dueDate: new Date(editItem.date + 'T00:00:00'), status: editItem.status as any, priority: editItem.priority as any, categoryId: null, createdAt: new Date(), completedAt: null, imageUrl: null }}
-              onClose={closeEdit}
-            />
-          ) : (
-            <MaintenanceTaskForm
-              task={{ id: editItem.id, name: editItem.title, nextDueDate: editItem.date, status: editItem.status, recurrenceRule: editItem.recurrenceRule ?? null, assetName: editItem.assetName, providerName: editItem.providerName, notes: editItem.description ?? null } as any}
-              onClose={closeEdit}
-            />
-          )}
+        <ResponsiveFormDialog open={!!editItem} onOpenChange={(open) => { if (!open) closeEdit(); }} title="Edit Task">
+          <TaskForm
+            task={{ id: editItem.id, title: editItem.title, description: editItem.description ?? '', dueDate: new Date(editItem.date + 'T00:00:00'), status: editItem.status as any, priority: editItem.priority as any, categoryId: null, createdAt: new Date(), completedAt: null, imageUrl: null }}
+            onClose={closeEdit}
+          />
         </ResponsiveFormDialog>
       )}
     </div>

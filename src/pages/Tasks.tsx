@@ -7,11 +7,8 @@ import { useApp } from '@/contexts/AppContext';
 import { Task, TaskStatus, TaskPriority } from '@/types';
 import { KanbanColumn } from '@/components/tasks/KanbanColumn';
 import { TaskForm } from '@/components/tasks/TaskForm';
-import { MaintenanceTaskForm } from '@/components/maintenance/MaintenanceTaskForm';
-import { useKanbanMaintenanceTasks } from '@/hooks/useMaintenanceTasks';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { ResponsiveFormDialog } from '@/components/ui/responsive-dialog';
 import {
@@ -32,7 +29,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from '@/hooks/use-toast';
-import type { MaintenanceTask } from '@/types/maintenance';
 
 const statusOrder: TaskStatus[] = ['backlog', 'to-do', 'in-progress', 'blocked', 'done'];
 
@@ -43,12 +39,7 @@ export default function Tasks() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>();
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
-  const [showMaintenance, setShowMaintenance] = useState(true);
-  const [editingMaintenanceTask, setEditingMaintenanceTask] = useState<MaintenanceTask | undefined>();
-  const [isMaintenanceFormOpen, setIsMaintenanceFormOpen] = useState(false);
   const [showPurgeDialog, setShowPurgeDialog] = useState(false);
-
-  const { data: maintenanceTasks = [] } = useKanbanMaintenanceTasks();
 
   // Auto-open edit dialog from search param
   useEffect(() => {
@@ -87,11 +78,11 @@ export default function Tasks() {
       blocked: [],
       done: [],
     };
-    
+
     filteredTasks.forEach((task) => {
       grouped[task.status].push(task);
     });
-    
+
     Object.keys(grouped).forEach((status) => {
       grouped[status as TaskStatus].sort((a, b) => {
         if (a.dueDate && !b.dueDate) return -1;
@@ -102,35 +93,20 @@ export default function Tasks() {
         return 0;
       });
     });
-    
+
     return grouped;
   }, [filteredTasks]);
 
-  const maintenanceByStatus = useMemo(() => {
-    if (!showMaintenance) return {} as Record<TaskStatus, MaintenanceTask[]>;
-    const mapped: Partial<Record<TaskStatus, MaintenanceTask[]>> = {};
-    maintenanceTasks.forEach((t) => {
-      let col: TaskStatus;
-      if (t.status === 'needs_attention') col = 'blocked';
-      else if (t.status === 'in_progress') col = 'in-progress';
-      else if (t.status === 'completed') col = 'done';
-      else col = 'to-do';
-      if (!mapped[col]) mapped[col] = [];
-      mapped[col]!.push(t);
-    });
-    return mapped;
-  }, [maintenanceTasks, showMaintenance]);
-
   const handleDragEnd = (result: DropResult) => {
     const { destination, draggableId } = result;
-    
+
     if (!destination) return;
-    
+
     const newStatus = destination.droppableId as TaskStatus;
     const task = tasks.find((t) => t.id === draggableId);
-    
+
     if (task && task.status !== newStatus) {
-      updateTask(task.id, { 
+      updateTask(task.id, {
         status: newStatus,
         completedAt: newStatus === 'done' ? new Date() : null
       });
@@ -196,13 +172,8 @@ export default function Tasks() {
           </SelectContent>
         </Select>
 
-        <div className="flex items-center gap-2 ml-auto">
-          <Switch id="show-maintenance" checked={showMaintenance} onCheckedChange={setShowMaintenance} />
-          <Label htmlFor="show-maintenance" className="text-sm text-muted-foreground">Reminders</Label>
-        </div>
-
         {tasksByStatus.done.length > 0 && (
-          <Button variant="destructive" size="sm" className="gap-2" onClick={() => setShowPurgeDialog(true)}>
+          <Button variant="destructive" size="sm" className="gap-2 ml-auto" onClick={() => setShowPurgeDialog(true)}>
             <Trash2 className="h-4 w-4" />
             Purge Done ({tasksByStatus.done.length})
           </Button>
@@ -218,8 +189,6 @@ export default function Tasks() {
                 status={status}
                 tasks={tasksByStatus[status]}
                 onTaskClick={handleOpenForm}
-                maintenanceTasks={maintenanceByStatus[status] ?? []}
-                onMaintenanceTaskClick={(t) => { setEditingMaintenanceTask(t); setIsMaintenanceFormOpen(true); }}
               />
             ))}
           </div>
@@ -235,14 +204,6 @@ export default function Tasks() {
           task={editingTask}
           onClose={handleCloseForm}
         />
-      </ResponsiveFormDialog>
-
-      <ResponsiveFormDialog
-        open={isMaintenanceFormOpen}
-        onOpenChange={(open) => { if (!open) setIsMaintenanceFormOpen(false); }}
-        title="Edit Reminder"
-      >
-        <MaintenanceTaskForm task={editingMaintenanceTask} onClose={() => setIsMaintenanceFormOpen(false)} />
       </ResponsiveFormDialog>
 
       <AlertDialog open={showPurgeDialog} onOpenChange={setShowPurgeDialog}>

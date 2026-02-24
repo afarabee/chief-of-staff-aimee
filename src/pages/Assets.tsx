@@ -1,20 +1,14 @@
 import { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { format, parseISO, isPast, isToday } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { icons } from 'lucide-react';
-import { ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, Circle, Loader2, Package, Pencil, Plus, Repeat, Sparkles, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Package, Pencil, Plus, Sparkles, Trash2 } from 'lucide-react';
 import { usePageTitle } from '@/hooks/usePageTitle';
-import { useAssets, useDeleteAsset, useUpdateAsset } from '@/hooks/useAssets';
-import { useAssetMaintenanceTasks, useCompleteMaintenanceTask } from '@/hooks/useMaintenanceTasks';
+import { useAssets, useDeleteAsset } from '@/hooks/useAssets';
 import { AssetCard } from '@/components/assets/AssetCard';
 import { AssetForm } from '@/components/assets/AssetForm';
-import { MaintenanceTaskForm } from '@/components/maintenance/MaintenanceTaskForm';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { cn } from '@/lib/utils';
 import { ResponsiveFormDialog } from '@/components/ui/responsive-dialog';
 import {
   AlertDialog,
@@ -29,104 +23,11 @@ import {
 } from '@/components/ui/alert-dialog';
 import type { Asset } from '@/types/assets';
 import { useEffect } from 'react';
-import type { MaintenanceTask } from '@/types/maintenance';
 import { LinkedProvidersSection } from '@/components/links/LinkedProvidersSection';
 import { useEnrichAndSave } from '@/hooks/useEnrichAndSave';
 import { useAssetProviders } from '@/hooks/useAssetProviders';
 import { useAssetEnrichment } from '@/hooks/useAssetEnrichment';
 import { AssetSuggestionsSection } from '@/components/assets/AssetSuggestionsSection';
-
-function AssetTasksSection({ assetId, showOnKanban }: { assetId: string; showOnKanban: boolean }) {
-  const { data: tasks = [] } = useAssetMaintenanceTasks(assetId);
-  const completeTask = useCompleteMaintenanceTask();
-  const updateAsset = useUpdateAsset();
-  const [taskFormOpen, setTaskFormOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<MaintenanceTask | undefined>();
-  const [completedOpen, setCompletedOpen] = useState(false);
-
-  const pendingTasks = tasks.filter((t) => t.status === 'pending' || t.status === 'needs_attention');
-  const completedTasks = tasks.filter((t) => t.status === 'completed').slice(0, 10);
-
-  const toggleKanban = (checked: boolean) => {
-    updateAsset.mutate({ id: assetId, show_on_kanban: checked });
-  };
-
-  const openTaskAdd = () => { setEditingTask(undefined); setTaskFormOpen(true); };
-  const openTaskEdit = (t: MaintenanceTask) => { setEditingTask(t); setTaskFormOpen(true); };
-
-  return (
-    <div className="pt-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-foreground">Tasks</h2>
-        <div className="flex items-center gap-2">
-          <Switch id="kanban-toggle" checked={showOnKanban} onCheckedChange={toggleKanban} />
-          <Label htmlFor="kanban-toggle" className="text-xs text-muted-foreground">Show on Kanban</Label>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <h3 className="text-sm font-medium text-muted-foreground">Pending</h3>
-        {pendingTasks.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No pending tasks</p>
-        ) : (
-          pendingTasks.map((t) => {
-            const isOverdue = t.nextDueDate && isPast(parseISO(t.nextDueDate)) && !isToday(parseISO(t.nextDueDate));
-            return (
-              <div
-                key={t.id}
-                className="flex items-center gap-3 rounded-lg border p-2 cursor-pointer hover:bg-accent/50"
-                onClick={() => openTaskEdit(t)}
-              >
-                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={(e) => { e.stopPropagation(); completeTask.mutate(t); }}>
-                  <Circle className="h-5 w-5 text-muted-foreground" />
-                </Button>
-                <div className="flex-1 min-w-0 flex items-center gap-1.5">
-                  <span className="text-sm truncate">{t.name}</span>
-                  {t.recurrenceRule && <Repeat className="h-3 w-3 text-muted-foreground shrink-0" />}
-                  {t.status === 'needs_attention' && <span className="h-2 w-2 rounded-full bg-amber-500 shrink-0" />}
-                </div>
-                {t.nextDueDate && (
-                  <span className={cn('text-xs whitespace-nowrap', isOverdue ? 'text-destructive font-medium' : 'text-muted-foreground')}>
-                    {format(parseISO(t.nextDueDate), 'MMM d')}
-                  </span>
-                )}
-              </div>
-            );
-          })
-        )}
-        <Button variant="outline" size="sm" className="gap-1" onClick={openTaskAdd}>
-          <Plus className="h-3 w-3" /> Add Reminder
-        </Button>
-      </div>
-
-      {completedTasks.length > 0 && (
-        <Collapsible open={completedOpen} onOpenChange={setCompletedOpen}>
-          <CollapsibleTrigger className="flex items-center gap-2">
-            <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', !completedOpen && '-rotate-90')} />
-            <h3 className="text-sm font-medium text-muted-foreground">Completed ({completedTasks.length})</h3>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="mt-2 space-y-2">
-            {completedTasks.map((t) => (
-              <div key={t.id} className="flex items-center gap-3 rounded-lg border p-2 opacity-70 cursor-pointer hover:bg-accent/50" onClick={() => openTaskEdit(t)}>
-                <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
-                <span className="text-sm truncate line-through text-muted-foreground flex-1">{t.name}</span>
-                {t.dateCompleted && <span className="text-xs text-muted-foreground">{format(parseISO(t.dateCompleted), 'MMM d')}</span>}
-              </div>
-            ))}
-          </CollapsibleContent>
-        </Collapsible>
-      )}
-
-      <ResponsiveFormDialog
-        open={taskFormOpen}
-        onOpenChange={setTaskFormOpen}
-        title={editingTask ? 'Edit Reminder' : 'Add Reminder'}
-      >
-        <MaintenanceTaskForm task={editingTask} lockedAssetId={assetId} onClose={() => setTaskFormOpen(false)} />
-      </ResponsiveFormDialog>
-    </div>
-  );
-}
 
 function DynamicIcon({ name, className }: { name: string; className?: string }) {
   const pascalName = name.split('-').map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join('');
@@ -180,12 +81,15 @@ export default function Assets() {
   const { enrich, isEnriching } = useEnrichAndSave();
   const activeAssetId = view === 'detail' && selectedAsset ? selectedAsset.id : undefined;
   const { data: linkedProviders = [] } = useAssetProviders(activeAssetId);
-  const { data: maintenanceTasks = [] } = useAssetMaintenanceTasks(activeAssetId);
   const { data: assetEnrichment } = useAssetEnrichment(activeAssetId);
 
   const handleEnrichAsset = (asset: Asset) => {
     const providerNames = linkedProviders.map((p) => p.name).join(', ') || 'None';
-    const taskNames = maintenanceTasks.map((t) => t.name).join(', ') || 'None';
+    // Pull existing maintenance events from enrichment suggestions
+    const scheduledNames = assetEnrichment?.suggestions
+      ?.filter((s: any) => s.status === 'scheduled')
+      ?.map((s: any) => s.suggestion)
+      ?.join(', ') || 'None';
     enrich({
       itemType: 'asset',
       itemTitle: asset.name,
@@ -197,7 +101,7 @@ export default function Assets() {
         notes: asset.notes || '',
         purchase_date: asset.purchaseDate || 'Unknown',
         linked_providers: providerNames,
-        existing_tasks: taskNames,
+        existing_tasks: scheduledNames,
       },
     });
   };
@@ -287,8 +191,6 @@ export default function Assets() {
             <p className="text-sm text-muted-foreground">No maintenance schedule yet. Click "Enrich with AI" to generate one.</p>
           )}
         </div>
-
-        <AssetTasksSection assetId={fresh.id} showOnKanban={fresh.showOnKanban} />
 
         <ResponsiveFormDialog open={isFormOpen} onOpenChange={setIsFormOpen} title={editingAsset ? 'Edit Asset' : 'Add Asset'}>
           <AssetForm asset={editingAsset} onClose={closeForm} />
