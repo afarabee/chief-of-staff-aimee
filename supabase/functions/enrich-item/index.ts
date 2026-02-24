@@ -104,43 +104,52 @@ Respond ONLY with a JSON array of objects. Each object has a single "suggestion"
 }
 
 /**
- * Groups unbundled suggestions that share the same frequency + due date into bundles.
- * Leaves already-bundled suggestions and unique ones untouched.
+ * Groups all suggestions that share the same frequency + due date into a single bundle.
+ * Handles both unbundled items AND already-bundled items (merges them together).
  */
 function autoBundleSuggestions(suggestions: Array<Record<string, any>>): Array<Record<string, any>> {
-  const groups = new Map<string, Array<Record<string, any>>>();
-  const result: Array<Record<string, any>> = [];
+  const groups = new Map<string, string[]>();
+  const groupMeta = new Map<string, { frequency: any; recommended_due_date: string }>();
+  const noKey: Array<Record<string, any>> = [];
 
   for (const s of suggestions) {
-    // Already bundled — keep as-is
-    if (Array.isArray(s.bundled_items) && s.bundled_items.length > 0) {
-      result.push(s);
-      continue;
-    }
-
     const freq = s.frequency;
     const date = s.recommended_due_date;
     if (!freq || !date) {
-      result.push(s);
+      noKey.push(s);
       continue;
     }
 
     const key = `${freq.interval}|${freq.unit}|${date}`;
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push(s);
+    if (!groups.has(key)) {
+      groups.set(key, []);
+      groupMeta.set(key, { frequency: freq, recommended_due_date: date });
+    }
+
+    // Flatten: if this item has bundled_items, add those; otherwise add the suggestion itself
+    if (Array.isArray(s.bundled_items) && s.bundled_items.length > 0) {
+      groups.get(key)!.push(...s.bundled_items);
+    } else {
+      groups.get(key)!.push(s.suggestion);
+    }
   }
 
-  for (const [, items] of groups) {
-    if (items.length === 1) {
-      result.push(items[0]);
-    } else {
-      // Create a bundle from multiple same-schedule items
-      const first = items[0];
-      const freq = first.frequency;
-      const unit = freq.unit as string;
-      const interval = freq.interval as number;
+  const result: Array<Record<string, any>> = [...noKey];
 
-      // Build a descriptive title
+  for (const [key, items] of groups) {
+    const meta = groupMeta.get(key)!;
+    if (items.length === 1) {
+      // Single task — no bundle needed
+      result.push({
+        suggestion: items[0],
+        frequency: meta.frequency,
+        recommended_due_date: meta.recommended_due_date,
+      });
+    } else {
+      // Multiple tasks — create a bundle
+      const unit = meta.frequency.unit as string;
+      const interval = meta.frequency.interval as number;
+
       let title: string;
       if (interval === 1 && unit === "years") title = "Annual maintenance";
       else if (interval === 6 && unit === "months") title = "Semi-annual maintenance";
@@ -150,9 +159,9 @@ function autoBundleSuggestions(suggestions: Array<Record<string, any>>): Array<R
 
       result.push({
         suggestion: title,
-        frequency: first.frequency,
-        recommended_due_date: first.recommended_due_date,
-        bundled_items: items.map((i) => i.suggestion),
+        frequency: meta.frequency,
+        recommended_due_date: meta.recommended_due_date,
+        bundled_items: items,
       });
     }
   }
