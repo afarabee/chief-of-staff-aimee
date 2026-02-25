@@ -256,8 +256,36 @@ serve(async (req) => {
 
     const result = await res.json();
 
+    // --- SMS via email-to-SMS gateway ---
+    let smsSent = false;
+    const smsAddress = Deno.env.get("DIGEST_SMS_ADDRESS");
+    if (smsAddress) {
+      const overdue = items.filter((i) => i.urgency === "overdue");
+      const upcoming = items.filter((i) => i.urgency === "upcoming");
+      // Keep it short for SMS (160 char segments)
+      let smsText = `CoS: ${items.length} items need attention.`;
+      if (overdue.length > 0) smsText += ` ${overdue.length} overdue.`;
+      if (upcoming.length > 0) smsText += ` ${upcoming.length} upcoming.`;
+      smsText += ` ${appUrl}`;
+
+      const smsRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "CoS <onboarding@resend.dev>",
+          to: [smsAddress],
+          subject: "CoS Alert",
+          text: smsText,
+        }),
+      });
+      smsSent = smsRes.ok;
+    }
+
     return new Response(
-      JSON.stringify({ sent: true, itemCount: items.length, resendId: result.id }),
+      JSON.stringify({ sent: true, smsSent, itemCount: items.length, resendId: result.id }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
