@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { SearchModal } from '@/components/search/SearchModal';
 import { InlineSearch } from '@/components/search/InlineSearch';
 import { AIChatBot } from '@/components/chat/AIChatBot';
+import { NotificationBell } from './NotificationBell';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -41,6 +42,9 @@ export function AppLayout({ children }: AppLayoutProps) {
               <span className="sr-only">Search (⌘K)</span>
             </Button>
             <InlineSearch />
+            <div className="ml-auto">
+              <NotificationBell />
+            </div>
           </header>
           <div className="p-4 md:p-8">{children}</div>
         </main>
