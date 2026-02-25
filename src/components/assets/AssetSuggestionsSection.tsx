@@ -41,6 +41,7 @@ export function AssetSuggestionsSection({ enrichment, assetName, assetId }: Prop
   const [customUnit, setCustomUnit] = useState<StructuredFrequency['unit']>('months');
   const [schedulingIdx, setSchedulingIdx] = useState<number | null>(null);
   const [selectedProviderId, setSelectedProviderId] = useState<string>('none');
+  const [editBundledItems, setEditBundledItems] = useState<string[]>([]);
 
   // Manual add form state
   const [showManualForm, setShowManualForm] = useState(false);
@@ -109,7 +110,7 @@ export function AssetSuggestionsSection({ enrichment, assetName, assetId }: Prop
       await scheduleToCalendar.mutateAsync({
         enrichmentId: enrichment.id,
         suggestionIndex: idx,
-        summary: s.suggestion,
+        summary: `${assetName || enrichment.item_title}: ${s.suggestion}`,
         description,
         startDate: s.recommended_due_date || new Date().toISOString().split('T')[0],
         frequency: freq,
@@ -172,7 +173,7 @@ export function AssetSuggestionsSection({ enrichment, assetName, assetId }: Prop
       await scheduleToCalendar.mutateAsync({
         enrichmentId: enrichment.id,
         suggestionIndex: -1, // Won't update any existing suggestion
-        summary: manualForm.summary,
+        summary: `${assetName || enrichment.item_title}: ${manualForm.summary}`,
         description: `Asset: ${assetName || enrichment.item_title}`,
         startDate: manualForm.start_date,
         frequency: freq,
@@ -190,6 +191,7 @@ export function AssetSuggestionsSection({ enrichment, assetName, assetId }: Prop
       suggestion: s.suggestion,
       recommended_due_date: s.recommended_due_date || '',
     });
+    setEditBundledItems((s as any).bundled_items || []);
     const key = findPresetKey(s.frequency);
     setFreqPreset(key);
     if (key === 'custom') {
@@ -228,6 +230,7 @@ export function AssetSuggestionsSection({ enrichment, assetName, assetId }: Prop
         suggestion: editForm.suggestion,
         frequency: getFrequencyValue(),
         recommended_due_date: editForm.recommended_due_date,
+        bundled_items: editBundledItems.filter((item) => item.trim() !== ''),
       },
     });
     setEditingIdx(null);
@@ -264,6 +267,44 @@ export function AssetSuggestionsSection({ enrichment, assetName, assetId }: Prop
                     onChange={(e) => setEditForm({ ...editForm, suggestion: e.target.value })}
                     placeholder="Maintenance task"
                   />
+                  {editBundledItems.length > 0 && (
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Checklist items</label>
+                      {editBundledItems.map((item, i) => (
+                        <div key={i} className="flex gap-1.5 items-center">
+                          <span className="text-xs text-muted-foreground">•</span>
+                          <Input
+                            value={item}
+                            onChange={(e) => {
+                              const updated = [...editBundledItems];
+                              updated[i] = e.target.value;
+                              setEditBundledItems(updated);
+                            }}
+                            className="h-8 text-sm"
+                            placeholder="Checklist item"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                            onClick={() => setEditBundledItems(editBundledItems.filter((_, idx) => idx !== i))}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs gap-1"
+                        onClick={() => setEditBundledItems([...editBundledItems, ''])}
+                      >
+                        <Plus className="h-3 w-3" /> Add item
+                      </Button>
+                    </div>
+                  )}
                   <div className="flex gap-2">
                     <Select value={freqPreset} onValueChange={setFreqPreset}>
                       <SelectTrigger className="flex-1">
