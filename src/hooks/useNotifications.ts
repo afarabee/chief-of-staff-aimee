@@ -54,7 +54,7 @@ export function useNotifications() {
           dueDate: due,
           urgency: due < todayStr ? 'overdue' : 'upcoming',
           daysOffset: diffDays,
-          link: '/tasks',
+          link: `/tasks?edit=${t.id}`,
         });
       }
 
@@ -128,7 +128,7 @@ export function useNotifications() {
             dueDate: nextDueDate,
             urgency: isOverdue ? 'overdue' : 'upcoming',
             daysOffset: diffDays,
-            link: '/maintenance',
+            link: `/ai-activity/${enrichment.id}`,
           });
         }
       }

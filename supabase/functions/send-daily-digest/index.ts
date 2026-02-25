@@ -35,6 +35,7 @@ interface DigestItem {
   dueDate: string;
   urgency: "overdue" | "upcoming";
   daysOffset: number;
+  deepLink: string; // relative path e.g. /tasks?edit=ID or /ai-activity/ID
 }
 
 async function gatherItems(supabase: any): Promise<DigestItem[]> {
@@ -64,6 +65,7 @@ async function gatherItems(supabase: any): Promise<DigestItem[]> {
       dueDate: due,
       urgency: due < todayStr ? "overdue" : "upcoming",
       daysOffset: diff,
+      deepLink: `/tasks?edit=${t.id}`,
     });
   }
 
@@ -139,6 +141,7 @@ async function gatherItems(supabase: any): Promise<DigestItem[]> {
         dueDate: nextDueDate,
         urgency: isOverdue ? "overdue" : "upcoming",
         daysOffset: diff,
+        deepLink: `/ai-activity/${enrichment.id}`,
       });
     }
   }
@@ -166,9 +169,10 @@ function buildEmailHtml(items: DigestItem[], appUrl: string): string {
       const label = `${days} day${days !== 1 ? "s" : ""} overdue`;
       const typeLabel = item.type === "task" ? "Task" : "Maintenance";
       const subtitle = item.assetName ? ` &middot; ${item.assetName}` : "";
+      const itemUrl = `${appUrl}${item.deepLink}`;
       html += `<tr style="border-bottom: 1px solid #e5e7eb;">
         <td style="padding: 10px 0;">
-          <strong>${item.title}</strong>
+          <a href="${itemUrl}" style="color: #1a1a1a; text-decoration: none; font-weight: 600;">${item.title}</a>
           <span style="color:#6b7280; font-size:13px;">${subtitle}</span>
           <br/><span style="color:#9ca3af; font-size:12px;">${typeLabel}</span>
         </td>
@@ -188,9 +192,10 @@ function buildEmailHtml(items: DigestItem[], appUrl: string): string {
           : `${item.daysOffset} day${item.daysOffset !== 1 ? "s" : ""}`;
       const typeLabel = item.type === "task" ? "Task" : "Maintenance";
       const subtitle = item.assetName ? ` &middot; ${item.assetName}` : "";
+      const itemUrl = `${appUrl}${item.deepLink}`;
       html += `<tr style="border-bottom: 1px solid #e5e7eb;">
         <td style="padding: 10px 0;">
-          <strong>${item.title}</strong>
+          <a href="${itemUrl}" style="color: #1a1a1a; text-decoration: none; font-weight: 600;">${item.title}</a>
           <span style="color:#6b7280; font-size:13px;">${subtitle}</span>
           <br/><span style="color:#9ca3af; font-size:12px;">${typeLabel}</span>
         </td>
