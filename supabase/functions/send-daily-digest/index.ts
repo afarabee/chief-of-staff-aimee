@@ -242,7 +242,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "CoS Digest <onboarding@resend.dev>",
+        from: "CoS Digest <cos@genai-aims.com>",
         to: [recipientEmail],
         subject,
         html,
@@ -275,7 +275,7 @@ serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "CoS <onboarding@resend.dev>",
+          from: "CoS <cos@genai-aims.com>",
           to: [smsAddress],
           subject: "CoS Alert",
           text: smsText,
