@@ -448,6 +448,21 @@ export function AssetSuggestionsSection({ enrichment, assetName, assetId }: Prop
                         <CalendarPlus className="h-3.5 w-3.5" />
                         Schedule
                       </Button>
+                      <Button size="sm" variant="outline" className="gap-1.5" onClick={() => startEdit(realIdx)}>
+                        <Pencil className="h-3.5 w-3.5" /> Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="gap-1.5 text-muted-foreground"
+                        onClick={() => updateSuggestion.mutateAsync({
+                          enrichmentId: enrichment.id,
+                          suggestionIndex: realIdx,
+                          updates: { status: 'pending' },
+                        })}
+                      >
+                        Undo Accept
+                      </Button>
                     </div>
                   )}
 
