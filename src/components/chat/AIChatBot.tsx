@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect, useCallback, KeyboardEvent } from 'react';
-import { MessageCircle, X, SendHorizontal, Trash2 } from 'lucide-react';
+import { useState, useRef, useEffect, KeyboardEvent } from 'react';
+import { MessageCircle, X, SendHorizontal, Trash2, Mic, MicOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -137,6 +138,20 @@ export function AIChatBot() {
   const contextRef = useRef<ChatContext | null>(null);
   const contextFetchedRef = useRef(false);
   const queryClient = useQueryClient();
+  const sendFromVoiceRef = useRef<((text: string) => void) | null>(null);
+
+  const { transcript, isListening, isSupported, startListening, stopListening, resetTranscript } =
+    useSpeechRecognition((text) => {
+      // Called when speech ends with final transcript — auto-send
+      sendFromVoiceRef.current?.(text);
+    });
+
+  // Update input field live as user speaks
+  useEffect(() => {
+    if (isListening && transcript) {
+      setInput(transcript);
+    }
+  }, [transcript, isListening]);
 
   useEffect(() => {
     if (open && !contextFetchedRef.current) {
@@ -168,13 +183,14 @@ export function AIChatBot() {
     }
   }, [messages, loading, open]);
 
-  const sendMessage = async () => {
-    const text = input.trim();
+  const sendMessageWithText = async (overrideText?: string) => {
+    const text = (overrideText ?? input).trim();
     if (!text || loading) return;
 
     const userMsg: Message = { role: 'user', content: text };
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
+    resetTranscript();
     setLoading(true);
 
     try {
@@ -211,10 +227,18 @@ export function AIChatBot() {
     }
   };
 
+  // Wire up voice auto-send callback
+  useEffect(() => {
+    sendFromVoiceRef.current = (text: string) => {
+      if (!text.trim() || loading) return;
+      sendMessageWithText(text);
+    };
+  });
+
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      sendMessageWithText();
     }
   };
 
@@ -284,7 +308,19 @@ export function AIChatBot() {
               rows={1}
               disabled={loading}
             />
-            <Button size="icon" onClick={sendMessage} disabled={loading || !input.trim()}>
+            {isSupported && (
+              <Button
+                size="icon"
+                variant={isListening ? 'destructive' : 'outline'}
+                onClick={isListening ? stopListening : startListening}
+                disabled={loading}
+                title={isListening ? 'Stop listening' : 'Voice input'}
+                className={isListening ? 'animate-pulse' : ''}
+              >
+                {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              </Button>
+            )}
+            <Button size="icon" onClick={() => sendMessageWithText()} disabled={loading || !input.trim()}>
               <SendHorizontal className="h-4 w-4" />
             </Button>
           </CardFooter>
