@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.execute-suggestion]
 verify_jwt = false
+
+[functions.sync-calendar-events]
+verify_jwt = false

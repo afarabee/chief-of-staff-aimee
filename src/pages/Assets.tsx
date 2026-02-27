@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { icons } from 'lucide-react';
-import { ArrowLeft, Loader2, Package, Pencil, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Package, Pencil, Plus, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useAssets, useDeleteAsset } from '@/hooks/useAssets';
 import { AssetCard } from '@/components/assets/AssetCard';
@@ -28,6 +28,7 @@ import { useEnrichAndSave } from '@/hooks/useEnrichAndSave';
 import { useAssetProviders } from '@/hooks/useAssetProviders';
 import { useAssetEnrichment } from '@/hooks/useAssetEnrichment';
 import { AssetSuggestionsSection } from '@/components/assets/AssetSuggestionsSection';
+import { useSyncFromCalendar } from '@/hooks/useSyncFromCalendar';
 
 function DynamicIcon({ name, className }: { name: string; className?: string }) {
   const pascalName = name.split('-').map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join('');
@@ -82,6 +83,7 @@ export default function Assets() {
   const activeAssetId = view === 'detail' && selectedAsset ? selectedAsset.id : undefined;
   const { data: linkedProviders = [] } = useAssetProviders(activeAssetId);
   const { data: assetEnrichment } = useAssetEnrichment(activeAssetId);
+  const syncMutation = useSyncFromCalendar();
 
   const handleEnrichAsset = (asset: Asset) => {
     const providerNames = linkedProviders.map((p) => p.name).join(', ') || 'None';
@@ -184,7 +186,20 @@ export default function Assets() {
 
         {/* Maintenance Schedule from AI Enrichment */}
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold text-foreground">Maintenance Schedule</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-foreground">Maintenance Schedule</h2>
+            {assetEnrichment && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => syncMutation.mutate({ assetId: fresh.id })}
+                disabled={syncMutation.isPending}
+              >
+                <RefreshCw className={`h-4 w-4 mr-1.5 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
+                {syncMutation.isPending ? 'Syncing...' : 'Sync Calendar'}
+              </Button>
+            )}
+          </div>
           {assetEnrichment ? (
             <AssetSuggestionsSection enrichment={assetEnrichment} assetName={fresh.name} assetId={fresh.id} />
           ) : (

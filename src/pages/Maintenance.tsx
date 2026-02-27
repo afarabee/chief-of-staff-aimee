@@ -1,10 +1,12 @@
 import { useState, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
-import { CalendarCheck, CalendarDays, ChevronDown, Circle, CheckCircle2, ExternalLink } from 'lucide-react';
+import { CalendarCheck, CalendarDays, ChevronDown, Circle, CheckCircle2, ExternalLink, RefreshCw } from 'lucide-react';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useAllMaintenanceEvents } from '@/hooks/useAllMaintenanceEvents';
 import { useCompleteMaintenanceEvent } from '@/hooks/useMaintenanceTasks';
+import { useSyncFromCalendar } from '@/hooks/useSyncFromCalendar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
@@ -118,6 +120,7 @@ export default function Maintenance() {
   usePageTitle('Maintenance');
   const { data: events = [], isLoading } = useAllMaintenanceEvents();
   const completeMutation = useCompleteMaintenanceEvent();
+  const syncMutation = useSyncFromCalendar();
 
   const { overdue, upcoming, scheduled, completed } = useMemo(() => {
     const overdue: MaintenanceEvent[] = [];
@@ -147,6 +150,15 @@ export default function Maintenance() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Maintenance</h1>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => syncMutation.mutate({})}
+          disabled={syncMutation.isPending}
+        >
+          <RefreshCw className={cn('h-4 w-4 mr-1.5', syncMutation.isPending && 'animate-spin')} />
+          {syncMutation.isPending ? 'Syncing...' : 'Sync Calendar'}
+        </Button>
       </div>
 
       {isLoading ? (
