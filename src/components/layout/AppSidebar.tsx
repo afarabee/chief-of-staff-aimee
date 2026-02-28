@@ -1,4 +1,4 @@
-import { Calendar, CalendarCheck, CheckSquare, Lightbulb, LayoutDashboard, Tags, Package, Wrench, Sparkles } from 'lucide-react';
+import { Calendar, CalendarCheck, CheckSquare, Lightbulb, LayoutDashboard, Tags, Package, Wrench, Sparkles, ShoppingCart } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import {
   Sidebar,
@@ -16,6 +16,7 @@ import {
 const navItems = [
   { title: 'Today', url: '/', icon: LayoutDashboard },
   { title: 'Calendar', url: '/calendar', icon: Calendar },
+  { title: 'Shopping List', url: '/shopping-list', icon: ShoppingCart },
   { title: 'Tasks', url: '/tasks', icon: CheckSquare },
   { title: 'Ideas', url: '/ideas', icon: Lightbulb },
   { title: 'Categories', url: '/categories', icon: Tags },

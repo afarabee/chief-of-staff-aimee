@@ -17,6 +17,7 @@ import Maintenance from "./pages/Maintenance";
 import CalendarPage from "./pages/Calendar";
 import AiActivity from "./pages/AiActivity";
 import AiEnrichmentDetail from "./pages/AiEnrichmentDetail";
+import ShoppingList from "./pages/ShoppingList";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -48,6 +49,7 @@ const App = () => (
               <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/ai-activity" element={<AiActivity />} />
               <Route path="/ai-activity/:id" element={<AiEnrichmentDetail />} />
+              <Route path="/shopping-list" element={<ShoppingList />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

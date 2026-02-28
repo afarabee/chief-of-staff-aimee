@@ -34,3 +34,10 @@ export interface Idea {
   createdAt: Date;
   imageUrl: string | null;
 }
+
+export interface ShoppingItem {
+  id: string;
+  name: string;
+  checked: boolean;
+  createdAt: Date;
+}
