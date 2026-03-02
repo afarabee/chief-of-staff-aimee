@@ -211,6 +211,7 @@ export default function Maintenance() {
       {
         enrichmentId: event.enrichmentId,
         suggestionIndex: event.suggestionIndex,
+        calendarEventId: event.calendarEventId,
         updates: {
           suggestion: name.trim(),
           frequency,
