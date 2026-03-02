@@ -55,7 +55,7 @@ export function useAllMaintenanceEvents() {
         const suggestions = Array.isArray(enrichment.suggestions) ? enrichment.suggestions : [];
 
         suggestions.forEach((s: any, idx: number) => {
-          if (s.status !== 'scheduled') return;
+          if (s.status !== 'scheduled' && s.status !== 'accepted') return;
 
           const freq = typeof s.frequency === 'object' && s.frequency
             ? s.frequency
