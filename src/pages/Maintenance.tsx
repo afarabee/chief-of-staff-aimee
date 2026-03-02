@@ -1,11 +1,13 @@
 import { useState, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
-import { CalendarCheck, CalendarDays, ChevronDown, Circle, CheckCircle2, ExternalLink, Pencil, RefreshCw } from 'lucide-react';
+import { CalendarCheck, CalendarDays, CalendarPlus, ChevronDown, Circle, CheckCircle2, ExternalLink, Loader2, Pencil, RefreshCw } from 'lucide-react';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useAllMaintenanceEvents } from '@/hooks/useAllMaintenanceEvents';
 import { useCompleteMaintenanceEvent } from '@/hooks/useMaintenanceTasks';
 import { useSyncFromCalendar } from '@/hooks/useSyncFromCalendar';
 import { useUpdateMaintenanceSuggestion } from '@/hooks/useUpdateMaintenanceSuggestion';
+import { useScheduleToCalendar } from '@/hooks/useScheduleToCalendar';
+import { useProviders } from '@/hooks/useProviders';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -42,20 +44,38 @@ function Section({ title, count, accentClass, defaultOpen = true, children }: Se
   );
 }
 
+interface CardProps {
+  event: MaintenanceEvent;
+  onComplete: () => void;
+  onEdit: () => void;
+  onScheduleOpen: () => void;
+  isScheduling: boolean;
+  schedulingProviderId: string;
+  onProviderChange: (id: string) => void;
+  onScheduleConfirm: () => void;
+  onScheduleCancel: () => void;
+  isSchedulePending: boolean;
+  allProviders: { id: string; name: string }[];
+}
+
 function MaintenanceEventCard({
   event,
   onComplete,
   onEdit,
-}: {
-  event: MaintenanceEvent;
-  onComplete: () => void;
-  onEdit: () => void;
-}) {
+  onScheduleOpen,
+  isScheduling,
+  schedulingProviderId,
+  onProviderChange,
+  onScheduleConfirm,
+  onScheduleCancel,
+  isSchedulePending,
+  allProviders,
+}: CardProps) {
   const isCompleted = event.status === 'completed';
 
   return (
     <Card className={isCompleted ? 'opacity-60' : ''}>
-      <CardContent className="p-4">
+      <CardContent className="p-4 space-y-3">
         <div className="flex items-start gap-3">
           <button
             onClick={(e) => { e.stopPropagation(); if (!isCompleted) onComplete(); }}
@@ -65,11 +85,7 @@ function MaintenanceEventCard({
             )}
             disabled={isCompleted}
           >
-            {isCompleted ? (
-              <CheckCircle2 className="h-5 w-5" />
-            ) : (
-              <Circle className="h-5 w-5" />
-            )}
+            {isCompleted ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
           </button>
 
           <div className="flex-1 min-w-0 space-y-1">
@@ -100,9 +116,7 @@ function MaintenanceEventCard({
                 </span>
               )}
               {event.providerName && (
-                <Badge variant="outline" className="text-xs">
-                  {event.providerName}
-                </Badge>
+                <Badge variant="outline" className="text-xs">{event.providerName}</Badge>
               )}
               {event.lastCompleted && (
                 <span className="text-xs text-muted-foreground">
@@ -113,6 +127,15 @@ function MaintenanceEventCard({
           </div>
 
           <div className="flex items-center gap-1 shrink-0">
+            {!isCompleted && !event.calendarEventId && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onScheduleOpen(); }}
+                className="text-muted-foreground hover:text-blue-500 transition-colors p-1"
+                title="Schedule to Google Calendar"
+              >
+                <CalendarPlus className="h-3.5 w-3.5" />
+              </button>
+            )}
             <button
               onClick={(e) => { e.stopPropagation(); onEdit(); }}
               className="text-muted-foreground hover:text-foreground transition-colors p-1"
@@ -125,7 +148,7 @@ function MaintenanceEventCard({
                 href={event.calendarLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-500 hover:text-blue-600"
+                className="text-blue-500 hover:text-blue-600 p-1"
                 onClick={(e) => e.stopPropagation()}
               >
                 <ExternalLink className="h-4 w-4" />
@@ -133,6 +156,38 @@ function MaintenanceEventCard({
             )}
           </div>
         </div>
+
+        {/* Inline scheduling panel */}
+        {isScheduling && (
+          <div className="rounded-md border p-3 bg-muted/30 space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">Schedule to Google Calendar</p>
+            <Select value={schedulingProviderId} onValueChange={onProviderChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Link a provider (optional)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No provider</SelectItem>
+                {allProviders.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                className="gap-1.5"
+                onClick={onScheduleConfirm}
+                disabled={isSchedulePending}
+              >
+                {isSchedulePending
+                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  : <CalendarPlus className="h-3.5 w-3.5" />}
+                {isSchedulePending ? 'Scheduling...' : 'Confirm'}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={onScheduleCancel}>Cancel</Button>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -151,18 +206,21 @@ interface EditState {
 export default function Maintenance() {
   usePageTitle('Maintenance');
   const { data: events = [], isLoading } = useAllMaintenanceEvents();
+  const { data: allProviders = [] } = useProviders();
   const completeMutation = useCompleteMaintenanceEvent();
   const syncMutation = useSyncFromCalendar();
   const updateMutation = useUpdateMaintenanceSuggestion();
+  const scheduleMutation = useScheduleToCalendar();
 
   const [editState, setEditState] = useState<EditState | null>(null);
+  const [schedulingKey, setSchedulingKey] = useState<string | null>(null);
+  const [schedulingProviderId, setSchedulingProviderId] = useState('none');
 
   const { overdue, upcoming, scheduled, completed } = useMemo(() => {
     const overdue: MaintenanceEvent[] = [];
     const upcoming: MaintenanceEvent[] = [];
     const scheduled: MaintenanceEvent[] = [];
     const completed: MaintenanceEvent[] = [];
-
     events.forEach((e) => {
       switch (e.status) {
         case 'overdue': overdue.push(e); break;
@@ -171,7 +229,6 @@ export default function Maintenance() {
         default: scheduled.push(e);
       }
     });
-
     return { overdue, upcoming, scheduled, completed };
   }, [events]);
 
@@ -184,7 +241,6 @@ export default function Maintenance() {
     const presetIdx = freq
       ? FREQUENCY_PRESETS.findIndex(p => p.value.interval === freq.interval && p.value.unit === freq.unit)
       : -1;
-
     setEditState({
       event,
       name: event.name,
@@ -199,14 +255,12 @@ export default function Maintenance() {
   const handleSave = () => {
     if (!editState) return;
     const { event, name, frequencyKey, customInterval, customUnit, dueDate, providerName } = editState;
-
     let frequency: { interval: number; unit: string } | null = null;
     if (frequencyKey === 'custom') {
       frequency = { interval: parseInt(customInterval) || 1, unit: customUnit };
     } else if (frequencyKey !== 'none') {
       frequency = FREQUENCY_PRESETS[parseInt(frequencyKey)]?.value ?? null;
     }
-
     updateMutation.mutate(
       {
         enrichmentId: event.enrichmentId,
@@ -223,7 +277,58 @@ export default function Maintenance() {
     );
   };
 
+  const openSchedule = (event: MaintenanceEvent) => {
+    setSchedulingKey(`${event.enrichmentId}-${event.suggestionIndex}`);
+    setSchedulingProviderId('none');
+  };
+
+  const handleScheduleConfirm = async (event: MaintenanceEvent) => {
+    const provider = schedulingProviderId !== 'none'
+      ? allProviders.find((p) => p.id === schedulingProviderId)
+      : null;
+
+    let description = `Asset: ${event.assetName}`;
+    if (provider) description += `\nProvider: ${provider.name}`;
+    if (event.bundledItems && event.bundledItems.length > 0) {
+      description += `\n\nMaintenance checklist:\n${event.bundledItems.map(i => `- ${i}`).join('\n')}`;
+    }
+
+    await scheduleMutation.mutateAsync({
+      enrichmentId: event.enrichmentId,
+      suggestionIndex: event.suggestionIndex,
+      summary: `${event.assetName}: ${event.name}`,
+      description,
+      startDate: event.nextDueDate || event.recommendedDueDate || new Date().toISOString().split('T')[0],
+      frequency: event.frequency ?? undefined,
+      providerName: provider?.name,
+      providerId: provider?.id,
+    });
+
+    setSchedulingKey(null);
+    setSchedulingProviderId('none');
+  };
+
   const isEmpty = events.length === 0 && !isLoading;
+
+  const renderCard = (e: MaintenanceEvent) => {
+    const key = `${e.enrichmentId}-${e.suggestionIndex}`;
+    return (
+      <MaintenanceEventCard
+        key={key}
+        event={e}
+        onComplete={() => handleComplete(e)}
+        onEdit={() => openEdit(e)}
+        onScheduleOpen={() => openSchedule(e)}
+        isScheduling={schedulingKey === key}
+        schedulingProviderId={schedulingProviderId}
+        onProviderChange={setSchedulingProviderId}
+        onScheduleConfirm={() => handleScheduleConfirm(e)}
+        onScheduleCancel={() => setSchedulingKey(null)}
+        isSchedulePending={scheduleMutation.isPending}
+        allProviders={allProviders}
+      />
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -246,41 +351,28 @@ export default function Maintenance() {
         <div className="flex flex-col items-center gap-4 py-16 text-center">
           <CalendarCheck className="h-12 w-12 text-muted-foreground" />
           <p className="text-muted-foreground">No maintenance events scheduled yet.</p>
-          <p className="text-sm text-muted-foreground">Open an asset and click "Enrich with AI" to generate a maintenance schedule, then schedule events to Google Calendar.</p>
+          <p className="text-sm text-muted-foreground">Open an asset and click "Enrich with AI" to generate a maintenance schedule.</p>
         </div>
       ) : (
         <div className="space-y-6">
           {overdue.length > 0 && (
             <Section title="Overdue" count={overdue.length} accentClass="text-destructive">
-              {overdue.map((e) => (
-                <MaintenanceEventCard key={`${e.enrichmentId}-${e.suggestionIndex}`} event={e} onComplete={() => handleComplete(e)} onEdit={() => openEdit(e)} />
-              ))}
+              {overdue.map(renderCard)}
             </Section>
           )}
-
           <Section title="Upcoming" count={upcoming.length} accentClass="text-blue-500">
-            {upcoming.length === 0 ? (
-              <p className="text-sm text-muted-foreground pl-6">No upcoming maintenance</p>
-            ) : (
-              upcoming.map((e) => (
-                <MaintenanceEventCard key={`${e.enrichmentId}-${e.suggestionIndex}`} event={e} onComplete={() => handleComplete(e)} onEdit={() => openEdit(e)} />
-              ))
-            )}
+            {upcoming.length === 0
+              ? <p className="text-sm text-muted-foreground pl-6">No upcoming maintenance</p>
+              : upcoming.map(renderCard)}
           </Section>
-
           {scheduled.length > 0 && (
             <Section title="Scheduled" count={scheduled.length} accentClass="text-muted-foreground">
-              {scheduled.map((e) => (
-                <MaintenanceEventCard key={`${e.enrichmentId}-${e.suggestionIndex}`} event={e} onComplete={() => handleComplete(e)} onEdit={() => openEdit(e)} />
-              ))}
+              {scheduled.map(renderCard)}
             </Section>
           )}
-
           {completed.length > 0 && (
             <Section title="Recently Completed" count={completed.length} accentClass="text-emerald-500" defaultOpen={false}>
-              {completed.map((e) => (
-                <MaintenanceEventCard key={`${e.enrichmentId}-${e.suggestionIndex}`} event={e} onComplete={() => handleComplete(e)} onEdit={() => openEdit(e)} />
-              ))}
+              {completed.map(renderCard)}
             </Section>
           )}
         </div>
@@ -292,7 +384,6 @@ export default function Maintenance() {
           <DialogHeader>
             <DialogTitle>Edit Maintenance Task</DialogTitle>
           </DialogHeader>
-
           {editState && (
             <div className="space-y-4 py-2">
               <div className="space-y-1.5">
@@ -303,7 +394,6 @@ export default function Maintenance() {
                   onChange={(e) => setEditState({ ...editState, name: e.target.value })}
                 />
               </div>
-
               <div className="space-y-1.5">
                 <Label htmlFor="edit-frequency">Frequency</Label>
                 <Select
@@ -322,7 +412,6 @@ export default function Maintenance() {
                   </SelectContent>
                 </Select>
               </div>
-
               {editState.frequencyKey === 'custom' && (
                 <div className="flex gap-2">
                   <div className="space-y-1.5 w-24">
@@ -341,9 +430,7 @@ export default function Maintenance() {
                       value={editState.customUnit}
                       onValueChange={(val) => setEditState({ ...editState, customUnit: val })}
                     >
-                      <SelectTrigger id="edit-unit">
-                        <SelectValue />
-                      </SelectTrigger>
+                      <SelectTrigger id="edit-unit"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="days">Days</SelectItem>
                         <SelectItem value="weeks">Weeks</SelectItem>
@@ -354,7 +441,6 @@ export default function Maintenance() {
                   </div>
                 </div>
               )}
-
               <div className="space-y-1.5">
                 <Label htmlFor="edit-due">Next Due Date</Label>
                 <Input
@@ -364,7 +450,6 @@ export default function Maintenance() {
                   onChange={(e) => setEditState({ ...editState, dueDate: e.target.value })}
                 />
               </div>
-
               <div className="space-y-1.5">
                 <Label htmlFor="edit-provider">Provider</Label>
                 <Input
@@ -376,7 +461,6 @@ export default function Maintenance() {
               </div>
             </div>
           )}
-
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditState(null)}>Cancel</Button>
             <Button onClick={handleSave} disabled={updateMutation.isPending}>
