@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { CalendarIcon, Trash2, Plus } from 'lucide-react';
+import { AssetAttachments } from '@/components/assets/AssetAttachments';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
