@@ -53,7 +53,7 @@ export function useAssetCategories() {
 export function useCreateAsset() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (asset: { name: string; category_id?: string | null; description?: string | null; purchase_date?: string | null; notes?: string | null }) => {
+    mutationFn: async (asset: { name: string; category_id?: string | null; description?: string | null; purchase_date?: string | null; notes?: string | null; attachment_url?: string | null }) => {
       const { data, error } = await supabase.from('assets').insert(asset).select('id').single();
       if (error) throw error;
       return data;
