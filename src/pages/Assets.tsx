@@ -28,6 +28,7 @@ import { useEnrichAndSave } from '@/hooks/useEnrichAndSave';
 import { useAssetProviders } from '@/hooks/useAssetProviders';
 import { useAssetEnrichment } from '@/hooks/useAssetEnrichment';
 import { AssetSuggestionsSection } from '@/components/assets/AssetSuggestionsSection';
+import { AssetAttachmentsReadonly } from '@/components/assets/AssetAttachments';
 import { useSyncFromCalendar } from '@/hooks/useSyncFromCalendar';
 
 function DynamicIcon({ name, className }: { name: string; className?: string }) {
