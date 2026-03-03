@@ -58,7 +58,7 @@ export function AssetForm({ asset, onClose }: AssetFormProps) {
     asset?.purchaseDate ? new Date(asset.purchaseDate + 'T00:00:00') : undefined
   );
   const [notes, setNotes] = useState(asset?.notes ?? '');
-  const [attachmentUrl, setAttachmentUrl] = useState<string | null>(asset?.attachmentUrl ?? null);
+  
   const [selectedProviderId, setSelectedProviderId] = useState<string>('');
 
   // New provider dialog state
