@@ -216,7 +216,7 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*,.pdf"
+        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
         onChange={handleFileSelect}
         className="hidden"
       />
