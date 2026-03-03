@@ -5,25 +5,15 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 
-const ACCEPTED_TYPES = [
-  'image/',
-  'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-];
+const ACCEPTED_TYPES = ['image/', 'application/pdf'];
 
 function isAcceptedFile(file: File) {
   return ACCEPTED_TYPES.some((t) => file.type.startsWith(t));
 }
 
-const DOC_EXTENSIONS = ['.pdf', '.doc', '.docx', '.xls', '.xlsx'];
-
-function isDocUrl(url: string) {
+function isPdfUrl(url: string) {
   try {
-    const path = new URL(url).pathname.toLowerCase();
-    return DOC_EXTENSIONS.some((ext) => path.endsWith(ext));
+    return new URL(url).pathname.toLowerCase().endsWith('.pdf');
   } catch {
     return false;
   }
@@ -103,7 +93,7 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
     if (!items) return;
 
     for (const item of items) {
-      if (item.type.startsWith('image/') || ACCEPTED_TYPES.some(t => item.type.startsWith(t) || item.type === t)) {
+      if (isAcceptedFile(item as unknown as File) || item.type.startsWith('image/') || item.type === 'application/pdf') {
         e.preventDefault();
         const file = item.getAsFile();
         if (file) {
@@ -167,11 +157,11 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
   }, [handlePaste]);
 
   if (value) {
-    const isDoc = isDocUrl(value);
+    const isPdf = isPdfUrl(value);
     return (
       <div className={cn('relative group', className)} ref={containerRef}>
         <div className="relative rounded-lg border border-border overflow-hidden bg-muted/30">
-          {isDoc ? (
+          {isPdf ? (
             <div className="flex items-center gap-2 px-3 py-3">
               <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
               <span className="text-sm text-foreground truncate">
@@ -216,7 +206,7 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+        accept="image/*,.pdf"
         onChange={handleFileSelect}
         className="hidden"
       />
@@ -234,7 +224,7 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
               <Upload className="h-4 w-4 text-muted-foreground" />
             </div>
             <p className="text-sm text-muted-foreground">
-              Images, PDFs, Word & Excel — click, drag, or paste
+              Images & PDFs — click, drag, or paste
             </p>
           </>
         )}
