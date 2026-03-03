@@ -191,9 +191,9 @@ const Index = () => {
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-destructive" />
                 <CardTitle className="text-lg">Overdue</CardTitle>
-                {overdueTasks.length > 0 && (
+                {overdueNonBlocked.length > 0 && (
                   <span className="rounded-full bg-destructive px-2 py-0.5 text-xs font-medium text-destructive-foreground">
-                    {overdueTasks.length}
+                    {overdueNonBlocked.length}
                   </span>
                 )}
               </div>
@@ -205,13 +205,13 @@ const Index = () => {
             </div>
           </CardHeader>
           <CardContent>
-            {overdueTasks.length === 0 ? (
+            {overdueNonBlocked.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4 text-center">
                 No overdue tasks. You're all caught up! 🎉
               </p>
             ) : (
               <div className="space-y-3 min-w-0">
-                {overdueTasks.map((task) => (
+                {overdueNonBlocked.map((task) => (
                   <TaskCard key={task.id} task={task} onClick={() => handleOpenTaskForm(task)} />
                 ))}
               </div>
