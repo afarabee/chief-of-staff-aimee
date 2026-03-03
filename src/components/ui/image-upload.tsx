@@ -18,9 +18,12 @@ function isAcceptedFile(file: File) {
   return ACCEPTED_TYPES.some((t) => file.type.startsWith(t));
 }
 
-function isPdfUrl(url: string) {
+const DOC_EXTENSIONS = ['.pdf', '.doc', '.docx', '.xls', '.xlsx'];
+
+function isDocUrl(url: string) {
   try {
-    return new URL(url).pathname.toLowerCase().endsWith('.pdf');
+    const path = new URL(url).pathname.toLowerCase();
+    return DOC_EXTENSIONS.some((ext) => path.endsWith(ext));
   } catch {
     return false;
   }
