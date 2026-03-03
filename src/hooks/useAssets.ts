@@ -71,7 +71,7 @@ export function useCreateAsset() {
 export function useUpdateAsset() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; name?: string; category_id?: string | null; description?: string | null; purchase_date?: string | null; notes?: string | null; show_on_kanban?: boolean }) => {
+    mutationFn: async ({ id, ...updates }: { id: string; name?: string; category_id?: string | null; description?: string | null; purchase_date?: string | null; notes?: string | null; show_on_kanban?: boolean; attachment_url?: string | null }) => {
       const { error } = await supabase.from('assets').update(updates).eq('id', id);
       if (error) throw error;
     },
