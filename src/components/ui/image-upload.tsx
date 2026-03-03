@@ -234,7 +234,7 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
               <Upload className="h-4 w-4 text-muted-foreground" />
             </div>
             <p className="text-sm text-muted-foreground">
-              Images & PDFs — click, drag, or paste
+              Images, PDFs, Word & Excel — click, drag, or paste
             </p>
           </>
         )}
