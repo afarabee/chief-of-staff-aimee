@@ -184,41 +184,6 @@ const Index = () => {
       </div>
 
       <div className="grid gap-4 md:gap-8 md:grid-cols-2 min-w-0">
-        {/* Overdue Tasks */}
-        <Card className="border-red-200 bg-red-50 dark:bg-red-950/30 shadow-md min-w-0 overflow-hidden">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-destructive" />
-                <CardTitle className="text-lg">Overdue</CardTitle>
-                {overdueNonBlocked.length > 0 && (
-                  <span className="rounded-full bg-destructive px-2 py-0.5 text-xs font-medium text-destructive-foreground">
-                    {overdueNonBlocked.length}
-                  </span>
-                )}
-              </div>
-              <Button variant="ghost" size="sm" className="min-h-[44px]" asChild>
-                <Link to="/tasks" className="gap-1">
-                  View all <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {overdueNonBlocked.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">
-                No overdue tasks. You're all caught up! 🎉
-              </p>
-            ) : (
-              <div className="space-y-3 min-w-0">
-                {overdueNonBlocked.map((task) => (
-                  <TaskCard key={task.id} task={task} onClick={() => handleOpenTaskForm(task)} />
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
         {/* Tasks Due Today */}
         <Card className="border-sky-200 bg-sky-50 dark:bg-sky-950/30 shadow-md min-w-0 overflow-hidden">
           <CardHeader className="pb-3">
@@ -247,6 +212,41 @@ const Index = () => {
             ) : (
               <div className="space-y-3 min-w-0">
                 {todayTasks.map((task) => (
+                  <TaskCard key={task.id} task={task} onClick={() => handleOpenTaskForm(task)} />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Overdue Tasks */}
+        <Card className="border-red-200 bg-red-50 dark:bg-red-950/30 shadow-md min-w-0 overflow-hidden">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                <CardTitle className="text-lg">Overdue</CardTitle>
+                {overdueNonBlocked.length > 0 && (
+                  <span className="rounded-full bg-destructive px-2 py-0.5 text-xs font-medium text-destructive-foreground">
+                    {overdueNonBlocked.length}
+                  </span>
+                )}
+              </div>
+              <Button variant="ghost" size="sm" className="min-h-[44px]" asChild>
+                <Link to="/tasks" className="gap-1">
+                  View all <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {overdueNonBlocked.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">
+                No overdue tasks. You're all caught up! 🎉
+              </p>
+            ) : (
+              <div className="space-y-3 min-w-0">
+                {overdueNonBlocked.map((task) => (
                   <TaskCard key={task.id} task={task} onClick={() => handleOpenTaskForm(task)} />
                 ))}
               </div>
