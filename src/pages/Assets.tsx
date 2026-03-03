@@ -181,21 +181,8 @@ export default function Assets() {
               <p className="text-foreground whitespace-pre-wrap">{fresh.notes}</p>
             </div>
           )}
-          {fresh.attachmentUrl && (
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Attachment</p>
-              {/\.(pdf|docx?|xlsx?)$/i.test(fresh.attachmentUrl) ? (
-                <a href={fresh.attachmentUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-primary hover:underline">
-                  <FileText className="h-4 w-4" />
-                  {decodeURIComponent(fresh.attachmentUrl.split('/').pop() || 'document')}
-                </a>
-              ) : (
-                <a href={fresh.attachmentUrl} target="_blank" rel="noopener noreferrer">
-                  <img src={fresh.attachmentUrl} alt="Attachment" className="rounded-lg border border-border max-h-48 object-cover" />
-                </a>
-              )}
-            </div>
-          )}
+          {/* Multi-attachment display */}
+          <AssetAttachmentsReadonly assetId={fresh.id} />
         </div>
 
         <LinkedProvidersSection assetId={fresh.id} onNavigateToProvider={(providerId) => navigate(`/providers?detail=${providerId}`)} />

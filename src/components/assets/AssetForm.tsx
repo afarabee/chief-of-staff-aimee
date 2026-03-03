@@ -225,8 +225,12 @@ export function AssetForm({ asset, onClose }: AssetFormProps) {
         )}
 
         <div className="space-y-2">
-          <Label>Attachment</Label>
-          <ImageUpload value={attachmentUrl} onChange={setAttachmentUrl} />
+          <Label>Attachments {isEdit ? '' : '(available after saving)'}</Label>
+          {isEdit ? (
+            <AssetAttachments assetId={asset!.id} />
+          ) : (
+            <p className="text-sm text-muted-foreground">Save the asset first, then add attachments.</p>
+          )}
         </div>
 
         <div className="space-y-2">
