@@ -224,6 +224,11 @@ export function AssetForm({ asset, onClose }: AssetFormProps) {
         )}
 
         <div className="space-y-2">
+          <Label>Attachment</Label>
+          <ImageUpload value={attachmentUrl} onChange={setAttachmentUrl} />
+        </div>
+
+        <div className="space-y-2">
           <Label htmlFor="asset-notes">Notes</Label>
           <Textarea id="asset-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
         </div>
