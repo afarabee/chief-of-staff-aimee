@@ -8,6 +8,7 @@ export interface Asset {
   description: string | null;
   purchaseDate: string | null;
   notes: string | null;
+  attachmentUrl: string | null;
   createdAt: string | null;
   updatedAt: string | null;
   showOnKanban: boolean;

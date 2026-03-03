@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { CalendarIcon, Trash2, Plus } from 'lucide-react';
+import { ImageUpload } from '@/components/ui/image-upload';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,6 +57,7 @@ export function AssetForm({ asset, onClose }: AssetFormProps) {
     asset?.purchaseDate ? new Date(asset.purchaseDate + 'T00:00:00') : undefined
   );
   const [notes, setNotes] = useState(asset?.notes ?? '');
+  const [attachmentUrl, setAttachmentUrl] = useState<string | null>(asset?.attachmentUrl ?? null);
   const [selectedProviderId, setSelectedProviderId] = useState<string>('');
 
   // New provider dialog state
@@ -113,6 +115,7 @@ export function AssetForm({ asset, onClose }: AssetFormProps) {
       description: description.trim() || null,
       purchase_date: purchaseDate ? format(purchaseDate, 'yyyy-MM-dd') : null,
       notes: notes.trim() || null,
+      attachment_url: attachmentUrl,
     };
 
     if (isEdit) {
@@ -219,6 +222,11 @@ export function AssetForm({ asset, onClose }: AssetFormProps) {
             </Select>
           </div>
         )}
+
+        <div className="space-y-2">
+          <Label>Attachment</Label>
+          <ImageUpload value={attachmentUrl} onChange={setAttachmentUrl} />
+        </div>
 
         <div className="space-y-2">
           <Label htmlFor="asset-notes">Notes</Label>

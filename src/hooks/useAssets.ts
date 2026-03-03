@@ -15,6 +15,7 @@ function mapRow(row: any): Asset {
     description: row.description,
     purchaseDate: row.purchase_date,
     notes: row.notes,
+    attachmentUrl: row.attachment_url ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     showOnKanban: row.show_on_kanban ?? false,
@@ -52,7 +53,7 @@ export function useAssetCategories() {
 export function useCreateAsset() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (asset: { name: string; category_id?: string | null; description?: string | null; purchase_date?: string | null; notes?: string | null }) => {
+    mutationFn: async (asset: { name: string; category_id?: string | null; description?: string | null; purchase_date?: string | null; notes?: string | null; attachment_url?: string | null }) => {
       const { data, error } = await supabase.from('assets').insert(asset).select('id').single();
       if (error) throw error;
       return data;
@@ -70,7 +71,7 @@ export function useCreateAsset() {
 export function useUpdateAsset() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; name?: string; category_id?: string | null; description?: string | null; purchase_date?: string | null; notes?: string | null; show_on_kanban?: boolean }) => {
+    mutationFn: async ({ id, ...updates }: { id: string; name?: string; category_id?: string | null; description?: string | null; purchase_date?: string | null; notes?: string | null; show_on_kanban?: boolean; attachment_url?: string | null }) => {
       const { error } = await supabase.from('assets').update(updates).eq('id', id);
       if (error) throw error;
     },

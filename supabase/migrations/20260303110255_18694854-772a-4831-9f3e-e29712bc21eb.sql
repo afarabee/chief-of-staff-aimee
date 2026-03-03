@@ -1,0 +1,1 @@
+ALTER TABLE public.assets ADD COLUMN attachment_url text;
