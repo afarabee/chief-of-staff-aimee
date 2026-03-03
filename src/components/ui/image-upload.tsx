@@ -103,7 +103,7 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
     if (!items) return;
 
     for (const item of items) {
-      if (isAcceptedFile(item as unknown as File) || item.type.startsWith('image/') || item.type === 'application/pdf') {
+      if (item.type.startsWith('image/') || ACCEPTED_TYPES.some(t => item.type.startsWith(t) || item.type === t)) {
         e.preventDefault();
         const file = item.getAsFile();
         if (file) {
