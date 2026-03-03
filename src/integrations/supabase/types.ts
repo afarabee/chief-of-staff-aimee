@@ -71,6 +71,38 @@ export type Database = {
         }
         Relationships: []
       }
+      asset_attachments: {
+        Row: {
+          asset_id: string
+          created_at: string | null
+          display_name: string
+          file_url: string
+          id: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string | null
+          display_name?: string
+          file_url: string
+          id?: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string | null
+          display_name?: string
+          file_url?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_attachments_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       asset_providers: {
         Row: {
           asset_id: string
