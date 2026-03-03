@@ -15,6 +15,7 @@ function mapRow(row: any): Asset {
     description: row.description,
     purchaseDate: row.purchase_date,
     notes: row.notes,
+    attachmentUrl: row.attachment_url ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     showOnKanban: row.show_on_kanban ?? false,
