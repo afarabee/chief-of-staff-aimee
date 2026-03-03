@@ -68,13 +68,24 @@ const Index = () => {
     );
   }, [tasks]);
 
-  const overdueTasks = useMemo(() => {
+  const overdueNonBlocked = useMemo(() => {
     return tasks.filter(
       (task) =>
         task.dueDate &&
         isPast(task.dueDate) &&
         !isToday(task.dueDate) &&
-        task.status !== 'done'
+        task.status !== 'done' &&
+        task.status !== 'blocked'
+    );
+  }, [tasks]);
+
+  const overdueBlocked = useMemo(() => {
+    return tasks.filter(
+      (task) =>
+        task.dueDate &&
+        isPast(task.dueDate) &&
+        !isToday(task.dueDate) &&
+        task.status === 'blocked'
     );
   }, [tasks]);
 
