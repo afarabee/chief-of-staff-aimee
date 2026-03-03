@@ -5,15 +5,25 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 
-const ACCEPTED_TYPES = ['image/', 'application/pdf'];
+const ACCEPTED_TYPES = [
+  'image/',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+];
 
 function isAcceptedFile(file: File) {
   return ACCEPTED_TYPES.some((t) => file.type.startsWith(t));
 }
 
-function isPdfUrl(url: string) {
+const DOC_EXTENSIONS = ['.pdf', '.doc', '.docx', '.xls', '.xlsx'];
+
+function isDocumentUrl(url: string) {
   try {
-    return new URL(url).pathname.toLowerCase().endsWith('.pdf');
+    const pathname = new URL(url).pathname.toLowerCase();
+    return DOC_EXTENSIONS.some((ext) => pathname.endsWith(ext));
   } catch {
     return false;
   }
