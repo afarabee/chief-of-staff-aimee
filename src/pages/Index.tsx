@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { isToday, isPast, startOfDay, isFuture, compareAsc } from 'date-fns';
-import { AlertTriangle, Calendar, Lightbulb, ArrowRight, Clock } from 'lucide-react';
+import { AlertTriangle, Calendar, Lightbulb, ArrowRight, Clock, Ban } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { Task, Idea } from '@/types';
