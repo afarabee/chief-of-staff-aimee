@@ -255,6 +255,35 @@ const Index = () => {
         </Card>
       </div>
 
+      {/* Overdue Blocked */}
+      {overdueBlocked.length > 0 && (
+        <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/30 shadow-md min-w-0 overflow-hidden">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Ban className="h-5 w-5 text-destructive" />
+                <CardTitle className="text-lg">Blocked &amp; Overdue</CardTitle>
+                <span className="rounded-full bg-destructive px-2 py-0.5 text-xs font-medium text-destructive-foreground">
+                  {overdueBlocked.length}
+                </span>
+              </div>
+              <Button variant="ghost" size="sm" className="min-h-[44px]" asChild>
+                <Link to="/tasks" className="gap-1">
+                  View all <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3 min-w-0">
+              {overdueBlocked.map((task) => (
+                <TaskCard key={task.id} task={task} onClick={() => handleOpenTaskForm(task)} />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Coming Up */}
       <Card className="border-muted bg-muted/30 shadow-md min-w-0 overflow-hidden">
         <CardHeader className="pb-3">
