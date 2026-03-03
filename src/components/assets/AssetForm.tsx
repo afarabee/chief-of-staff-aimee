@@ -116,7 +116,7 @@ export function AssetForm({ asset, onClose }: AssetFormProps) {
       description: description.trim() || null,
       purchase_date: purchaseDate ? format(purchaseDate, 'yyyy-MM-dd') : null,
       notes: notes.trim() || null,
-      attachment_url: attachmentUrl,
+      attachment_url: null,
     };
 
     if (isEdit) {
