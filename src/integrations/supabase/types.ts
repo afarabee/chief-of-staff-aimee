@@ -394,6 +394,27 @@ export type Database = {
           },
         ]
       }
+      shopping_list: {
+        Row: {
+          checked: boolean
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          checked?: boolean
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          checked?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           ai_suggestions: string | null
