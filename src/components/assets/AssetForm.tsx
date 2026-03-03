@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { CalendarIcon, Trash2, Plus } from 'lucide-react';
+import { AssetAttachments } from '@/components/assets/AssetAttachments';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -57,7 +58,7 @@ export function AssetForm({ asset, onClose }: AssetFormProps) {
     asset?.purchaseDate ? new Date(asset.purchaseDate + 'T00:00:00') : undefined
   );
   const [notes, setNotes] = useState(asset?.notes ?? '');
-  const [attachmentUrl, setAttachmentUrl] = useState<string | null>(asset?.attachmentUrl ?? null);
+  
   const [selectedProviderId, setSelectedProviderId] = useState<string>('');
 
   // New provider dialog state
@@ -115,7 +116,7 @@ export function AssetForm({ asset, onClose }: AssetFormProps) {
       description: description.trim() || null,
       purchase_date: purchaseDate ? format(purchaseDate, 'yyyy-MM-dd') : null,
       notes: notes.trim() || null,
-      attachment_url: attachmentUrl,
+      attachment_url: null,
     };
 
     if (isEdit) {
@@ -224,8 +225,12 @@ export function AssetForm({ asset, onClose }: AssetFormProps) {
         )}
 
         <div className="space-y-2">
-          <Label>Attachment</Label>
-          <ImageUpload value={attachmentUrl} onChange={setAttachmentUrl} />
+          <Label>Attachments {isEdit ? '' : '(available after saving)'}</Label>
+          {isEdit ? (
+            <AssetAttachments assetId={asset!.id} />
+          ) : (
+            <p className="text-sm text-muted-foreground">Save the asset first, then add attachments.</p>
+          )}
         </div>
 
         <div className="space-y-2">
