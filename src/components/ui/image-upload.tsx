@@ -167,11 +167,11 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
   }, [handlePaste]);
 
   if (value) {
-    const isPdf = isPdfUrl(value);
+    const isDoc = isDocUrl(value);
     return (
       <div className={cn('relative group', className)} ref={containerRef}>
         <div className="relative rounded-lg border border-border overflow-hidden bg-muted/30">
-          {isPdf ? (
+          {isDoc ? (
             <div className="flex items-center gap-2 px-3 py-3">
               <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
               <span className="text-sm text-foreground truncate">
