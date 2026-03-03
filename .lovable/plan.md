@@ -1,15 +1,21 @@
 
 
-# Fix: Preserve `bundled_items` when saving AI enrichment suggestions
+# Add Word & Excel file support to Assets
 
-## Problem
-The `formattedSuggestions` mapping in `useEnrichAndSave.tsx` explicitly picks only `suggestion`, `status`, `result`, `frequency`, and `recommended_due_date` -- dropping `bundled_items` from the AI response before saving to the database.
+## Changes
 
-## Fix
-Add one line to the mapping in `src/hooks/useEnrichAndSave.tsx` (line ~72) to spread `bundled_items` when present:
+### 1. `src/components/ui/image-upload.tsx` — Extend accepted file types
 
-```tsx
-...(s.bundled_items ? { bundled_items: s.bundled_items } : {}),
-```
+- Add Word and Excel MIME types to `ACCEPTED_TYPES`: `application/msword`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document`, `application/vnd.ms-excel`, `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
+- Add a `isDocumentUrl` helper that checks for `.doc`, `.docx`, `.xls`, `.xlsx` extensions
+- In the preview (when `value` is set), handle document URLs the same way as PDFs — show a `FileText` icon + filename
+- Update the `accept` attribute on the file input to include `.doc,.docx,.xls,.xlsx`
+- Update the placeholder text from "Images & PDFs" to "Images, PDFs & Office docs"
+- Update the error toast to mention supported file types
 
-This is a single-line addition to the existing spread pattern. No database, schema, or other file changes needed.
+### 2. `src/pages/Assets.tsx` — Display Word/Excel in detail view
+
+- Extend the attachment display logic (lines 186-196) to treat `.doc`, `.docx`, `.xls`, `.xlsx` the same as PDF — render as a clickable file icon + filename link instead of an image preview.
+
+Both changes are purely UI — no database or schema changes needed since `attachment_url` already stores any URL string.
+
