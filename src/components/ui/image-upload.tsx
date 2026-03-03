@@ -52,7 +52,7 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
     if (!isAcceptedFile(file)) {
       toast({
         title: 'Invalid file type',
-        description: 'Please upload an image or PDF file.',
+        description: 'Please upload an image, PDF, Word, or Excel file.',
         variant: 'destructive',
       });
       return;
