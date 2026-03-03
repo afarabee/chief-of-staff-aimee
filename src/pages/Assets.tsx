@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { icons } from 'lucide-react';
-import { ArrowLeft, Loader2, Package, Pencil, Plus, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileText, Loader2, Package, Pencil, Plus, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useAssets, useDeleteAsset } from '@/hooks/useAssets';
 import { AssetCard } from '@/components/assets/AssetCard';
