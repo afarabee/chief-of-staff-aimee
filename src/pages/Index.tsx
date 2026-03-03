@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { isToday, isPast, startOfDay, isFuture, compareAsc } from 'date-fns';
-import { AlertTriangle, Calendar, Lightbulb, ArrowRight, Clock } from 'lucide-react';
+import { AlertTriangle, Calendar, Lightbulb, ArrowRight, Clock, Ban } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { Task, Idea } from '@/types';
@@ -68,13 +68,24 @@ const Index = () => {
     );
   }, [tasks]);
 
-  const overdueTasks = useMemo(() => {
+  const overdueNonBlocked = useMemo(() => {
     return tasks.filter(
       (task) =>
         task.dueDate &&
         isPast(task.dueDate) &&
         !isToday(task.dueDate) &&
-        task.status !== 'done'
+        task.status !== 'done' &&
+        task.status !== 'blocked'
+    );
+  }, [tasks]);
+
+  const overdueBlocked = useMemo(() => {
+    return tasks.filter(
+      (task) =>
+        task.dueDate &&
+        isPast(task.dueDate) &&
+        !isToday(task.dueDate) &&
+        task.status === 'blocked'
     );
   }, [tasks]);
 
@@ -180,9 +191,9 @@ const Index = () => {
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-destructive" />
                 <CardTitle className="text-lg">Overdue</CardTitle>
-                {overdueTasks.length > 0 && (
+                {overdueNonBlocked.length > 0 && (
                   <span className="rounded-full bg-destructive px-2 py-0.5 text-xs font-medium text-destructive-foreground">
-                    {overdueTasks.length}
+                    {overdueNonBlocked.length}
                   </span>
                 )}
               </div>
@@ -194,13 +205,13 @@ const Index = () => {
             </div>
           </CardHeader>
           <CardContent>
-            {overdueTasks.length === 0 ? (
+            {overdueNonBlocked.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4 text-center">
                 No overdue tasks. You're all caught up! 🎉
               </p>
             ) : (
               <div className="space-y-3 min-w-0">
-                {overdueTasks.map((task) => (
+                {overdueNonBlocked.map((task) => (
                   <TaskCard key={task.id} task={task} onClick={() => handleOpenTaskForm(task)} />
                 ))}
               </div>
@@ -243,6 +254,35 @@ const Index = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Overdue Blocked */}
+      {overdueBlocked.length > 0 && (
+        <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/30 shadow-md min-w-0 overflow-hidden">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Ban className="h-5 w-5 text-destructive" />
+                <CardTitle className="text-lg">Blocked &amp; Overdue</CardTitle>
+                <span className="rounded-full bg-destructive px-2 py-0.5 text-xs font-medium text-destructive-foreground">
+                  {overdueBlocked.length}
+                </span>
+              </div>
+              <Button variant="ghost" size="sm" className="min-h-[44px]" asChild>
+                <Link to="/tasks" className="gap-1">
+                  View all <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3 min-w-0">
+              {overdueBlocked.map((task) => (
+                <TaskCard key={task.id} task={task} onClick={() => handleOpenTaskForm(task)} />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Coming Up */}
       <Card className="border-muted bg-muted/30 shadow-md min-w-0 overflow-hidden">
