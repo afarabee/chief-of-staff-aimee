@@ -1,6 +1,7 @@
 import { ChevronRight } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import type { Asset } from '@/types/assets';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface AssetCardProps {
   asset: Asset;
@@ -18,9 +19,16 @@ export function AssetCard({ asset, onClick }: AssetCardProps) {
       className="flex w-full items-center gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-accent/50"
     >
       <div className="min-w-0 flex-1">
-        <p className="font-medium text-card-foreground">{asset.name}</p>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <p className="font-medium text-card-foreground line-clamp-2">{asset.name}</p>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs">{asset.name}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         {asset.description && (
-          <p className="truncate text-sm text-muted-foreground">{asset.description}</p>
+          <p className="line-clamp-2 text-sm text-muted-foreground">{asset.description}</p>
         )}
       </div>
       {formattedDate && (

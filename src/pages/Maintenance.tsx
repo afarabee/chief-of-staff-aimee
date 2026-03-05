@@ -7,6 +7,7 @@ import { useCompleteMaintenanceEvent } from '@/hooks/useMaintenanceTasks';
 import { useSyncFromCalendar } from '@/hooks/useSyncFromCalendar';
 import { useUpdateMaintenanceSuggestion } from '@/hooks/useUpdateMaintenanceSuggestion';
 import { useScheduleToCalendar } from '@/hooks/useScheduleToCalendar';
+import { useBulkScheduleToCalendar } from '@/hooks/useBulkScheduleToCalendar';
 import { useProviders } from '@/hooks/useProviders';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -211,6 +212,7 @@ export default function Maintenance() {
   const syncMutation = useSyncFromCalendar();
   const updateMutation = useUpdateMaintenanceSuggestion();
   const scheduleMutation = useScheduleToCalendar();
+  const bulkScheduleMutation = useBulkScheduleToCalendar();
 
   const [editState, setEditState] = useState<EditState | null>(null);
   const [schedulingKey, setSchedulingKey] = useState<string | null>(null);
@@ -334,15 +336,29 @@ export default function Maintenance() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Maintenance</h1>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => syncMutation.mutate({})}
-          disabled={syncMutation.isPending}
-        >
-          <RefreshCw className={cn('h-4 w-4 mr-1.5', syncMutation.isPending && 'animate-spin')} />
-          {syncMutation.isPending ? 'Syncing...' : 'Sync Calendar'}
-        </Button>
+        <div className="flex items-center gap-2">
+          {events.some(e => !e.calendarEventId && e.status !== 'completed') && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => bulkScheduleMutation.mutate(events.filter(e => !e.calendarEventId && e.status !== 'completed'))}
+              disabled={bulkScheduleMutation.isPending}
+            >
+              <Loader2 className={cn('h-4 w-4 mr-1.5', !bulkScheduleMutation.isPending && 'hidden')} />
+              <CalendarPlus className={cn('h-4 w-4 mr-1.5', bulkScheduleMutation.isPending && 'hidden')} />
+              {bulkScheduleMutation.isPending ? 'Scheduling...' : 'Schedule All'}
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => syncMutation.mutate({})}
+            disabled={syncMutation.isPending}
+          >
+            <RefreshCw className={cn('h-4 w-4 mr-1.5', syncMutation.isPending && 'animate-spin')} />
+            {syncMutation.isPending ? 'Syncing...' : 'Sync Calendar'}
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (

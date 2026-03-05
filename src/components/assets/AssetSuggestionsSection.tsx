@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUpdateEnrichmentSuggestion } from '@/hooks/useUpdateEnrichmentSuggestion';
 import { useScheduleToCalendar } from '@/hooks/useScheduleToCalendar';
+import { useBulkAcceptSuggestions } from '@/hooks/useBulkAcceptSuggestions';
 import { useAssetProviders } from '@/hooks/useAssetProviders';
 import { useProviders } from '@/hooks/useProviders';
 import type { AiEnrichmentRow } from '@/hooks/useAiEnrichments';
@@ -30,6 +31,7 @@ interface Props {
 export function AssetSuggestionsSection({ enrichment, assetName, assetId }: Props) {
   const updateSuggestion = useUpdateEnrichmentSuggestion();
   const scheduleToCalendar = useScheduleToCalendar();
+  const bulkAccept = useBulkAcceptSuggestions();
   const queryClient = useQueryClient();
   const { data: linkedProviders = [] } = useAssetProviders(assetId);
   const { data: allProviders = [] } = useProviders();
@@ -55,6 +57,9 @@ export function AssetSuggestionsSection({ enrichment, assetName, assetId }: Prop
     ? suggestions
     : suggestions.filter((s) => s.status !== 'dismissed');
   const dismissedCount = suggestions.filter((s) => s.status === 'dismissed').length;
+  const pendingIndexes = suggestions
+    .map((s, i) => (s.status === 'pending' ? i : -1))
+    .filter((i) => i >= 0);
 
   const handleAccept = async (idx: number) => {
     await updateSuggestion.mutateAsync({
@@ -238,16 +243,32 @@ export function AssetSuggestionsSection({ enrichment, assetName, assetId }: Prop
 
   return (
     <div className="space-y-3">
-      {dismissedCount > 0 && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="gap-2 text-muted-foreground"
-          onClick={() => setShowDismissed(!showDismissed)}
-        >
-          {showDismissed ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          {showDismissed ? 'Hide' : 'Show'} {dismissedCount} dismissed
-        </Button>
+      {(pendingIndexes.length > 1 || dismissedCount > 0) && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {pendingIndexes.length > 1 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              disabled={bulkAccept.isPending}
+              onClick={() => bulkAccept.mutate({ enrichmentId: enrichment.id, indexes: pendingIndexes })}
+            >
+              {bulkAccept.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+              {bulkAccept.isPending ? 'Accepting...' : `Accept All (${pendingIndexes.length})`}
+            </Button>
+          )}
+          {dismissedCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2 text-muted-foreground"
+              onClick={() => setShowDismissed(!showDismissed)}
+            >
+              {showDismissed ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {showDismissed ? 'Hide' : 'Show'} {dismissedCount} dismissed
+            </Button>
+          )}
+        </div>
       )}
 
       {visibleSuggestions.map((s) => {

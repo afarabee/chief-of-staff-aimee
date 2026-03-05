@@ -18,6 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 interface TaskCardProps {
@@ -110,12 +111,21 @@ export function TaskCard({ task, onClick, showCheckbox = true }: TaskCardProps) 
         
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 min-w-0">
-            <h3 className={cn(
-              'font-medium text-foreground truncate',
-              isComplete && 'line-through text-muted-foreground'
-            )}>
-              {task.title}
-            </h3>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <h3 className={cn(
+                    'font-medium text-foreground line-clamp-2',
+                    isComplete && 'line-through text-muted-foreground'
+                  )}>
+                    {task.title}
+                  </h3>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  {task.title}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <div className="flex items-center gap-1 shrink-0">
               <Badge variant="outline" className={cn('text-xs', priorityColors[task.priority])}>
                 {task.priority}
