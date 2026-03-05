@@ -16,6 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 interface IdeaCardProps {
@@ -80,7 +81,14 @@ export function IdeaCard({ idea, onClick }: IdeaCardProps) {
         onClick={onClick}
       >
         <div className="flex items-start justify-between gap-2 min-w-0">
-          <h3 className="font-medium text-foreground truncate min-w-0">{idea.title}</h3>
+          <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <h3 className="font-medium text-foreground line-clamp-2 min-w-0">{idea.title}</h3>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">{idea.title}</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           <div className="flex items-center gap-1 shrink-0">
             <Badge variant="outline" className={cn('text-xs', statusColors[idea.status])}>
               {statusLabels[idea.status]}

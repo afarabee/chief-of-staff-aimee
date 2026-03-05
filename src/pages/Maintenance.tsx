@@ -337,18 +337,25 @@ export default function Maintenance() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Maintenance</h1>
         <div className="flex items-center gap-2">
-          {events.some(e => !e.calendarEventId && e.status !== 'completed') && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => bulkScheduleMutation.mutate(events.filter(e => !e.calendarEventId && e.status !== 'completed'))}
-              disabled={bulkScheduleMutation.isPending}
-            >
-              <Loader2 className={cn('h-4 w-4 mr-1.5', !bulkScheduleMutation.isPending && 'hidden')} />
-              <CalendarPlus className={cn('h-4 w-4 mr-1.5', bulkScheduleMutation.isPending && 'hidden')} />
-              {bulkScheduleMutation.isPending ? 'Scheduling...' : 'Schedule All'}
-            </Button>
-          )}
+          {events.length > 0 && (() => {
+            const unscheduled = events.filter(e => !e.calendarEventId && e.status !== 'completed');
+            const allDone = unscheduled.length === 0;
+            return (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => bulkScheduleMutation.mutate(unscheduled)}
+                disabled={bulkScheduleMutation.isPending || allDone}
+              >
+                {bulkScheduleMutation.isPending
+                  ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                  : allDone
+                    ? <CalendarCheck className="h-4 w-4 mr-1.5 text-emerald-500" />
+                    : <CalendarPlus className="h-4 w-4 mr-1.5" />}
+                {bulkScheduleMutation.isPending ? 'Scheduling...' : allDone ? 'All Scheduled' : `Schedule All (${unscheduled.length})`}
+              </Button>
+            );
+          })()}
           <Button
             variant="outline"
             size="sm"
