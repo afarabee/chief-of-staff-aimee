@@ -172,6 +172,15 @@ export function AssetForm({ asset, onClose, initialValues }: AssetFormProps) {
               }
             );
           }
+          // Auto-attach the scanned document
+          if (initialValues?.documentUrl && data?.id) {
+            const fileName = initialValues.documentUrl.split('/').pop() || 'scanned-document';
+            createAttachment.mutate({
+              assetId: data.id,
+              fileUrl: initialValues.documentUrl,
+              displayName: fileName,
+            });
+          }
           onClose();
         },
       });
