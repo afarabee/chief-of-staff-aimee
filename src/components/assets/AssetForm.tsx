@@ -113,6 +113,7 @@ export function AssetForm({ asset, onClose, initialValues }: AssetFormProps) {
   const deleteAssetMutation = useDeleteAsset();
   const createProvider = useCreateProvider();
   const linkMutation = useLinkAssetProvider();
+  const createAttachment = useCreateAssetAttachment();
   const isPending = createAsset.isPending || updateAsset.isPending;
 
   const handleProviderChange = (value: string) => {
