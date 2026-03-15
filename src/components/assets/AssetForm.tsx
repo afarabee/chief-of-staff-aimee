@@ -190,6 +190,14 @@ export function AssetForm({ asset, onClose, initialValues }: AssetFormProps) {
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-4">
+        {initialValues && !isEdit && (
+          <Alert className="border-primary/30 bg-primary/5">
+            <FileText className="h-4 w-4" />
+            <AlertDescription>
+              Parsed from document — please review before saving
+            </AlertDescription>
+          </Alert>
+        )}
         <div className="space-y-2">
           <Label htmlFor="asset-name">Name *</Label>
           <Input id="asset-name" value={name} onChange={(e) => setName(e.target.value)} required />
