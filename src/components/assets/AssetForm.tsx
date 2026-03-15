@@ -176,9 +176,9 @@ export function AssetForm({ asset, onClose, initialValues }: AssetFormProps) {
           if (initialValues?.documentUrl && data?.id) {
             const fileName = initialValues.documentUrl.split('/').pop() || 'scanned-document';
             createAttachment.mutate({
-              assetId: data.id,
-              fileUrl: initialValues.documentUrl,
-              displayName: fileName,
+              asset_id: data.id,
+              file_url: initialValues.documentUrl,
+              display_name: fileName,
             });
           }
           onClose();
