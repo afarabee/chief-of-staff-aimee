@@ -44,20 +44,32 @@ import {
 import { toast } from '@/hooks/use-toast';
 import type { Asset } from '@/types/assets';
 
+export interface AssetInitialValues {
+  name?: string;
+  description?: string;
+  purchaseDate?: string;
+  notes?: string;
+  categoryHint?: string;
+  documentUrl?: string;
+}
+
 interface AssetFormProps {
   asset?: Asset;
   onClose: () => void;
+  initialValues?: AssetInitialValues;
 }
 
-export function AssetForm({ asset, onClose }: AssetFormProps) {
+export function AssetForm({ asset, onClose, initialValues }: AssetFormProps) {
   const isEdit = !!asset;
-  const [name, setName] = useState(asset?.name ?? '');
+  const [name, setName] = useState(initialValues?.name ?? asset?.name ?? '');
   const [categoryId, setCategoryId] = useState<string>(asset?.categoryId ?? '');
-  const [description, setDescription] = useState(asset?.description ?? '');
+  const [description, setDescription] = useState(initialValues?.description ?? asset?.description ?? '');
   const [purchaseDate, setPurchaseDate] = useState<Date | undefined>(
-    asset?.purchaseDate ? new Date(asset.purchaseDate + 'T00:00:00') : undefined
+    initialValues?.purchaseDate
+      ? new Date(initialValues.purchaseDate + 'T00:00:00')
+      : asset?.purchaseDate ? new Date(asset.purchaseDate + 'T00:00:00') : undefined
   );
-  const [notes, setNotes] = useState(asset?.notes ?? '');
+  const [notes, setNotes] = useState(initialValues?.notes ?? asset?.notes ?? '');
   
   const [selectedProviderId, setSelectedProviderId] = useState<string>('');
 
