@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { icons } from 'lucide-react';
-import { ArrowLeft, Loader2, Package, Pencil, Plus, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileUp, Loader2, Package, Pencil, Plus, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useAssets, useDeleteAsset } from '@/hooks/useAssets';
 import { AssetCard } from '@/components/assets/AssetCard';
-import { AssetForm } from '@/components/assets/AssetForm';
+import { AssetForm, type AssetInitialValues } from '@/components/assets/AssetForm';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ResponsiveFormDialog } from '@/components/ui/responsive-dialog';
@@ -30,6 +30,9 @@ import { useAssetEnrichment } from '@/hooks/useAssetEnrichment';
 import { AssetSuggestionsSection } from '@/components/assets/AssetSuggestionsSection';
 import { AssetAttachmentsReadonly } from '@/components/assets/AssetAttachments';
 import { useSyncFromCalendar } from '@/hooks/useSyncFromCalendar';
+import { useParseAssetDocument } from '@/hooks/useParseAssetDocument';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 function DynamicIcon({ name, className }: { name: string; className?: string }) {
   const pascalName = name.split('-').map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join('');
