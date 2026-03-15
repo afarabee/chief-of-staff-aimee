@@ -51,6 +51,12 @@ export default function Assets() {
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | undefined>(undefined);
+  const [formInitialValues, setFormInitialValues] = useState<AssetInitialValues | undefined>(undefined);
+
+  const scanInputRef = useRef<HTMLInputElement>(null);
+  const parseMutation = useParseAssetDocument();
+  const [isUploading, setIsUploading] = useState(false);
+  const isScanningDoc = isUploading || parseMutation.isPending;
 
   const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => {
@@ -66,9 +72,9 @@ export default function Assets() {
     }
   }, [searchParams, assets, isLoading]);
 
-  const openAdd = () => { setEditingAsset(undefined); setIsFormOpen(true); };
-  const openEdit = (asset: Asset) => { setEditingAsset(asset); setIsFormOpen(true); };
-  const closeForm = () => setIsFormOpen(false);
+  const openAdd = () => { setEditingAsset(undefined); setFormInitialValues(undefined); setIsFormOpen(true); };
+  const openEdit = (asset: Asset) => { setEditingAsset(asset); setFormInitialValues(undefined); setIsFormOpen(true); };
+  const closeForm = () => { setIsFormOpen(false); setFormInitialValues(undefined); };
 
   const openDetail = (asset: Asset) => { setSelectedAsset(asset); setView('detail'); };
   const backToList = () => { setView('list'); setSelectedAsset(null); };
