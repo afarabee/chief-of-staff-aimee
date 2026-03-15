@@ -282,7 +282,6 @@ export default function Assets() {
             Add Asset
           </Button>
         </div>
-        </Button>
       </div>
 
       {isLoading ? (
