@@ -81,6 +81,41 @@ export default function Assets() {
 
   const handleDelete = (id: string) => { deleteAsset.mutate(id, { onSuccess: backToList }); };
 
+  const handleScanDocument = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Reset input so re-selecting same file works
+    e.target.value = '';
+
+    try {
+      setIsUploading(true);
+      const ext = file.name.split('.').pop() || 'bin';
+      const path = `scan-${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from('attachments').upload(path, file);
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from('attachments').getPublicUrl(path);
+      const publicUrl = urlData.publicUrl;
+      setIsUploading(false);
+
+      const parsed = await parseMutation.mutateAsync(publicUrl);
+
+      setEditingAsset(undefined);
+      setFormInitialValues({
+        name: parsed.name || '',
+        description: parsed.description || '',
+        purchaseDate: parsed.purchase_date || undefined,
+        notes: parsed.notes || '',
+        categoryHint: parsed.category_hint || '',
+        documentUrl: publicUrl,
+      });
+      setIsFormOpen(true);
+    } catch (err) {
+      setIsUploading(false);
+      toast({ title: 'Scan failed', description: err instanceof Error ? err.message : 'Unknown error', variant: 'destructive' });
+    }
+  };
+
   const grouped = assets.reduce<Record<string, { name: string; icon: string | null; color: string | null; assets: Asset[] }>>((acc, asset) => {
     const key = asset.categoryName ?? 'Uncategorized';
     if (!acc[key]) acc[key] = { name: key, icon: asset.categoryIcon ?? null, color: asset.categoryColor ?? null, assets: [] };
