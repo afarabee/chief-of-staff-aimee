@@ -265,9 +265,23 @@ export default function Assets() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Assets</h1>
-        <Button onClick={openAdd}>
-          <Plus className="h-4 w-4" />
-          Add Asset
+        <div className="flex gap-2">
+          <input
+            ref={scanInputRef}
+            type="file"
+            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+            className="hidden"
+            onChange={handleScanDocument}
+          />
+          <Button variant="outline" onClick={() => scanInputRef.current?.click()} disabled={isScanningDoc}>
+            {isScanningDoc ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />}
+            {isScanningDoc ? 'Scanning…' : 'Scan Document'}
+          </Button>
+          <Button onClick={openAdd}>
+            <Plus className="h-4 w-4" />
+            Add Asset
+          </Button>
+        </div>
         </Button>
       </div>
 
