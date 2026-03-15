@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { icons } from 'lucide-react';
-import { ArrowLeft, Loader2, Package, Pencil, Plus, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileUp, Loader2, Package, Pencil, Plus, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useAssets, useDeleteAsset } from '@/hooks/useAssets';
 import { AssetCard } from '@/components/assets/AssetCard';
-import { AssetForm } from '@/components/assets/AssetForm';
+import { AssetForm, type AssetInitialValues } from '@/components/assets/AssetForm';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ResponsiveFormDialog } from '@/components/ui/responsive-dialog';
@@ -30,6 +30,9 @@ import { useAssetEnrichment } from '@/hooks/useAssetEnrichment';
 import { AssetSuggestionsSection } from '@/components/assets/AssetSuggestionsSection';
 import { AssetAttachmentsReadonly } from '@/components/assets/AssetAttachments';
 import { useSyncFromCalendar } from '@/hooks/useSyncFromCalendar';
+import { useParseAssetDocument } from '@/hooks/useParseAssetDocument';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 function DynamicIcon({ name, className }: { name: string; className?: string }) {
   const pascalName = name.split('-').map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join('');
@@ -48,6 +51,12 @@ export default function Assets() {
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | undefined>(undefined);
+  const [formInitialValues, setFormInitialValues] = useState<AssetInitialValues | undefined>(undefined);
+
+  const scanInputRef = useRef<HTMLInputElement>(null);
+  const parseMutation = useParseAssetDocument();
+  const [isUploading, setIsUploading] = useState(false);
+  const isScanningDoc = isUploading || parseMutation.isPending;
 
   const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => {
@@ -63,14 +72,49 @@ export default function Assets() {
     }
   }, [searchParams, assets, isLoading]);
 
-  const openAdd = () => { setEditingAsset(undefined); setIsFormOpen(true); };
-  const openEdit = (asset: Asset) => { setEditingAsset(asset); setIsFormOpen(true); };
-  const closeForm = () => setIsFormOpen(false);
+  const openAdd = () => { setEditingAsset(undefined); setFormInitialValues(undefined); setIsFormOpen(true); };
+  const openEdit = (asset: Asset) => { setEditingAsset(asset); setFormInitialValues(undefined); setIsFormOpen(true); };
+  const closeForm = () => { setIsFormOpen(false); setFormInitialValues(undefined); };
 
   const openDetail = (asset: Asset) => { setSelectedAsset(asset); setView('detail'); };
   const backToList = () => { setView('list'); setSelectedAsset(null); };
 
   const handleDelete = (id: string) => { deleteAsset.mutate(id, { onSuccess: backToList }); };
+
+  const handleScanDocument = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Reset input so re-selecting same file works
+    e.target.value = '';
+
+    try {
+      setIsUploading(true);
+      const ext = file.name.split('.').pop() || 'bin';
+      const path = `scan-${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from('attachments').upload(path, file);
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from('attachments').getPublicUrl(path);
+      const publicUrl = urlData.publicUrl;
+      setIsUploading(false);
+
+      const parsed = await parseMutation.mutateAsync(publicUrl);
+
+      setEditingAsset(undefined);
+      setFormInitialValues({
+        name: parsed.name || '',
+        description: parsed.description || '',
+        purchaseDate: parsed.purchase_date || undefined,
+        notes: parsed.notes || '',
+        categoryHint: parsed.category_hint || '',
+        documentUrl: publicUrl,
+      });
+      setIsFormOpen(true);
+    } catch (err) {
+      setIsUploading(false);
+      toast({ title: 'Scan failed', description: err instanceof Error ? err.message : 'Unknown error', variant: 'destructive' });
+    }
+  };
 
   const grouped = assets.reduce<Record<string, { name: string; icon: string | null; color: string | null; assets: Asset[] }>>((acc, asset) => {
     const key = asset.categoryName ?? 'Uncategorized';
@@ -210,8 +254,8 @@ export default function Assets() {
           )}
         </div>
 
-        <ResponsiveFormDialog open={isFormOpen} onOpenChange={setIsFormOpen} title={editingAsset ? 'Edit Asset' : 'Add Asset'}>
-          <AssetForm asset={editingAsset} onClose={closeForm} />
+        <ResponsiveFormDialog open={isFormOpen} onOpenChange={(open) => { if (!open) closeForm(); else setIsFormOpen(true); }} title={editingAsset ? 'Edit Asset' : formInitialValues ? 'Review Scanned Asset' : 'Add Asset'}>
+          <AssetForm asset={editingAsset} onClose={closeForm} initialValues={formInitialValues} />
         </ResponsiveFormDialog>
       </div>
     );
@@ -221,10 +265,23 @@ export default function Assets() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Assets</h1>
-        <Button onClick={openAdd}>
-          <Plus className="h-4 w-4" />
-          Add Asset
-        </Button>
+        <div className="flex gap-2">
+          <input
+            ref={scanInputRef}
+            type="file"
+            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+            className="hidden"
+            onChange={handleScanDocument}
+          />
+          <Button variant="outline" onClick={() => scanInputRef.current?.click()} disabled={isScanningDoc}>
+            {isScanningDoc ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />}
+            {isScanningDoc ? 'Scanning…' : 'Scan Document'}
+          </Button>
+          <Button onClick={openAdd}>
+            <Plus className="h-4 w-4" />
+            Add Asset
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -256,8 +313,8 @@ export default function Assets() {
         ))
       )}
 
-      <ResponsiveFormDialog open={isFormOpen} onOpenChange={setIsFormOpen} title={editingAsset ? 'Edit Asset' : 'Add Asset'}>
-        <AssetForm asset={editingAsset} onClose={closeForm} />
+      <ResponsiveFormDialog open={isFormOpen} onOpenChange={(open) => { if (!open) closeForm(); else setIsFormOpen(true); }} title={editingAsset ? 'Edit Asset' : formInitialValues ? 'Review Scanned Asset' : 'Add Asset'}>
+        <AssetForm asset={editingAsset} onClose={closeForm} initialValues={formInitialValues} />
       </ResponsiveFormDialog>
     </div>
   );

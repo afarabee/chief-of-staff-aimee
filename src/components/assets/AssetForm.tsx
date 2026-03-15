@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, Trash2, Plus } from 'lucide-react';
+import { CalendarIcon, Trash2, Plus, FileText } from 'lucide-react';
 import { AssetAttachments } from '@/components/assets/AssetAttachments';
 import { ImageUpload } from '@/components/ui/image-upload';
+import { useCreateAssetAttachment } from '@/hooks/useAssetAttachments';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,20 +46,32 @@ import {
 import { toast } from '@/hooks/use-toast';
 import type { Asset } from '@/types/assets';
 
+export interface AssetInitialValues {
+  name?: string;
+  description?: string;
+  purchaseDate?: string;
+  notes?: string;
+  categoryHint?: string;
+  documentUrl?: string;
+}
+
 interface AssetFormProps {
   asset?: Asset;
   onClose: () => void;
+  initialValues?: AssetInitialValues;
 }
 
-export function AssetForm({ asset, onClose }: AssetFormProps) {
+export function AssetForm({ asset, onClose, initialValues }: AssetFormProps) {
   const isEdit = !!asset;
-  const [name, setName] = useState(asset?.name ?? '');
+  const [name, setName] = useState(initialValues?.name ?? asset?.name ?? '');
   const [categoryId, setCategoryId] = useState<string>(asset?.categoryId ?? '');
-  const [description, setDescription] = useState(asset?.description ?? '');
+  const [description, setDescription] = useState(initialValues?.description ?? asset?.description ?? '');
   const [purchaseDate, setPurchaseDate] = useState<Date | undefined>(
-    asset?.purchaseDate ? new Date(asset.purchaseDate + 'T00:00:00') : undefined
+    initialValues?.purchaseDate
+      ? new Date(initialValues.purchaseDate + 'T00:00:00')
+      : asset?.purchaseDate ? new Date(asset.purchaseDate + 'T00:00:00') : undefined
   );
-  const [notes, setNotes] = useState(asset?.notes ?? '');
+  const [notes, setNotes] = useState(initialValues?.notes ?? asset?.notes ?? '');
   
   const [selectedProviderId, setSelectedProviderId] = useState<string>('');
 
@@ -70,12 +84,36 @@ export function AssetForm({ asset, onClose }: AssetFormProps) {
   const [newProviderNotes, setNewProviderNotes] = useState('');
 
   const { data: categories = [] } = useAssetCategories();
+
+  // Fuzzy-match categoryHint to an existing category
+  useState(() => {
+    if (initialValues?.categoryHint && !categoryId && categories.length > 0) {
+      const hint = initialValues.categoryHint.toLowerCase();
+      const match = categories.find(
+        (cat) => cat.name.toLowerCase() === hint || cat.name.toLowerCase().includes(hint) || hint.includes(cat.name.toLowerCase())
+      );
+      if (match) setCategoryId(match.id);
+    }
+  });
+  // Re-run when categories load
+  const [categoryMatched, setCategoryMatched] = useState(false);
+  if (initialValues?.categoryHint && !categoryMatched && !categoryId && categories.length > 0) {
+    const hint = initialValues.categoryHint.toLowerCase();
+    const match = categories.find(
+      (cat) => cat.name.toLowerCase() === hint || cat.name.toLowerCase().includes(hint) || hint.includes(cat.name.toLowerCase())
+    );
+    if (match) {
+      setCategoryId(match.id);
+    }
+    setCategoryMatched(true);
+  }
   const { data: providers = [] } = useProviders();
   const createAsset = useCreateAsset();
   const updateAsset = useUpdateAsset();
   const deleteAssetMutation = useDeleteAsset();
   const createProvider = useCreateProvider();
   const linkMutation = useLinkAssetProvider();
+  const createAttachment = useCreateAssetAttachment();
   const isPending = createAsset.isPending || updateAsset.isPending;
 
   const handleProviderChange = (value: string) => {
@@ -134,6 +172,15 @@ export function AssetForm({ asset, onClose }: AssetFormProps) {
               }
             );
           }
+          // Auto-attach the scanned document
+          if (initialValues?.documentUrl && data?.id) {
+            const fileName = initialValues.documentUrl.split('/').pop() || 'scanned-document';
+            createAttachment.mutate({
+              asset_id: data.id,
+              file_url: initialValues.documentUrl,
+              display_name: fileName,
+            });
+          }
           onClose();
         },
       });
@@ -143,6 +190,14 @@ export function AssetForm({ asset, onClose }: AssetFormProps) {
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-4">
+        {initialValues && !isEdit && (
+          <Alert className="border-primary/30 bg-primary/5">
+            <FileText className="h-4 w-4" />
+            <AlertDescription>
+              Parsed from document — please review before saving
+            </AlertDescription>
+          </Alert>
+        )}
         <div className="space-y-2">
           <Label htmlFor="asset-name">Name *</Label>
           <Input id="asset-name" value={name} onChange={(e) => setName(e.target.value)} required />
