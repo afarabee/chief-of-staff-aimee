@@ -82,6 +82,29 @@ export function AssetForm({ asset, onClose, initialValues }: AssetFormProps) {
   const [newProviderNotes, setNewProviderNotes] = useState('');
 
   const { data: categories = [] } = useAssetCategories();
+
+  // Fuzzy-match categoryHint to an existing category
+  useState(() => {
+    if (initialValues?.categoryHint && !categoryId && categories.length > 0) {
+      const hint = initialValues.categoryHint.toLowerCase();
+      const match = categories.find(
+        (cat) => cat.name.toLowerCase() === hint || cat.name.toLowerCase().includes(hint) || hint.includes(cat.name.toLowerCase())
+      );
+      if (match) setCategoryId(match.id);
+    }
+  });
+  // Re-run when categories load
+  const [categoryMatched, setCategoryMatched] = useState(false);
+  if (initialValues?.categoryHint && !categoryMatched && !categoryId && categories.length > 0) {
+    const hint = initialValues.categoryHint.toLowerCase();
+    const match = categories.find(
+      (cat) => cat.name.toLowerCase() === hint || cat.name.toLowerCase().includes(hint) || hint.includes(cat.name.toLowerCase())
+    );
+    if (match) {
+      setCategoryId(match.id);
+    }
+    setCategoryMatched(true);
+  }
   const { data: providers = [] } = useProviders();
   const createAsset = useCreateAsset();
   const updateAsset = useUpdateAsset();
