@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, Trash2, Plus } from 'lucide-react';
+import { CalendarIcon, Trash2, Plus, FileText } from 'lucide-react';
 import { AssetAttachments } from '@/components/assets/AssetAttachments';
 import { ImageUpload } from '@/components/ui/image-upload';
+import { useCreateAssetAttachment } from '@/hooks/useAssetAttachments';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
