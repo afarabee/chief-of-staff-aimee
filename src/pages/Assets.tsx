@@ -314,8 +314,8 @@ export default function Assets() {
         ))
       )}
 
-      <ResponsiveFormDialog open={isFormOpen} onOpenChange={setIsFormOpen} title={editingAsset ? 'Edit Asset' : 'Add Asset'}>
-        <AssetForm asset={editingAsset} onClose={closeForm} />
+      <ResponsiveFormDialog open={isFormOpen} onOpenChange={(open) => { if (!open) closeForm(); else setIsFormOpen(true); }} title={editingAsset ? 'Edit Asset' : formInitialValues ? 'Review Scanned Asset' : 'Add Asset'}>
+        <AssetForm asset={editingAsset} onClose={closeForm} initialValues={formInitialValues} />
       </ResponsiveFormDialog>
     </div>
   );
