@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface BriefingSuggestion {
   text: string;
   type: 'reschedule' | 'focus' | 'unblock' | 'idea' | 'general';
+  relatedItemIds?: string[];
 }
 
 export interface IdeaSpotlight {

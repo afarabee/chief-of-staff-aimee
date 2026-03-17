@@ -1,7 +1,9 @@
 import { Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { BriefingSuggestion } from '@/hooks/useDailyBriefing';
 
 const suggestionTypeColors: Record<string, string> = {
   reschedule: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
@@ -17,6 +19,15 @@ interface BriefingWidgetProps {
 }
 
 export function BriefingWidget({ briefing, isLoading }: BriefingWidgetProps) {
+  const navigate = useNavigate();
+
+  const handleSuggestionClick = (s: BriefingSuggestion) => {
+    const ids = s.relatedItemIds || s.related_item_ids;
+    if (ids && ids.length > 0) {
+      navigate(`/briefing-items?ids=${ids.join(',')}`);
+    }
+  };
+
   return (
     <Card className="md:col-span-2 border-primary/20 bg-primary/5 shadow-md min-w-0 overflow-hidden">
       <CardHeader className="pb-3">
@@ -40,11 +51,20 @@ export function BriefingWidget({ briefing, isLoading }: BriefingWidgetProps) {
           <>
             <p className="text-sm text-foreground leading-relaxed">{briefing.summary}</p>
             <div className="flex flex-wrap gap-2">
-              {briefing.suggestions.map((s: any, i: number) => (
-                <Badge key={i} variant="secondary" className={`text-xs px-3 py-1.5 ${suggestionTypeColors[s.type] || suggestionTypeColors.general}`}>
-                  {s.text}
-                </Badge>
-              ))}
+              {briefing.suggestions.map((s: any, i: number) => {
+                const ids = s.relatedItemIds || s.related_item_ids;
+                const isClickable = ids && ids.length > 0;
+                return (
+                  <Badge
+                    key={i}
+                    variant="secondary"
+                    className={`text-xs px-3 py-1.5 ${suggestionTypeColors[s.type] || suggestionTypeColors.general} ${isClickable ? 'cursor-pointer hover:ring-2 hover:ring-primary/30 transition-shadow' : ''}`}
+                    onClick={isClickable ? () => handleSuggestionClick(s) : undefined}
+                  >
+                    {s.text}
+                  </Badge>
+                );
+              })}
             </div>
           </>
         ) : (
