@@ -17,7 +17,7 @@ serve(async (req) => {
     // Fetch tasks
     const { data: tasks } = await sb.from("cos_tasks").select("id, title, status, priority, due_date, description").neq("status", "Done");
     // Fetch ideas
-    const { data: ideas } = await sb.from("cos_ideas").select("id, title, status, description, created_at");
+    const { data: ideas } = await sb.from("cos_ideas").select("id, title, status, description, created_at").neq("status", "Done");
     // Fetch maintenance enrichments
     const { data: enrichments } = await sb.from("ai_enrichments").select("item_title, suggestions, item_type").eq("item_type", "asset");
 
