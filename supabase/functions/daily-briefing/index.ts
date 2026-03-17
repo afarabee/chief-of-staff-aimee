@@ -55,7 +55,7 @@ ${blockedTasks.map((t: any) => `- [id:${t.id}] "${t.title}": ${(t.description ||
 IDEAS (${parkedIdeas.length} parked/new):
 ${parkedIdeas.slice(0, 8).map((i: any) => `- [id:${i.id}] "${i.title}" (status: ${i.status}, created: ${i.created_at?.slice(0, 10)}): ${(i.description || "").slice(0, 80)}`).join("\n") || "None"}
 
-TOTAL OPEN TASKS: ${(tasks || []).length}
+TOTAL OPEN TASKS: ${activeTasks.length}
 `;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
