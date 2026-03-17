@@ -33,7 +33,7 @@ export function BriefingWidget({ briefing, isLoading }: BriefingWidgetProps) {
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
-          <CardTitle className="text-lg">AI Daily Briefing</CardTitle>
+          <CardTitle className="text-lg">Daily Brief</CardTitle>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
