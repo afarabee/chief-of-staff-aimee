@@ -37,6 +37,7 @@ const CommandCenter = () => {
     refetchBriefing();
     refetchNews();
     queryClient.invalidateQueries({ queryKey: ['weather'] });
+    podcastRefetchRef.current?.();
   };
 
   const handleQuickCapture = () => {
