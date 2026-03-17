@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { RefreshCw, Sparkles, Cloud, Newspaper, Lightbulb, ArrowRight, ExternalLink } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { usePageTitle } from '@/hooks/usePageTitle';
