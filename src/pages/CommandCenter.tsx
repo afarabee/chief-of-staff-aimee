@@ -255,6 +255,9 @@ const CommandCenter = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Podcasts */}
+      <PodcastWidget onRefetchRef={podcastRefetchRef} />
     </div>
   );
 };
