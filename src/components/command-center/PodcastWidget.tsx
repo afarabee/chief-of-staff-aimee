@@ -13,7 +13,6 @@ export function PodcastWidget({ onRefetchRef }: { onRefetchRef?: React.MutableRe
   const { feeds, isLoading: feedsLoading, addFeed, deleteFeed } = usePodcastFeeds();
   const { data: episodes, isLoading: episodesLoading, refetch: refetchEpisodes } = usePodcastEpisodes();
   const [manageOpen, setManageOpen] = useState(false);
-  const [newName, setNewName] = useState('');
   const [newUrl, setNewUrl] = useState('');
 
   // Expose refetch to parent
@@ -22,14 +21,13 @@ export function PodcastWidget({ onRefetchRef }: { onRefetchRef?: React.MutableRe
   }
 
   const handleAdd = () => {
-    if (!newName.trim() || !newUrl.trim()) return;
+    if (!newUrl.trim()) return;
     addFeed.mutate(
-      { name: newName.trim(), rss_url: newUrl.trim() },
+      { name: 'Auto-detect', rss_url: newUrl.trim() },
       {
         onSuccess: () => {
-          setNewName('');
           setNewUrl('');
-          toast({ title: 'Feed added' });
+          toast({ title: 'Feed added – name will be detected automatically' });
         },
       }
     );
@@ -81,17 +79,13 @@ export function PodcastWidget({ onRefetchRef }: { onRefetchRef?: React.MutableRe
                 {/* Add form */}
                 <div className="space-y-2 border-t pt-3">
                   <Input
-                    placeholder="Podcast name"
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                  />
-                  <Input
                     placeholder="RSS feed URL"
                     value={newUrl}
                     onChange={(e) => setNewUrl(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
                   />
-                  <Button onClick={handleAdd} disabled={!newName.trim() || !newUrl.trim() || addFeed.isPending} className="w-full gap-1">
+                  <p className="text-xs text-muted-foreground">Podcast name will be auto-detected from the feed.</p>
+                  <Button onClick={handleAdd} disabled={!newUrl.trim() || addFeed.isPending} className="w-full gap-1">
                     <Plus className="h-4 w-4" /> Add Feed
                   </Button>
                 </div>
