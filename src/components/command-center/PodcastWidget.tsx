@@ -21,14 +21,13 @@ export function PodcastWidget({ onRefetchRef }: { onRefetchRef?: React.MutableRe
   }
 
   const handleAdd = () => {
-    if (!newName.trim() || !newUrl.trim()) return;
+    if (!newUrl.trim()) return;
     addFeed.mutate(
-      { name: newName.trim(), rss_url: newUrl.trim() },
+      { name: 'Auto-detect', rss_url: newUrl.trim() },
       {
         onSuccess: () => {
-          setNewName('');
           setNewUrl('');
-          toast({ title: 'Feed added' });
+          toast({ title: 'Feed added – name will be detected automatically' });
         },
       }
     );
