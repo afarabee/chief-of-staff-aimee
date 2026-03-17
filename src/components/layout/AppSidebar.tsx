@@ -15,7 +15,7 @@ import {
 
 const navItems = [
   { title: 'Command Center', url: '/command-center', icon: BrainCircuit },
-  { title: 'Today', url: '/', icon: LayoutDashboard },
+  { title: 'Today', url: '/today', icon: LayoutDashboard },
   { title: 'Calendar', url: '/calendar', icon: Calendar },
   { title: 'Shopping List', url: '/shopping-list', icon: ShoppingCart },
   { title: 'Tasks', url: '/tasks', icon: CheckSquare },

@@ -41,6 +41,7 @@ const App = () => (
           <AppLayout>
             <Routes>
               <Route path="/" element={<CommandCenter />} />
+              <Route path="/today" element={<Index />} />
               <Route path="/tasks" element={<Tasks />} />
               <Route path="/ideas" element={<Ideas />} />
               <Route path="/categories" element={<Categories />} />
