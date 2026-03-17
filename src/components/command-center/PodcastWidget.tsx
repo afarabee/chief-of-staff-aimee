@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 
 export function PodcastWidget({ onRefetchRef }: { onRefetchRef?: React.MutableRefObject<(() => void) | null> }) {
   const { feeds, isLoading: feedsLoading, addFeed, deleteFeed } = usePodcastFeeds();
@@ -120,9 +121,9 @@ export function PodcastWidget({ onRefetchRef }: { onRefetchRef?: React.MutableRe
                         </span>
                       )}
                       {ep.url && (
-                        <a href={ep.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline inline-flex items-center gap-0.5">
+                        <button onClick={() => openExternalUrl(ep.url!)} className="text-xs text-primary hover:underline inline-flex items-center gap-0.5">
                           Listen <ExternalLink className="h-3 w-3" />
-                        </a>
+                        </button>
                       )}
                     </div>
                   </div>
