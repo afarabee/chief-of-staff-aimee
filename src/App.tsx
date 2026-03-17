@@ -19,6 +19,7 @@ import AiActivity from "./pages/AiActivity";
 import AiEnrichmentDetail from "./pages/AiEnrichmentDetail";
 import ShoppingList from "./pages/ShoppingList";
 import CommandCenter from "./pages/CommandCenter";
+import BriefingItems from "./pages/BriefingItems";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
