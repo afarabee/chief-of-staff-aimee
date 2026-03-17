@@ -14,3 +14,9 @@ verify_jwt = false
 
 [functions.parse-asset-document]
 verify_jwt = false
+
+[functions.daily-briefing]
+verify_jwt = false
+
+[functions.ai-news]
+verify_jwt = false
