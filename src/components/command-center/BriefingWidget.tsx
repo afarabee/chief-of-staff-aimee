@@ -21,8 +21,8 @@ interface BriefingWidgetProps {
 export function BriefingWidget({ briefing, isLoading }: BriefingWidgetProps) {
   const navigate = useNavigate();
 
-  const handleSuggestionClick = (s: BriefingSuggestion) => {
-    const ids = s.relatedItemIds || s.related_item_ids;
+  const handleSuggestionClick = (s: any) => {
+    const ids: string[] | undefined = s.relatedItemIds || s.related_item_ids;
     if (ids && ids.length > 0) {
       navigate(`/briefing-items?ids=${ids.join(',')}`);
     }
