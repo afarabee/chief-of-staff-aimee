@@ -210,6 +210,30 @@ export type Database = {
         }
         Relationships: []
       }
+      command_center_config: {
+        Row: {
+          created_at: string
+          hidden_widgets: string[]
+          id: string
+          updated_at: string
+          widget_order: string[]
+        }
+        Insert: {
+          created_at?: string
+          hidden_widgets?: string[]
+          id?: string
+          updated_at?: string
+          widget_order?: string[]
+        }
+        Update: {
+          created_at?: string
+          hidden_widgets?: string[]
+          id?: string
+          updated_at?: string
+          widget_order?: string[]
+        }
+        Relationships: []
+      }
       cos_categories: {
         Row: {
           created_at: string
