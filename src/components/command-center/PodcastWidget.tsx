@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 
 export function PodcastWidget({ onRefetchRef }: { onRefetchRef?: React.MutableRefObject<(() => void) | null> }) {
   const { feeds, isLoading: feedsLoading, addFeed, deleteFeed } = usePodcastFeeds();
