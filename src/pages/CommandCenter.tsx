@@ -27,6 +27,7 @@ const CommandCenter = () => {
   const queryClient = useQueryClient();
   const { addIdea } = useApp();
   const [captureText, setCaptureText] = useState('');
+  const podcastRefetchRef = useRef<(() => void) | null>(null);
 
   const { data: weather, isLoading: weatherLoading } = useWeather();
   const { data: briefing, isLoading: briefingLoading, refetch: refetchBriefing } = useDailyBriefing();
