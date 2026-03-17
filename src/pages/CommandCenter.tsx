@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Link } from 'react-router-dom';
+import { PodcastWidget } from '@/components/command-center/PodcastWidget';
 
 const suggestionTypeColors: Record<string, string> = {
   reschedule: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
