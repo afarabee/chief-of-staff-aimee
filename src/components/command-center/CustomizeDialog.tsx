@@ -4,7 +4,7 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 const WIDGET_LABELS: Record<string, string> = {
-  briefing: 'AI Daily Briefing',
+  briefing: 'Daily Brief',
   weather: 'Weather',
   calendar: "Today's Calendar",
   ideaSpotlight: 'Idea Spotlight',
