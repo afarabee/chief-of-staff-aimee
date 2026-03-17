@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { RefreshCw, Sparkles, Cloud, Newspaper, Lightbulb, ArrowRight, ExternalLink } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { usePageTitle } from '@/hooks/usePageTitle';
@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Link } from 'react-router-dom';
+import { PodcastWidget } from '@/components/command-center/PodcastWidget';
 
 const suggestionTypeColors: Record<string, string> = {
   reschedule: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
@@ -26,6 +27,7 @@ const CommandCenter = () => {
   const queryClient = useQueryClient();
   const { addIdea } = useApp();
   const [captureText, setCaptureText] = useState('');
+  const podcastRefetchRef = useRef<(() => void) | null>(null);
 
   const { data: weather, isLoading: weatherLoading } = useWeather();
   const { data: briefing, isLoading: briefingLoading, refetch: refetchBriefing } = useDailyBriefing();
@@ -35,6 +37,7 @@ const CommandCenter = () => {
     refetchBriefing();
     refetchNews();
     queryClient.invalidateQueries({ queryKey: ['weather'] });
+    podcastRefetchRef.current?.();
   };
 
   const handleQuickCapture = () => {
@@ -252,6 +255,9 @@ const CommandCenter = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Podcasts */}
+      <PodcastWidget onRefetchRef={podcastRefetchRef} />
     </div>
   );
 };
