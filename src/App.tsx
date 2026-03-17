@@ -40,7 +40,7 @@ const App = () => (
         <BrowserRouter>
           <AppLayout>
             <Routes>
-              <Route path="/" element={<Index />} />
+              <Route path="/" element={<CommandCenter />} />
               <Route path="/tasks" element={<Tasks />} />
               <Route path="/ideas" element={<Ideas />} />
               <Route path="/categories" element={<Categories />} />
