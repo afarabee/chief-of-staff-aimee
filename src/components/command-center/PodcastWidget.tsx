@@ -79,17 +79,13 @@ export function PodcastWidget({ onRefetchRef }: { onRefetchRef?: React.MutableRe
                 {/* Add form */}
                 <div className="space-y-2 border-t pt-3">
                   <Input
-                    placeholder="Podcast name"
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                  />
-                  <Input
                     placeholder="RSS feed URL"
                     value={newUrl}
                     onChange={(e) => setNewUrl(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
                   />
-                  <Button onClick={handleAdd} disabled={!newName.trim() || !newUrl.trim() || addFeed.isPending} className="w-full gap-1">
+                  <p className="text-xs text-muted-foreground">Podcast name will be auto-detected from the feed.</p>
+                  <Button onClick={handleAdd} disabled={!newUrl.trim() || addFeed.isPending} className="w-full gap-1">
                     <Plus className="h-4 w-4" /> Add Feed
                   </Button>
                 </div>
