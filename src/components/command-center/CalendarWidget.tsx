@@ -2,6 +2,7 @@ import { CalendarDays, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTodaysCalendar, CalendarEvent } from '@/hooks/useTodaysCalendar';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 
 function formatTime(dateStr: string, allDay: boolean): string {
   if (allDay) return 'All day';
