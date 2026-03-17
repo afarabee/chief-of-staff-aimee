@@ -29,24 +29,24 @@ serve(async (req) => {
     const blockedTasks = (tasks || []).filter((t: any) => t.status === "Blocked");
     const parkedIdeas = (ideas || []).filter((i: any) => i.status === "Parked" || i.status === "New");
 
-    // Build context for AI
+    // Build context for AI — include IDs so the model can reference them
     const context = `
 TODAY: ${today}
 
 OVERDUE TASKS (${overdueTasks.length}):
-${overdueTasks.map((t: any) => `- "${t.title}" (due ${t.due_date}, priority: ${t.priority})`).join("\n") || "None"}
+${overdueTasks.map((t: any) => `- [id:${t.id}] "${t.title}" (due ${t.due_date}, priority: ${t.priority})`).join("\n") || "None"}
 
 DUE TODAY (${todayTasks.length}):
-${todayTasks.map((t: any) => `- "${t.title}" (priority: ${t.priority})`).join("\n") || "None"}
+${todayTasks.map((t: any) => `- [id:${t.id}] "${t.title}" (priority: ${t.priority})`).join("\n") || "None"}
 
 UPCOMING TASKS (next 5):
-${upcomingTasks.map((t: any) => `- "${t.title}" (due ${t.due_date})`).join("\n") || "None"}
+${upcomingTasks.map((t: any) => `- [id:${t.id}] "${t.title}" (due ${t.due_date})`).join("\n") || "None"}
 
 BLOCKED TASKS (${blockedTasks.length}):
-${blockedTasks.map((t: any) => `- "${t.title}": ${(t.description || "").slice(0, 80)}`).join("\n") || "None"}
+${blockedTasks.map((t: any) => `- [id:${t.id}] "${t.title}": ${(t.description || "").slice(0, 80)}`).join("\n") || "None"}
 
 IDEAS (${parkedIdeas.length} parked/new):
-${parkedIdeas.slice(0, 8).map((i: any) => `- "${i.title}" (status: ${i.status}, created: ${i.created_at?.slice(0, 10)}): ${(i.description || "").slice(0, 80)}`).join("\n") || "None"}
+${parkedIdeas.slice(0, 8).map((i: any) => `- [id:${i.id}] "${i.title}" (status: ${i.status}, created: ${i.created_at?.slice(0, 10)}): ${(i.description || "").slice(0, 80)}`).join("\n") || "None"}
 
 TOTAL OPEN TASKS: ${(tasks || []).length}
 `;
@@ -65,7 +65,7 @@ TOTAL OPEN TASKS: ${(tasks || []).length}
         messages: [
           {
             role: "system",
-            content: `You are an AI Chief of Staff assistant. Generate a daily briefing based on the user's tasks, ideas, and schedule. Be warm, concise, and actionable. Never show IDs.`,
+            content: `You are an AI Chief of Staff assistant. Generate a daily briefing based on the user's tasks, ideas, and schedule. Be warm, concise, and actionable. Never show IDs in the text fields. Each item in the data has an [id:UUID] prefix — use those UUIDs in related_item_ids when a suggestion refers to specific tasks or ideas.`,
           },
           {
             role: "user",
@@ -90,6 +90,11 @@ TOTAL OPEN TASKS: ${(tasks || []).length}
                       properties: {
                         text: { type: "string", description: "The actionable suggestion" },
                         type: { type: "string", enum: ["reschedule", "focus", "unblock", "idea", "general"] },
+                        related_item_ids: {
+                          type: "array",
+                          items: { type: "string" },
+                          description: "UUIDs of the specific tasks or ideas this suggestion refers to. Only include when the suggestion maps to specific items from the data. Omit or leave empty for general suggestions.",
+                        },
                       },
                       required: ["text", "type"],
                     },
