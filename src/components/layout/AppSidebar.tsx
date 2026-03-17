@@ -24,6 +24,7 @@ const navItems = [
   { title: 'Maintenance', url: '/maintenance', icon: CalendarCheck },
   { title: 'Providers', url: '/providers', icon: Wrench },
   { title: 'AI Activity', url: '/ai-activity', icon: Sparkles },
+  { title: 'Command Center', url: '/command-center', icon: BrainCircuit },
 ];
 
 export function AppSidebar() {

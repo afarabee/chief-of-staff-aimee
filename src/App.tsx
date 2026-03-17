@@ -51,6 +51,7 @@ const App = () => (
               <Route path="/ai-activity" element={<AiActivity />} />
               <Route path="/ai-activity/:id" element={<AiEnrichmentDetail />} />
               <Route path="/shopping-list" element={<ShoppingList />} />
+              <Route path="/command-center" element={<CommandCenter />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
