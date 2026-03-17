@@ -49,7 +49,6 @@ serve(async (req) => {
                         title: { type: "string", description: "Headline of the news story" },
                         source: { type: "string", description: "Publication or source name" },
                         snippet: { type: "string", description: "1-2 sentence summary" },
-                        url: { type: "string", description: "URL to the article if known, otherwise empty string" },
                       },
                       required: ["title", "source", "snippet"],
                     },

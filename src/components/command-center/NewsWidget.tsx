@@ -31,17 +31,15 @@ export function NewsWidget({ news, isLoading }: NewsWidgetProps) {
         ) : news && news.length > 0 ? (
           <div className="divide-y divide-border">
             {news.map((article, i) => {
-              const hasUrl = article.url && article.url.startsWith('http');
-              const Wrapper = hasUrl ? 'a' : 'div';
-              const wrapperProps = hasUrl
-                ? { href: article.url, target: '_blank', rel: 'noopener noreferrer' }
-                : {};
+              const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(article.title + ' ' + article.source)}`;
 
               return (
-                <Wrapper
+                <a
                   key={i}
-                  {...wrapperProps}
-                  className={`block py-3 first:pt-0 last:pb-0 ${hasUrl ? 'cursor-pointer hover:bg-emerald-100/50 dark:hover:bg-emerald-900/20 -mx-2 px-2 rounded-md transition-colors' : ''}`}
+                  href={searchUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block py-3 first:pt-0 last:pb-0 cursor-pointer hover:bg-emerald-100/50 dark:hover:bg-emerald-900/20 -mx-2 px-2 rounded-md transition-colors"
                 >
                   <div className="flex items-start gap-2">
                     <div className="flex-1 min-w-0">
@@ -49,15 +47,13 @@ export function NewsWidget({ news, isLoading }: NewsWidgetProps) {
                       <p className="text-xs text-muted-foreground mt-0.5">{article.snippet}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0">{article.source}</Badge>
-                        {hasUrl && (
-                          <span className="text-xs text-primary inline-flex items-center gap-0.5">
-                            Read <ExternalLink className="h-3 w-3" />
-                          </span>
-                        )}
+                        <span className="text-xs text-primary inline-flex items-center gap-0.5">
+                          Search <ExternalLink className="h-3 w-3" />
+                        </span>
                       </div>
                     </div>
                   </div>
-                </Wrapper>
+                </a>
               );
             })}
           </div>

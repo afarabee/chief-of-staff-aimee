@@ -1,26 +1,15 @@
 
 
-# Fix News Article Links
+# Fix: Preserve `bundled_items` when saving AI enrichment suggestions
 
 ## Problem
-The Gemini model generating news articles produces URLs that are hallucinated — they look real but don't point to actual pages. LLMs don't browse the web, so any URL they return is unreliable.
+The `formattedSuggestions` mapping in `useEnrichAndSave.tsx` explicitly picks only `suggestion`, `status`, `result`, `frequency`, and `recommended_due_date` -- dropping `bundled_items` from the AI response before saving to the database.
 
-## Solution
-Instead of trusting AI-generated URLs, construct a **Google Search link** from each article's title and source. This guarantees the user lands on a real search results page where the actual article will be the top result.
+## Fix
+Add one line to the mapping in `src/hooks/useEnrichAndSave.tsx` (line ~72) to spread `bundled_items` when present:
 
-## Changes
+```tsx
+...(s.bundled_items ? { bundled_items: s.bundled_items } : {}),
+```
 
-### 1. Edge Function: `supabase/functions/ai-news/index.ts`
-- Remove the `url` field from the tool schema entirely (stop asking the model to hallucinate URLs)
-- Keep title, source, and snippet
-
-### 2. Frontend: `src/components/command-center/NewsWidget.tsx`
-- Instead of using `article.url`, construct a Google Search URL: `https://www.google.com/search?q=${encodeURIComponent(article.title + ' ' + article.source)}`
-- Every article becomes clickable (no need for the `hasUrl` conditional)
-- Change the "Read" label to "Search" with the ExternalLink icon
-
-### 3. Hook: `src/hooks/useAiNews.ts`
-- Remove `url` from the `NewsArticle` interface (optional)
-
-This is a small, reliable fix — every link will work and take the user to the real article via search.
-
+This is a single-line addition to the existing spread pattern. No database, schema, or other file changes needed.
