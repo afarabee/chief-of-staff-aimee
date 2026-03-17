@@ -121,9 +121,9 @@ export function PodcastWidget({ onRefetchRef }: { onRefetchRef?: React.MutableRe
                         </span>
                       )}
                       {ep.url && (
-                        <a href={ep.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline inline-flex items-center gap-0.5">
+                        <button onClick={() => openExternalUrl(ep.url!)} className="text-xs text-primary hover:underline inline-flex items-center gap-0.5">
                           Listen <ExternalLink className="h-3 w-3" />
-                        </a>
+                        </button>
                       )}
                     </div>
                   </div>

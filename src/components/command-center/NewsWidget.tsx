@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { NewsArticle } from '@/hooks/useAiNews';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 
 interface NewsWidgetProps {
   news: NewsArticle[] | undefined;
@@ -34,11 +35,9 @@ export function NewsWidget({ news, isLoading }: NewsWidgetProps) {
               const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(article.title + ' ' + article.source)}`;
 
               return (
-                <a
+                <div
                   key={i}
-                  href={searchUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  onClick={() => openExternalUrl(searchUrl)}
                   className="block py-3 first:pt-0 last:pb-0 cursor-pointer hover:bg-emerald-100/50 dark:hover:bg-emerald-900/20 -mx-2 px-2 rounded-md transition-colors"
                 >
                   <div className="flex items-start gap-2">
@@ -53,7 +52,7 @@ export function NewsWidget({ news, isLoading }: NewsWidgetProps) {
                       </div>
                     </div>
                   </div>
-                </a>
+                </div>
               );
             })}
           </div>

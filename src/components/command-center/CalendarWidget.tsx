@@ -43,9 +43,9 @@ export function CalendarWidget() {
                 </span>
                 <span className="text-sm text-foreground flex-1 min-w-0 truncate">{event.summary}</span>
                 {event.htmlLink && (
-                  <a href={event.htmlLink} target="_blank" rel="noopener noreferrer" className="shrink-0 text-muted-foreground hover:text-primary">
+                  <button onClick={() => openExternalUrl(event.htmlLink!)} className="shrink-0 text-muted-foreground hover:text-primary">
                     <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
+                  </button>
                 )}
               </div>
             ))}
