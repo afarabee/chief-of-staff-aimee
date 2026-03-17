@@ -15,19 +15,26 @@ serve(async (req) => {
     const sb = createClient(supabaseUrl, supabaseKey);
 
     // Fetch tasks
-    const { data: tasks } = await sb.from("cos_tasks").select("id, title, status, priority, due_date, description").neq("status", "Done");
+    const { data: tasks } = await sb.from("cos_tasks").select("id, title, status, priority, due_date, description");
     // Fetch ideas
-    const { data: ideas } = await sb.from("cos_ideas").select("id, title, status, description, created_at").neq("status", "Done");
+    const { data: ideas } = await sb.from("cos_ideas").select("id, title, status, description, created_at");
     // Fetch maintenance enrichments
     const { data: enrichments } = await sb.from("ai_enrichments").select("item_title, suggestions, item_type").eq("item_type", "asset");
 
     const today = new Date().toISOString().slice(0, 10);
+    const normalizeStatus = (status: unknown) => (typeof status === "string" ? status.trim().toLowerCase() : "");
 
-    const overdueTasks = (tasks || []).filter((t: any) => t.due_date && t.due_date < today && t.status !== "Done");
-    const todayTasks = (tasks || []).filter((t: any) => t.due_date === today);
-    const upcomingTasks = (tasks || []).filter((t: any) => t.due_date && t.due_date > today).slice(0, 5);
-    const blockedTasks = (tasks || []).filter((t: any) => t.status === "Blocked");
-    const parkedIdeas = (ideas || []).filter((i: any) => i.status === "Parked" || i.status === "New");
+    const activeTasks = (tasks || []).filter((t: any) => normalizeStatus(t.status) !== "done");
+    const activeIdeas = (ideas || []).filter((i: any) => normalizeStatus(i.status) !== "done");
+
+    const overdueTasks = activeTasks.filter((t: any) => t.due_date && t.due_date < today);
+    const todayTasks = activeTasks.filter((t: any) => t.due_date === today);
+    const upcomingTasks = activeTasks.filter((t: any) => t.due_date && t.due_date > today).slice(0, 5);
+    const blockedTasks = activeTasks.filter((t: any) => normalizeStatus(t.status) === "blocked");
+    const parkedIdeas = activeIdeas.filter((i: any) => {
+      const status = normalizeStatus(i.status);
+      return status === "parked" || status === "new";
+    });
 
     // Build context for AI — include IDs so the model can reference them
     const context = `
