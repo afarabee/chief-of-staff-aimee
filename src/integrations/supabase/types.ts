@@ -382,6 +382,27 @@ export type Database = {
           },
         ]
       }
+      podcast_feeds: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          rss_url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          rss_url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          rss_url?: string
+        }
+        Relationships: []
+      }
       service_providers: {
         Row: {
           address: string | null
