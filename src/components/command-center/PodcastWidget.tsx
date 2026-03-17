@@ -13,7 +13,6 @@ export function PodcastWidget({ onRefetchRef }: { onRefetchRef?: React.MutableRe
   const { feeds, isLoading: feedsLoading, addFeed, deleteFeed } = usePodcastFeeds();
   const { data: episodes, isLoading: episodesLoading, refetch: refetchEpisodes } = usePodcastEpisodes();
   const [manageOpen, setManageOpen] = useState(false);
-  const [newName, setNewName] = useState('');
   const [newUrl, setNewUrl] = useState('');
 
   // Expose refetch to parent

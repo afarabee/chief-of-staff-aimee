@@ -87,23 +87,44 @@ Deno.serve(async (req) => {
       snippet: string;
     }> = [];
 
+    const feedUpdates: Array<{ id: string; name: string }> = [];
+
     await Promise.all(
-      feeds.map(async (feed: { name: string; rss_url: string }) => {
+      feeds.map(async (feed: { id: string; name: string; rss_url: string }) => {
         try {
           const res = await fetch(feed.rss_url, {
             headers: { 'User-Agent': 'PodcastFetcher/1.0' },
           });
           if (!res.ok) return;
           const xml = await res.text();
+
+          // Auto-detect podcast name from channel title if feed name looks like a placeholder
+          let podcastName = feed.name;
+          const channelStart = xml.indexOf('<channel');
+          if (channelStart !== -1) {
+            const firstItemStart = xml.indexOf('<item', channelStart);
+            const channelHeader = firstItemStart !== -1 ? xml.substring(channelStart, firstItemStart) : xml.substring(channelStart, channelStart + 2000);
+            const detectedName = parseXmlTag(channelHeader, 'title');
+            if (detectedName && (!feed.name || feed.name === feed.rss_url || feed.name === 'Auto-detect')) {
+              podcastName = detectedName;
+              feedUpdates.push({ id: feed.id, name: detectedName });
+            }
+          }
+
           const items = parseItems(xml, 2);
           for (const item of items) {
-            allEpisodes.push({ podcastName: feed.name, ...item });
+            allEpisodes.push({ podcastName, ...item });
           }
         } catch (e) {
           console.error(`Failed to fetch feed ${feed.name}:`, e);
         }
       })
     );
+
+    // Persist auto-detected names back to DB
+    for (const upd of feedUpdates) {
+      await supabase.from('podcast_feeds').update({ name: upd.name }).eq('id', upd.id);
+    }
 
     // Sort by published date descending
     allEpisodes.sort((a, b) => {
