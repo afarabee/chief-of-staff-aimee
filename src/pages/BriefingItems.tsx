@@ -23,8 +23,8 @@ export default function BriefingItems() {
     return raw.split(',').filter(Boolean);
   }, [searchParams]);
 
-  const matchedTasks = useMemo(() => tasks.filter(t => ids.includes(t.id)), [tasks, ids]);
-  const matchedIdeas = useMemo(() => ideas.filter(i => ids.includes(i.id)), [ideas, ids]);
+  const matchedTasks = useMemo(() => tasks.filter(t => ids.includes(t.id) && t.status !== 'done'), [tasks, ids]);
+  const matchedIdeas = useMemo(() => ideas.filter(i => ids.includes(i.id) && i.status !== 'done'), [ideas, ids]);
 
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editingIdea, setEditingIdea] = useState<Idea | null>(null);
