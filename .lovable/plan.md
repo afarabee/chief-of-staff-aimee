@@ -1,12 +1,15 @@
 
 
-# Fix: Restore Today page and default to Command Center
+# Fix: Preserve `bundled_items` when saving AI enrichment suggestions
 
-The previous change replaced the `Index` component at `/` with `CommandCenter`, breaking the Today page. The fix:
+## Problem
+The `formattedSuggestions` mapping in `useEnrichAndSave.tsx` explicitly picks only `suggestion`, `status`, `result`, `frequency`, and `recommended_due_date` -- dropping `bundled_items` from the AI response before saving to the database.
 
-1. **`src/App.tsx`**: Restore `<Route path="/" element={<CommandCenter />} />` but also add a dedicated `/today` route for the Today/Index page: `<Route path="/today" element={<Index />} />`
+## Fix
+Add one line to the mapping in `src/hooks/useEnrichAndSave.tsx` (line ~72) to spread `bundled_items` when present:
 
-2. **`src/components/layout/AppSidebar.tsx`**: Update the Today nav item URL from `/` to `/today`
+```tsx
+...(s.bundled_items ? { bundled_items: s.bundled_items } : {}),
+```
 
-This keeps Command Center as the default landing page while preserving the Today page at `/today`.
-
+This is a single-line addition to the existing spread pattern. No database, schema, or other file changes needed.
