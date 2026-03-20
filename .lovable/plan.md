@@ -1,15 +1,15 @@
 
 
-# Fix: Preserve `bundled_items` when saving AI enrichment suggestions
+# Fix: Move Clear Date button for better visibility
 
-## Problem
-The `formattedSuggestions` mapping in `useEnrichAndSave.tsx` explicitly picks only `suggestion`, `status`, `result`, `frequency`, and `recommended_due_date` -- dropping `bundled_items` from the AI response before saving to the database.
+The "Clear date" button is currently placed **below** the calendar inside the popover, which can get clipped or hidden depending on viewport size. The fix is to place a small "Clear" link next to the "Due Date" label, making it always accessible.
 
-## Fix
-Add one line to the mapping in `src/hooks/useEnrichAndSave.tsx` (line ~72) to spread `bundled_items` when present:
+## Changes
 
-```tsx
-...(s.bundled_items ? { bundled_items: s.bundled_items } : {}),
-```
+### 1. `src/components/tasks/TaskForm.tsx`
+- Replace the label `<Label>Due Date</Label>` with a flex row containing the label and a conditional "Clear" button
+- Remove the "Clear date" section from inside the `PopoverContent`
 
-This is a single-line addition to the existing spread pattern. No database, schema, or other file changes needed.
+### 2. `src/components/assets/AssetForm.tsx`
+- Apply the same pattern: move "Clear date" next to the "Purchase Date" label and remove it from inside the popover
+
