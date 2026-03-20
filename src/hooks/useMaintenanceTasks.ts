@@ -3,10 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
-/**
- * Mark a maintenance event as completed.
- * Inserts a completion record into the `tasks` table.
- */
 export function useCompleteMaintenanceEvent() {
   const qc = useQueryClient();
   return useMutation({
@@ -26,6 +22,43 @@ export function useCompleteMaintenanceEvent() {
       qc.invalidateQueries({ queryKey: ['all-maintenance-events'] });
       qc.invalidateQueries({ queryKey: ['calendar-maintenance-tasks'] });
       toast({ title: 'Maintenance completed' });
+    },
+    onError: (e: Error) => {
+      toast({ title: 'Error', description: e.message, variant: 'destructive' });
+    },
+  });
+}
+
+export function useDeleteMaintenanceEvent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ enrichmentId, suggestionIndex }: { enrichmentId: string; suggestionIndex: number }) => {
+      const { data, error: fetchErr } = await supabase
+        .from('ai_enrichments')
+        .select('suggestions')
+        .eq('id', enrichmentId)
+        .single();
+      if (fetchErr) throw fetchErr;
+
+      const suggestions = Array.isArray(data.suggestions) ? [...data.suggestions] : [];
+      if (suggestionIndex < 0 || suggestionIndex >= suggestions.length) {
+        throw new Error('Invalid suggestion index');
+      }
+      const item = suggestions[suggestionIndex] as Record<string, unknown>;
+      suggestions[suggestionIndex] = { ...item, status: 'dismissed' };
+
+      const { error: updateErr } = await supabase
+        .from('ai_enrichments')
+        .update({ suggestions: suggestions as any })
+        .eq('id', enrichmentId);
+      if (updateErr) throw updateErr;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['all-maintenance-events'] });
+      qc.invalidateQueries({ queryKey: ['ai-enrichment-for-asset'] });
+      qc.invalidateQueries({ queryKey: ['ai-enrichments'] });
+      qc.invalidateQueries({ queryKey: ['calendar-maintenance-tasks'] });
+      toast({ title: 'Maintenance task removed' });
     },
     onError: (e: Error) => {
       toast({ title: 'Error', description: e.message, variant: 'destructive' });

@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
-import { CalendarCheck, CalendarDays, CalendarPlus, ChevronDown, Circle, CheckCircle2, ExternalLink, Loader2, Pencil, RefreshCw } from 'lucide-react';
+import { CalendarCheck, CalendarDays, CalendarPlus, ChevronDown, Circle, CheckCircle2, ExternalLink, Loader2, Pencil, RefreshCw, Trash2 } from 'lucide-react';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useAllMaintenanceEvents } from '@/hooks/useAllMaintenanceEvents';
-import { useCompleteMaintenanceEvent } from '@/hooks/useMaintenanceTasks';
+import { useCompleteMaintenanceEvent, useDeleteMaintenanceEvent } from '@/hooks/useMaintenanceTasks';
 import { useSyncFromCalendar } from '@/hooks/useSyncFromCalendar';
 import { useUpdateMaintenanceSuggestion } from '@/hooks/useUpdateMaintenanceSuggestion';
 import { useScheduleToCalendar } from '@/hooks/useScheduleToCalendar';
@@ -14,6 +14,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -49,6 +61,7 @@ interface CardProps {
   event: MaintenanceEvent;
   onComplete: () => void;
   onEdit: () => void;
+  onDelete: () => void;
   onScheduleOpen: () => void;
   isScheduling: boolean;
   schedulingProviderId: string;
@@ -63,6 +76,7 @@ function MaintenanceEventCard({
   event,
   onComplete,
   onEdit,
+  onDelete,
   onScheduleOpen,
   isScheduling,
   schedulingProviderId,
@@ -144,6 +158,29 @@ function MaintenanceEventCard({
             >
               <Pencil className="h-3.5 w-3.5" />
             </button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-muted-foreground hover:text-destructive transition-colors p-1"
+                  title="Delete task"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Maintenance Task</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently remove this maintenance task. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={onDelete}>Delete</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             {event.calendarLink && (
               <a
                 href={event.calendarLink}
@@ -158,7 +195,6 @@ function MaintenanceEventCard({
           </div>
         </div>
 
-        {/* Inline scheduling panel */}
         {isScheduling && (
           <div className="rounded-md border p-3 bg-muted/30 space-y-2">
             <p className="text-xs font-medium text-muted-foreground">Schedule to Google Calendar</p>
@@ -209,6 +245,7 @@ export default function Maintenance() {
   const { data: events = [], isLoading } = useAllMaintenanceEvents();
   const { data: allProviders = [] } = useProviders();
   const completeMutation = useCompleteMaintenanceEvent();
+  const deleteMutation = useDeleteMaintenanceEvent();
   const syncMutation = useSyncFromCalendar();
   const updateMutation = useUpdateMaintenanceSuggestion();
   const scheduleMutation = useScheduleToCalendar();
@@ -236,6 +273,10 @@ export default function Maintenance() {
 
   const handleComplete = (event: MaintenanceEvent) => {
     completeMutation.mutate({ name: event.name, assetId: event.assetId });
+  };
+
+  const handleDelete = (event: MaintenanceEvent) => {
+    deleteMutation.mutate({ enrichmentId: event.enrichmentId, suggestionIndex: event.suggestionIndex });
   };
 
   const openEdit = (event: MaintenanceEvent) => {
@@ -320,6 +361,7 @@ export default function Maintenance() {
         event={e}
         onComplete={() => handleComplete(e)}
         onEdit={() => openEdit(e)}
+        onDelete={() => handleDelete(e)}
         onScheduleOpen={() => openSchedule(e)}
         isScheduling={schedulingKey === key}
         schedulingProviderId={schedulingProviderId}
@@ -333,165 +375,174 @@ export default function Maintenance() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground">Maintenance</h1>
-        <div className="flex items-center gap-2">
-          {events.length > 0 && (() => {
-            const unscheduled = events.filter(e => !e.calendarEventId && e.status !== 'completed');
-            const allDone = unscheduled.length === 0;
-            return (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => bulkScheduleMutation.mutate(unscheduled)}
-                disabled={bulkScheduleMutation.isPending || allDone}
-              >
-                {bulkScheduleMutation.isPending
-                  ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                  : allDone
-                    ? <CalendarCheck className="h-4 w-4 mr-1.5 text-emerald-500" />
-                    : <CalendarPlus className="h-4 w-4 mr-1.5" />}
-                {bulkScheduleMutation.isPending ? 'Scheduling...' : allDone ? 'All Scheduled' : `Schedule All (${unscheduled.length})`}
-              </Button>
-            );
-          })()}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => syncMutation.mutate({})}
-            disabled={syncMutation.isPending}
-          >
-            <RefreshCw className={cn('h-4 w-4 mr-1.5', syncMutation.isPending && 'animate-spin')} />
-            {syncMutation.isPending ? 'Syncing...' : 'Sync Calendar'}
-          </Button>
-        </div>
-      </div>
-
-      {isLoading ? (
-        <p className="text-muted-foreground">Loading...</p>
-      ) : isEmpty ? (
-        <div className="flex flex-col items-center gap-4 py-16 text-center">
-          <CalendarCheck className="h-12 w-12 text-muted-foreground" />
-          <p className="text-muted-foreground">No maintenance events scheduled yet.</p>
-          <p className="text-sm text-muted-foreground">Open an asset and click "Enrich with AI" to generate a maintenance schedule.</p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {overdue.length > 0 && (
-            <Section title="Overdue" count={overdue.length} accentClass="text-destructive">
-              {overdue.map(renderCard)}
-            </Section>
-          )}
-          <Section title="Upcoming" count={upcoming.length} accentClass="text-blue-500">
-            {upcoming.length === 0
-              ? <p className="text-sm text-muted-foreground pl-6">No upcoming maintenance</p>
-              : upcoming.map(renderCard)}
-          </Section>
-          {scheduled.length > 0 && (
-            <Section title="Scheduled" count={scheduled.length} accentClass="text-muted-foreground">
-              {scheduled.map(renderCard)}
-            </Section>
-          )}
-          {completed.length > 0 && (
-            <Section title="Recently Completed" count={completed.length} accentClass="text-emerald-500" defaultOpen={false}>
-              {completed.map(renderCard)}
-            </Section>
-          )}
-        </div>
-      )}
-
-      {/* Edit Dialog */}
-      <Dialog open={!!editState} onOpenChange={(open) => { if (!open) setEditState(null); }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Maintenance Task</DialogTitle>
-          </DialogHeader>
-          {editState && (
-            <div className="space-y-4 py-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="edit-name">Task Name</Label>
-                <Input
-                  id="edit-name"
-                  value={editState.name}
-                  onChange={(e) => setEditState({ ...editState, name: e.target.value })}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="edit-frequency">Frequency</Label>
-                <Select
-                  value={editState.frequencyKey}
-                  onValueChange={(val) => setEditState({ ...editState, frequencyKey: val })}
+    <TooltipProvider>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-foreground">Maintenance</h1>
+          <div className="flex items-center gap-2">
+            {events.length > 0 && (() => {
+              const unscheduled = events.filter(e => !e.calendarEventId && e.status !== 'completed');
+              const allDone = unscheduled.length === 0;
+              return (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => bulkScheduleMutation.mutate(unscheduled)}
+                  disabled={bulkScheduleMutation.isPending || allDone}
                 >
-                  <SelectTrigger id="edit-frequency">
-                    <SelectValue placeholder="Select frequency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No recurrence</SelectItem>
-                    {FREQUENCY_PRESETS.map((p, i) => (
-                      <SelectItem key={i} value={String(i)}>{p.label}</SelectItem>
-                    ))}
-                    <SelectItem value="custom">Custom</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {editState.frequencyKey === 'custom' && (
-                <div className="flex gap-2">
-                  <div className="space-y-1.5 w-24">
-                    <Label htmlFor="edit-interval">Every</Label>
-                    <Input
-                      id="edit-interval"
-                      type="number"
-                      min={1}
-                      value={editState.customInterval}
-                      onChange={(e) => setEditState({ ...editState, customInterval: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-1.5 flex-1">
-                    <Label htmlFor="edit-unit">Unit</Label>
-                    <Select
-                      value={editState.customUnit}
-                      onValueChange={(val) => setEditState({ ...editState, customUnit: val })}
-                    >
-                      <SelectTrigger id="edit-unit"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="days">Days</SelectItem>
-                        <SelectItem value="weeks">Weeks</SelectItem>
-                        <SelectItem value="months">Months</SelectItem>
-                        <SelectItem value="years">Years</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {bulkScheduleMutation.isPending
+                    ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    : allDone
+                      ? <CalendarCheck className="h-4 w-4 mr-1.5 text-emerald-500" />
+                      : <CalendarPlus className="h-4 w-4 mr-1.5" />}
+                  {bulkScheduleMutation.isPending ? 'Scheduling...' : allDone ? 'All Scheduled' : `Schedule All (${unscheduled.length})`}
+                </Button>
+              );
+            })()}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => syncMutation.mutate({})}
+                  disabled={syncMutation.isPending}
+                >
+                  <RefreshCw className={cn('h-4 w-4 mr-1.5', syncMutation.isPending && 'animate-spin')} />
+                  {syncMutation.isPending ? 'Syncing...' : 'Sync Calendar'}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs text-center">
+                Pulls status from Google Calendar. If an event was deleted there, the task returns to unscheduled here. Nothing in Google Calendar is changed.
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <p className="text-muted-foreground">Loading...</p>
+        ) : isEmpty ? (
+          <div className="flex flex-col items-center gap-4 py-16 text-center">
+            <CalendarCheck className="h-12 w-12 text-muted-foreground" />
+            <p className="text-muted-foreground">No maintenance events scheduled yet.</p>
+            <p className="text-sm text-muted-foreground">Open an asset and click "Enrich with AI" to generate a maintenance schedule.</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {overdue.length > 0 && (
+              <Section title="Overdue" count={overdue.length} accentClass="text-destructive">
+                {overdue.map(renderCard)}
+              </Section>
+            )}
+            <Section title="Upcoming" count={upcoming.length} accentClass="text-blue-500">
+              {upcoming.length === 0
+                ? <p className="text-sm text-muted-foreground pl-6">No upcoming maintenance</p>
+                : upcoming.map(renderCard)}
+            </Section>
+            {scheduled.length > 0 && (
+              <Section title="Scheduled" count={scheduled.length} accentClass="text-muted-foreground">
+                {scheduled.map(renderCard)}
+              </Section>
+            )}
+            {completed.length > 0 && (
+              <Section title="Recently Completed" count={completed.length} accentClass="text-emerald-500" defaultOpen={false}>
+                {completed.map(renderCard)}
+              </Section>
+            )}
+          </div>
+        )}
+
+        {/* Edit Dialog */}
+        <Dialog open={!!editState} onOpenChange={(open) => { if (!open) setEditState(null); }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Maintenance Task</DialogTitle>
+            </DialogHeader>
+            {editState && (
+              <div className="space-y-4 py-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-name">Task Name</Label>
+                  <Input
+                    id="edit-name"
+                    value={editState.name}
+                    onChange={(e) => setEditState({ ...editState, name: e.target.value })}
+                  />
                 </div>
-              )}
-              <div className="space-y-1.5">
-                <Label htmlFor="edit-due">Next Due Date</Label>
-                <Input
-                  id="edit-due"
-                  type="date"
-                  value={editState.dueDate}
-                  onChange={(e) => setEditState({ ...editState, dueDate: e.target.value })}
-                />
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-frequency">Frequency</Label>
+                  <Select
+                    value={editState.frequencyKey}
+                    onValueChange={(val) => setEditState({ ...editState, frequencyKey: val })}
+                  >
+                    <SelectTrigger id="edit-frequency">
+                      <SelectValue placeholder="Select frequency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No recurrence</SelectItem>
+                      {FREQUENCY_PRESETS.map((p, i) => (
+                        <SelectItem key={i} value={String(i)}>{p.label}</SelectItem>
+                      ))}
+                      <SelectItem value="custom">Custom</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {editState.frequencyKey === 'custom' && (
+                  <div className="flex gap-2">
+                    <div className="space-y-1.5 w-24">
+                      <Label htmlFor="edit-interval">Every</Label>
+                      <Input
+                        id="edit-interval"
+                        type="number"
+                        min={1}
+                        value={editState.customInterval}
+                        onChange={(e) => setEditState({ ...editState, customInterval: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5 flex-1">
+                      <Label htmlFor="edit-unit">Unit</Label>
+                      <Select
+                        value={editState.customUnit}
+                        onValueChange={(val) => setEditState({ ...editState, customUnit: val })}
+                      >
+                        <SelectTrigger id="edit-unit"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="days">Days</SelectItem>
+                          <SelectItem value="weeks">Weeks</SelectItem>
+                          <SelectItem value="months">Months</SelectItem>
+                          <SelectItem value="years">Years</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-due">Next Due Date</Label>
+                  <Input
+                    id="edit-due"
+                    type="date"
+                    value={editState.dueDate}
+                    onChange={(e) => setEditState({ ...editState, dueDate: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-provider">Provider</Label>
+                  <Input
+                    id="edit-provider"
+                    value={editState.providerName}
+                    placeholder="Optional"
+                    onChange={(e) => setEditState({ ...editState, providerName: e.target.value })}
+                  />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="edit-provider">Provider</Label>
-                <Input
-                  id="edit-provider"
-                  value={editState.providerName}
-                  placeholder="Optional"
-                  onChange={(e) => setEditState({ ...editState, providerName: e.target.value })}
-                />
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditState(null)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={updateMutation.isPending}>
-              {updateMutation.isPending ? 'Saving...' : 'Save'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditState(null)}>Cancel</Button>
+              <Button onClick={handleSave} disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? 'Saving...' : 'Save'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </TooltipProvider>
   );
 }

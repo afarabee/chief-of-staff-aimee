@@ -89,8 +89,10 @@ export function useAllMaintenanceEvents() {
 
           // Derive status
           let status: MaintenanceEvent['status'] = 'scheduled';
-          if (lastCompleted && freq) {
-            // Check if completed within current period
+          if (lastCompleted && !freq) {
+            // One-time task that's been completed
+            status = 'completed';
+          } else if (lastCompleted && freq) {
             const nextAfterCompletion = advanceDate(lastCompleted, freq);
             if (nextAfterCompletion > todayStr) {
               status = 'completed';
