@@ -40,7 +40,7 @@ export function useDeleteMaintenanceEvent() {
         .single();
       if (fetchErr) throw fetchErr;
 
-      const suggestions = Array.isArray(data.suggestions) ? [...data.suggestions] : [];
+      const suggestions = Array.isArray(data.suggestions) ? [...data.suggestions] as Record<string, unknown>[] : [];
       if (suggestionIndex < 0 || suggestionIndex >= suggestions.length) {
         throw new Error('Invalid suggestion index');
       }
