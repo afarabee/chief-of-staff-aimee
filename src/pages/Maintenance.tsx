@@ -3,7 +3,7 @@ import { format, parseISO } from 'date-fns';
 import { CalendarCheck, CalendarDays, CalendarPlus, ChevronDown, Circle, CheckCircle2, ExternalLink, Loader2, Pencil, RefreshCw, Trash2 } from 'lucide-react';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useAllMaintenanceEvents } from '@/hooks/useAllMaintenanceEvents';
-import { useCompleteMaintenanceEvent, useDeleteMaintenanceEvent } from '@/hooks/useMaintenanceTasks';
+import { useCompleteMaintenanceEvent, useDeleteMaintenanceEvent, useUpdateDirectTask } from '@/hooks/useMaintenanceTasks';
 import { useSyncFromCalendar } from '@/hooks/useSyncFromCalendar';
 import { useUpdateMaintenanceSuggestion } from '@/hooks/useUpdateMaintenanceSuggestion';
 import { useScheduleToCalendar } from '@/hooks/useScheduleToCalendar';
@@ -248,6 +248,7 @@ export default function Maintenance() {
   const deleteMutation = useDeleteMaintenanceEvent();
   const syncMutation = useSyncFromCalendar();
   const updateMutation = useUpdateMaintenanceSuggestion();
+  const updateDirectTask = useUpdateDirectTask();
   const scheduleMutation = useScheduleToCalendar();
   const bulkScheduleMutation = useBulkScheduleToCalendar();
 
@@ -272,11 +273,11 @@ export default function Maintenance() {
   }, [events]);
 
   const handleComplete = (event: MaintenanceEvent) => {
-    completeMutation.mutate({ name: event.name, assetId: event.assetId });
+    completeMutation.mutate({ name: event.name, assetId: event.assetId, taskId: event.taskId });
   };
 
   const handleDelete = (event: MaintenanceEvent) => {
-    deleteMutation.mutate({ enrichmentId: event.enrichmentId, suggestionIndex: event.suggestionIndex });
+    deleteMutation.mutate({ enrichmentId: event.enrichmentId, suggestionIndex: event.suggestionIndex, taskId: event.taskId });
   };
 
   const openEdit = (event: MaintenanceEvent) => {
@@ -304,20 +305,39 @@ export default function Maintenance() {
     } else if (frequencyKey !== 'none') {
       frequency = FREQUENCY_PRESETS[parseInt(frequencyKey)]?.value ?? null;
     }
-    updateMutation.mutate(
-      {
-        enrichmentId: event.enrichmentId,
-        suggestionIndex: event.suggestionIndex,
-        calendarEventId: event.calendarEventId,
-        updates: {
-          suggestion: name.trim(),
-          frequency,
-          recommended_due_date: dueDate || null,
-          provider_name: providerName.trim() || null,
+
+    if (event.taskId) {
+      // Update a tasks-table item
+      const unitMap: Record<string, string> = { days: 'd', weeks: 'w', months: 'm', years: 'y' };
+      const recurrenceRule = frequency ? `${frequency.interval}${unitMap[frequency.unit] || 'm'}` : null;
+      updateDirectTask.mutate(
+        {
+          taskId: event.taskId,
+          updates: {
+            name: name.trim(),
+            next_due_date: dueDate || null,
+            recurrence_rule: recurrenceRule,
+          },
         },
-      },
-      { onSuccess: () => setEditState(null) }
-    );
+        { onSuccess: () => setEditState(null) }
+      );
+    } else {
+      // Update an ai_enrichments suggestion
+      updateMutation.mutate(
+        {
+          enrichmentId: event.enrichmentId,
+          suggestionIndex: event.suggestionIndex,
+          calendarEventId: event.calendarEventId,
+          updates: {
+            suggestion: name.trim(),
+            frequency,
+            recommended_due_date: dueDate || null,
+            provider_name: providerName.trim() || null,
+          },
+        },
+        { onSuccess: () => setEditState(null) }
+      );
+    }
   };
 
   const openSchedule = (event: MaintenanceEvent) => {
@@ -354,7 +374,7 @@ export default function Maintenance() {
   const isEmpty = events.length === 0 && !isLoading;
 
   const renderCard = (e: MaintenanceEvent) => {
-    const key = `${e.enrichmentId}-${e.suggestionIndex}`;
+    const key = e.taskId ? `task-${e.taskId}` : `${e.enrichmentId}-${e.suggestionIndex}`;
     return (
       <MaintenanceEventCard
         key={key}
@@ -536,8 +556,8 @@ export default function Maintenance() {
             )}
             <DialogFooter>
               <Button variant="outline" onClick={() => setEditState(null)}>Cancel</Button>
-              <Button onClick={handleSave} disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? 'Saving...' : 'Save'}
+              <Button onClick={handleSave} disabled={updateMutation.isPending || updateDirectTask.isPending}>
+                {(updateMutation.isPending || updateDirectTask.isPending) ? 'Saving...' : 'Save'}
               </Button>
             </DialogFooter>
           </DialogContent>

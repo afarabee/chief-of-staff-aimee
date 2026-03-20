@@ -16,6 +16,15 @@ function advanceDate(dateStr: string, freq: { interval: number; unit: string }):
   return format(next, 'yyyy-MM-dd');
 }
 
+function parseRecurrenceRule(rule: string | null): { interval: number; unit: string } | null {
+  if (!rule) return null;
+  const match = rule.match(/^(\d+)(d|w|m|y)$/);
+  if (!match) return null;
+  const interval = parseInt(match[1], 10);
+  const unitMap: Record<string, string> = { d: 'days', w: 'weeks', m: 'months', y: 'years' };
+  return { interval, unit: unitMap[match[2]] || 'months' };
+}
+
 export function useAllMaintenanceEvents() {
   return useQuery({
     queryKey: ['all-maintenance-events'],
@@ -36,6 +45,13 @@ export function useAllMaintenanceEvents() {
         .order('date_completed', { ascending: false });
       if (compErr) throw compErr;
 
+      // 3. Fetch pending tasks from the tasks table (manually added maintenance tasks)
+      const { data: pendingTasks, error: pendingErr } = await supabase
+        .from('tasks')
+        .select('id, name, asset_id, provider_id, next_due_date, recurrence_rule, notes, assets(name), service_providers(name)')
+        .eq('status', 'pending');
+      if (pendingErr) throw pendingErr;
+
       const today = new Date();
       const todayStr = format(today, 'yyyy-MM-dd');
       const thirtyDaysOut = format(addDays(today, 30), 'yyyy-MM-dd');
@@ -51,6 +67,7 @@ export function useAllMaintenanceEvents() {
 
       const events: MaintenanceEvent[] = [];
 
+      // --- AI enrichment-based events ---
       for (const enrichment of enrichments ?? []) {
         const suggestions = Array.isArray(enrichment.suggestions) ? enrichment.suggestions : [];
 
@@ -67,9 +84,7 @@ export function useAllMaintenanceEvents() {
           // Calculate next due date
           let nextDueDate = s.recommended_due_date || null;
           if (lastCompleted && freq) {
-            // Advance from last completion until we find a future date
             let candidate = advanceDate(lastCompleted, freq);
-            // Safety: don't loop more than 100 times
             let safety = 0;
             while (candidate < todayStr && safety < 100) {
               candidate = advanceDate(candidate, freq);
@@ -77,7 +92,6 @@ export function useAllMaintenanceEvents() {
             }
             nextDueDate = candidate;
           } else if (nextDueDate && freq && nextDueDate < todayStr) {
-            // Original date is past, advance until future
             let candidate = nextDueDate;
             let safety = 0;
             while (candidate < todayStr && safety < 100) {
@@ -90,7 +104,6 @@ export function useAllMaintenanceEvents() {
           // Derive status
           let status: MaintenanceEvent['status'] = 'scheduled';
           if (lastCompleted && !freq) {
-            // One-time task that's been completed
             status = 'completed';
           } else if (lastCompleted && freq) {
             const nextAfterCompletion = advanceDate(lastCompleted, freq);
@@ -128,12 +141,48 @@ export function useAllMaintenanceEvents() {
         });
       }
 
+      // --- Tasks-table pending events ---
+      for (const task of pendingTasks ?? []) {
+        const freq = parseRecurrenceRule(task.recurrence_rule);
+        const nextDueDate = task.next_due_date || null;
+        const completionKey = `${task.name}|${task.asset_id}`;
+        const lastCompleted = completionMap.get(completionKey) || null;
+
+        let status: MaintenanceEvent['status'] = 'scheduled';
+        if (nextDueDate) {
+          if (nextDueDate < todayStr) {
+            status = 'overdue';
+          } else if (nextDueDate <= thirtyDaysOut) {
+            status = 'upcoming';
+          }
+        }
+
+        const assetRow = task.assets as any;
+        const providerRow = task.service_providers as any;
+
+        events.push({
+          enrichmentId: '',
+          suggestionIndex: -1,
+          taskId: task.id,
+          name: task.name,
+          assetId: task.asset_id || '',
+          assetName: assetRow?.name || 'Unknown Asset',
+          frequency: freq,
+          recommendedDueDate: nextDueDate,
+          nextDueDate,
+          calendarLink: null,
+          calendarEventId: null,
+          lastCompleted,
+          status,
+          providerName: providerRow?.name || undefined,
+        });
+      }
+
       // Sort: overdue first, then upcoming, then scheduled, then completed
       const statusOrder: Record<string, number> = { overdue: 0, upcoming: 1, scheduled: 2, completed: 3 };
       events.sort((a, b) => {
         const orderDiff = (statusOrder[a.status] ?? 2) - (statusOrder[b.status] ?? 2);
         if (orderDiff !== 0) return orderDiff;
-        // Within same status, sort by next due date
         if (a.nextDueDate && b.nextDueDate) return a.nextDueDate.localeCompare(b.nextDueDate);
         return 0;
       });
