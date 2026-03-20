@@ -130,7 +130,14 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>Due Date</Label>
+            <div className="flex items-center justify-between">
+              <Label>Due Date</Label>
+              {dueDate && (
+                <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs text-muted-foreground" onClick={() => setDueDate(undefined)}>
+                  Clear
+                </Button>
+              )}
+            </div>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -152,13 +159,6 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
                   initialFocus
                   className="p-3 pointer-events-auto"
                 />
-                {dueDate && (
-                  <div className="border-t border-border p-2">
-                    <Button type="button" variant="ghost" size="sm" className="w-full text-xs" onClick={() => setDueDate(undefined)}>
-                      Clear date
-                    </Button>
-                  </div>
-                )}
               </PopoverContent>
             </Popover>
           </div>
