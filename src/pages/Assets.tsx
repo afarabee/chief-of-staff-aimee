@@ -237,15 +237,24 @@ export default function Assets() {
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-foreground">Maintenance Schedule</h2>
             {assetEnrichment && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => syncMutation.mutate({ assetId: fresh.id })}
-                disabled={syncMutation.isPending}
-              >
-                <RefreshCw className={`h-4 w-4 mr-1.5 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
-                {syncMutation.isPending ? 'Syncing...' : 'Sync Calendar'}
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => syncMutation.mutate({ assetId: fresh.id })}
+                      disabled={syncMutation.isPending}
+                    >
+                      <RefreshCw className={`h-4 w-4 mr-1.5 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
+                      {syncMutation.isPending ? 'Syncing...' : 'Sync Calendar'}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs text-center">
+                    Pulls status from Google Calendar. If an event was deleted there, the task returns to unscheduled here. Nothing in Google Calendar is changed.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
           </div>
           {assetEnrichment ? (
