@@ -33,6 +33,7 @@ import { useSyncFromCalendar } from '@/hooks/useSyncFromCalendar';
 import { useParseAssetDocument } from '@/hooks/useParseAssetDocument';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 function DynamicIcon({ name, className }: { name: string; className?: string }) {
   const pascalName = name.split('-').map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join('');
