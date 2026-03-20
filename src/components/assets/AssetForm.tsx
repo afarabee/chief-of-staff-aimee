@@ -225,7 +225,14 @@ export function AssetForm({ asset, onClose, initialValues }: AssetFormProps) {
         </div>
 
         <div className="space-y-2">
-          <Label>Purchase Date</Label>
+          <div className="flex items-center justify-between">
+            <Label>Purchase Date</Label>
+            {purchaseDate && (
+              <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs text-muted-foreground" onClick={() => setPurchaseDate(undefined)}>
+                Clear
+              </Button>
+            )}
+          </div>
           <Popover>
             <PopoverTrigger asChild>
               <Button
