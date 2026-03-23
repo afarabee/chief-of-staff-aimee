@@ -32,7 +32,7 @@ export function NewsWidget({ news, isLoading }: NewsWidgetProps) {
         ) : news && news.length > 0 ? (
           <div className="divide-y divide-border">
             {news.map((article, i) => {
-              const targetUrl = article.url || `https://www.google.com/search?q=${encodeURIComponent(article.title + ' ' + article.source)}`;
+              const targetUrl = article.url || `https://duckduckgo.com/?q=${encodeURIComponent(article.title + ' ' + article.source)}`;
 
               return (
                 <div

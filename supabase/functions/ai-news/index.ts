@@ -5,6 +5,47 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const BLOCKED_HOSTS = [
+  "google.com",
+  "google.co",
+  "googleapis.com",
+  "googleusercontent.com",
+  "vertexaisearch.cloud.google.com",
+];
+
+function isBlockedUrl(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+    return BLOCKED_HOSTS.some(
+      (blocked) => hostname === blocked || hostname.endsWith("." + blocked)
+    );
+  } catch {
+    return true;
+  }
+}
+
+async function resolveUrl(url: string): Promise<string | null> {
+  if (!url) return null;
+  try {
+    // Follow redirects to get final destination
+    const resp = await fetch(url, { method: "HEAD", redirect: "follow" });
+    const finalUrl = resp.url || url;
+    if (!isBlockedUrl(finalUrl)) return finalUrl;
+  } catch {
+    // If HEAD fails, try the original
+  }
+  // If original isn't blocked, return it
+  if (!isBlockedUrl(url)) return url;
+  return null;
+}
+
+async function sanitizeArticleUrl(rawUrl: string | null | undefined): Promise<string | null> {
+  if (!rawUrl) return null;
+  if (!isBlockedUrl(rawUrl)) return rawUrl;
+  // Try to resolve redirects server-side
+  return await resolveUrl(rawUrl);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -63,7 +104,6 @@ serve(async (req) => {
 
     let articles: any[] = [];
     try {
-      // Strip markdown code fences if present
       const cleaned = textContent
         .replace(/```json\s*/gi, "")
         .replace(/```\s*/gi, "")
@@ -71,7 +111,6 @@ serve(async (req) => {
       articles = JSON.parse(cleaned);
     } catch (e) {
       console.error("Failed to parse articles from text:", e);
-      // Try to extract JSON array from the text
       const match = textContent.match(/\[[\s\S]*\]/);
       if (match) {
         try {
@@ -82,17 +121,23 @@ serve(async (req) => {
       }
     }
 
-    // Ensure articles is an array and enrich with grounding URLs if missing
     if (!Array.isArray(articles)) articles = [];
 
-    articles = articles.slice(0, 5).map((a: any, i: number) => ({
-      title: a.title || "Untitled",
-      source: a.source || "Unknown",
-      snippet: a.snippet || "",
-      url: a.url || groundingUrls[i] || null,
-    }));
+    // Sanitize URLs: resolve redirects and strip Google-hosted URLs
+    const sanitized = await Promise.all(
+      articles.slice(0, 5).map(async (a: any, i: number) => {
+        const candidateUrl = a.url || groundingUrls[i] || null;
+        const safeUrl = await sanitizeArticleUrl(candidateUrl);
+        return {
+          title: a.title || "Untitled",
+          source: a.source || "Unknown",
+          snippet: a.snippet || "",
+          url: safeUrl,
+        };
+      })
+    );
 
-    return new Response(JSON.stringify({ articles }), {
+    return new Response(JSON.stringify({ articles: sanitized }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
