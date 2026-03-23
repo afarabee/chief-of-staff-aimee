@@ -5,6 +5,7 @@ export interface NewsArticle {
   title: string;
   source: string;
   snippet: string;
+  url?: string | null;
 }
 
 async function fetchNews(): Promise<NewsArticle[]> {

@@ -47,7 +47,7 @@ export function NewsWidget({ news, isLoading }: NewsWidgetProps) {
                       <div className="flex items-center gap-2 mt-1">
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0">{article.source}</Badge>
                         <span className="text-xs text-primary inline-flex items-center gap-0.5">
-                          Search <ExternalLink className="h-3 w-3" />
+                          {article.url ? 'Read' : 'Search'} <ExternalLink className="h-3 w-3" />
                         </span>
                       </div>
                     </div>
