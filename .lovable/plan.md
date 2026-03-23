@@ -1,43 +1,40 @@
 
-Fix goal: stop Top AI News links from ever sending users to Google-hosted URLs that trigger `ERR_BLOCKED_BY_RESPONSE` in preview.
 
-What I found
-- `src/components/command-center/NewsWidget.tsx` still falls back to `https://www.google.com/search?...` when `article.url` is missing.
-- `supabase/functions/ai-news/index.ts` is currently returning Gemini grounding redirect URLs like `https://vertexaisearch.cloud.google.com/grounding-api-redirect/...` (confirmed in network logs), which are also Google-hosted.
-- Those two paths explain why the issue keeps recurring.
+# Verify News Article URLs Before Returning Them
 
-Implementation plan
+## Problem
+The Gemini grounding URLs look real but 2 out of 5 led to dead pages. The edge function currently trusts whatever URL it gets without checking if the page actually exists.
 
-1) Harden URL generation in `supabase/functions/ai-news/index.ts`
-- Add URL sanitization + normalization logic before returning articles.
-- For each candidate URL:
-  - Parse and detect blocked hosts (`google.com`, `*.google.com`, `*.googleusercontent.com`, `vertexaisearch.cloud.google.com`).
-  - If it is a Google/grounding redirect URL, resolve it server-side by following redirects (`fetch` with redirect follow) and capture the final destination URL.
-  - Keep only final URLs that are valid `http/https` and non-Google.
-- If a safe direct URL cannot be resolved, return `url: null` (instead of returning a Google URL).
-- Keep response shape unchanged: `{ articles: [{ title, source, snippet, url }] }`.
+## Solution
+Add a server-side URL verification step in the edge function. After collecting articles with URLs, do a `HEAD` request (with timeout) to each URL. If the response is not a 2xx status, set `url` to `null` so the frontend falls back to DuckDuckGo search instead of sending the user to a broken page.
 
-2) Remove Google fallback from `src/components/command-center/NewsWidget.tsx`
-- Replace fallback from Google Search to a non-Google search URL (DuckDuckGo or Bing; defaulting to DuckDuckGo).
-- Keep full-row click behavior.
-- Label logic:
-  - `Read` when `article.url` exists (direct article link).
-  - `Search` when fallback search URL is used.
-- This guarantees no News click path uses `www.google.com`.
+## Changes
 
-3) Add a defensive guard in the UI click target
-- Build `targetUrl` from:
-  - safe article URL (if present), else
-  - non-Google search fallback.
-- Ensure the widget never passes a Google URL into `openExternalUrl`.
+### `supabase/functions/ai-news/index.ts`
 
-Validation plan
-- Call `ai-news` edge function and confirm returned `articles[].url` contains no Google/vertex URLs.
-- In Command Center, click multiple news rows:
-  - No `ERR_BLOCKED_BY_RESPONSE` page.
-  - Links open externally (or clipboard fallback toast appears with a non-Google URL if popup is blocked).
-- Confirm current behavior remains unchanged for Calendar/Podcasts links.
+After the existing URL sanitization step, add a verification pass:
 
-Files to update
-- `supabase/functions/ai-news/index.ts`
-- `src/components/command-center/NewsWidget.tsx`
+- For each article with a non-null `url`, send a `HEAD` request with a 5-second timeout using `AbortSignal.timeout(5000)`
+- If the response status is 2xx or 3xx, keep the URL
+- If it returns 4xx/5xx, times out, or throws an error, set `url` to `null`
+- Run all verifications in parallel with `Promise.all` so it doesn't add significant latency
+- Log which URLs passed/failed for debugging
+
+No frontend changes needed — the widget already handles `url: null` by falling back to DuckDuckGo search with the "Search" label.
+
+## Technical Detail
+
+```text
+Gemini returns articles with URLs
+        ↓
+Existing: sanitize blocked Google hosts
+        ↓
+NEW: HEAD request each URL (5s timeout, parallel)
+        ↓
+Keep URL if 2xx/3xx, null if 4xx/5xx/timeout
+        ↓
+Return to frontend
+```
+
+This adds ~1-3 seconds of latency (parallel, capped at 5s) but guarantees every "Read" link opens a real page.
+
