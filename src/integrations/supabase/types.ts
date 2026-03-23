@@ -210,6 +210,219 @@ export type Database = {
         }
         Relationships: []
       }
+      cfo_accounts: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          owner: string
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          owner: string
+          type?: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          owner?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      cfo_annual_payments: {
+        Row: {
+          account_id: string | null
+          amount: number
+          created_at: string | null
+          description: string
+          id: string
+          notes: string | null
+          typical_day: number | null
+          typical_month: number
+        }
+        Insert: {
+          account_id?: string | null
+          amount?: number
+          created_at?: string | null
+          description: string
+          id?: string
+          notes?: string | null
+          typical_day?: number | null
+          typical_month: number
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          created_at?: string | null
+          description?: string
+          id?: string
+          notes?: string | null
+          typical_day?: number | null
+          typical_month?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cfo_annual_payments_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "cfo_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cfo_bills: {
+        Row: {
+          account_id: string | null
+          amount: number
+          created_at: string | null
+          description: string
+          due_date: string | null
+          id: string
+          is_recurring: boolean | null
+          month_key: string
+          notes: string | null
+          pay_period_id: string | null
+          sort_order: number | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          amount?: number
+          created_at?: string | null
+          description: string
+          due_date?: string | null
+          id?: string
+          is_recurring?: boolean | null
+          month_key: string
+          notes?: string | null
+          pay_period_id?: string | null
+          sort_order?: number | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          created_at?: string | null
+          description?: string
+          due_date?: string | null
+          id?: string
+          is_recurring?: boolean | null
+          month_key?: string
+          notes?: string | null
+          pay_period_id?: string | null
+          sort_order?: number | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cfo_bills_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "cfo_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cfo_bills_pay_period_id_fkey"
+            columns: ["pay_period_id"]
+            isOneToOne: false
+            referencedRelation: "cfo_pay_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cfo_pay_periods: {
+        Row: {
+          account_id: string | null
+          amount: number
+          created_at: string | null
+          id: string
+          label: string | null
+          month_key: string
+          pay_date: string
+        }
+        Insert: {
+          account_id?: string | null
+          amount?: number
+          created_at?: string | null
+          id?: string
+          label?: string | null
+          month_key: string
+          pay_date: string
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          created_at?: string | null
+          id?: string
+          label?: string | null
+          month_key?: string
+          pay_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cfo_pay_periods_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "cfo_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cfo_recurring_templates: {
+        Row: {
+          account_id: string | null
+          created_at: string | null
+          default_amount: number
+          description: string
+          frequency: string
+          id: string
+          is_active: boolean | null
+          notes: string | null
+          sort_order: number | null
+        }
+        Insert: {
+          account_id?: string | null
+          created_at?: string | null
+          default_amount?: number
+          description: string
+          frequency?: string
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          sort_order?: number | null
+        }
+        Update: {
+          account_id?: string | null
+          created_at?: string | null
+          default_amount?: number
+          description?: string
+          frequency?: string
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cfo_recurring_templates_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "cfo_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       command_center_config: {
         Row: {
           created_at: string
