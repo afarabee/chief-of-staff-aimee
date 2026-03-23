@@ -1,29 +1,49 @@
 
 
-# Maintenance Enhancements: Delete, Complete Fix, Sync Tooltip
+# Fix: Make AI News Pull Real, Current Headlines
+
+## Problem
+The edge function asks an LLM to generate news from memory. LLMs don't browse the web — they return the same hallucinated/stale headlines every time.
+
+## Solution
+Use the **Gemini API directly** with **Google Search grounding** enabled. This tells Gemini to actually search Google for current news before responding, returning real headlines with source URLs from the grounding metadata.
+
+The `VITE_GEMINI_API_KEY` secret is already configured.
 
 ## Changes
 
-### 1. Tooltip on "Sync Calendar" buttons
-**`src/pages/Maintenance.tsx`** and **`src/pages/Assets.tsx`**
-- Wrap Sync Calendar button in `Tooltip`
-- Text: *"Pulls status from Google Calendar. If an event was deleted there, the task returns to 'unscheduled' in this app. Nothing in Google Calendar is changed."*
+### 1. Edge Function: `supabase/functions/ai-news/index.ts`
 
-### 2. Delete maintenance tasks
-**`src/hooks/useMaintenanceTasks.ts`** — Add `useDeleteMaintenanceEvent` mutation:
-- Sets suggestion status to `"dismissed"` in the `ai_enrichments` row
-- Invalidates maintenance queries
+Replace the Lovable AI gateway call with a direct Gemini API call using the native REST endpoint:
 
-**`src/pages/Maintenance.tsx`** — Add `Trash2` icon button with `AlertDialog` confirmation on each card
+```
+POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent
+```
 
-### 3. Fix complete button for one-time tasks
-**`src/hooks/useAllMaintenanceEvents.ts`** — When `lastCompleted` exists and there's no frequency, set status to `'completed'` so the card moves to "Recently Completed"
+- Pass `tools: [{ google_search: {} }]` to enable real-time Google Search grounding
+- Prompt: "What are the top 5 AI and technology news stories from today?"
+- Parse the response text AND `groundingMetadata.groundingChunks` to extract real source URLs
+- Use the structured tool call pattern to get clean article objects, but now grounded in actual search results
+- Fall back to Google Search links if direct URLs aren't available from grounding chunks
 
-### File summary
+### 2. Hook: `src/hooks/useAiNews.ts`
+
+- Add optional `url` field back to `NewsArticle` interface (now with real URLs from grounding)
+
+### 3. Widget: `src/components/command-center/NewsWidget.tsx`
+
+- When `article.url` exists, link directly to it instead of the Google Search fallback
+- Keep the Google Search fallback for articles without direct URLs
+
+## Technical Detail
+
+The Gemini Google Search grounding feature makes the model search the web in real-time, then synthesize results. The `groundingChunks` in the response metadata contain verified source URLs. This is fundamentally different from asking an LLM to "remember" news — it actually searches Google.
+
+## File Changes
+
 | File | Change |
 |------|--------|
-| `src/hooks/useMaintenanceTasks.ts` | Add `useDeleteMaintenanceEvent` |
-| `src/hooks/useAllMaintenanceEvents.ts` | Fix non-recurring completion status |
-| `src/pages/Maintenance.tsx` | Delete button + confirmation, sync tooltip |
-| `src/pages/Assets.tsx` | Sync tooltip |
+| `supabase/functions/ai-news/index.ts` | Switch to direct Gemini API with Google Search grounding |
+| `src/hooks/useAiNews.ts` | Add optional `url` field |
+| `src/components/command-center/NewsWidget.tsx` | Prefer real URL over search fallback |
 
