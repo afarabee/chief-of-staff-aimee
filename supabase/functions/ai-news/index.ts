@@ -137,7 +137,30 @@ serve(async (req) => {
       })
     );
 
-    return new Response(JSON.stringify({ articles: sanitized }), {
+    // Verify URLs are actually reachable
+    const verified = await Promise.all(
+      sanitized.map(async (article) => {
+        if (!article.url) return article;
+        try {
+          const resp = await fetch(article.url, {
+            method: "HEAD",
+            redirect: "follow",
+            signal: AbortSignal.timeout(5000),
+          });
+          if (resp.status < 400) {
+            console.log("URL OK:", article.url);
+            return article;
+          }
+          console.log("URL failed status", resp.status, article.url);
+          return { ...article, url: null };
+        } catch (e) {
+          console.log("URL unreachable:", article.url, e);
+          return { ...article, url: null };
+        }
+      })
+    );
+
+    return new Response(JSON.stringify({ articles: verified }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
