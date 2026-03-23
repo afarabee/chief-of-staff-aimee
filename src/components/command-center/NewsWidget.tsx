@@ -32,12 +32,12 @@ export function NewsWidget({ news, isLoading }: NewsWidgetProps) {
         ) : news && news.length > 0 ? (
           <div className="divide-y divide-border">
             {news.map((article, i) => {
-              const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(article.title + ' ' + article.source)}`;
+              const targetUrl = article.url || `https://www.google.com/search?q=${encodeURIComponent(article.title + ' ' + article.source)}`;
 
               return (
                 <div
                   key={i}
-                  onClick={() => openExternalUrl(searchUrl)}
+                  onClick={() => openExternalUrl(targetUrl)}
                   className="block py-3 first:pt-0 last:pb-0 cursor-pointer hover:bg-emerald-100/50 dark:hover:bg-emerald-900/20 -mx-2 px-2 rounded-md transition-colors"
                 >
                   <div className="flex items-start gap-2">
@@ -47,7 +47,7 @@ export function NewsWidget({ news, isLoading }: NewsWidgetProps) {
                       <div className="flex items-center gap-2 mt-1">
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0">{article.source}</Badge>
                         <span className="text-xs text-primary inline-flex items-center gap-0.5">
-                          Search <ExternalLink className="h-3 w-3" />
+                          {article.url ? 'Read' : 'Search'} <ExternalLink className="h-3 w-3" />
                         </span>
                       </div>
                     </div>
