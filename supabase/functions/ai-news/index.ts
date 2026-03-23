@@ -160,7 +160,7 @@ serve(async (req) => {
       })
     );
 
-    return new Response(JSON.stringify({ articles: sanitized }), {
+    return new Response(JSON.stringify({ articles: verified }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
