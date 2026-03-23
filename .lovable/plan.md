@@ -1,49 +1,43 @@
 
+Fix goal: stop Top AI News links from ever sending users to Google-hosted URLs that trigger `ERR_BLOCKED_BY_RESPONSE` in preview.
 
-# Fix: Make AI News Pull Real, Current Headlines
+What I found
+- `src/components/command-center/NewsWidget.tsx` still falls back to `https://www.google.com/search?...` when `article.url` is missing.
+- `supabase/functions/ai-news/index.ts` is currently returning Gemini grounding redirect URLs like `https://vertexaisearch.cloud.google.com/grounding-api-redirect/...` (confirmed in network logs), which are also Google-hosted.
+- Those two paths explain why the issue keeps recurring.
 
-## Problem
-The edge function asks an LLM to generate news from memory. LLMs don't browse the web — they return the same hallucinated/stale headlines every time.
+Implementation plan
 
-## Solution
-Use the **Gemini API directly** with **Google Search grounding** enabled. This tells Gemini to actually search Google for current news before responding, returning real headlines with source URLs from the grounding metadata.
+1) Harden URL generation in `supabase/functions/ai-news/index.ts`
+- Add URL sanitization + normalization logic before returning articles.
+- For each candidate URL:
+  - Parse and detect blocked hosts (`google.com`, `*.google.com`, `*.googleusercontent.com`, `vertexaisearch.cloud.google.com`).
+  - If it is a Google/grounding redirect URL, resolve it server-side by following redirects (`fetch` with redirect follow) and capture the final destination URL.
+  - Keep only final URLs that are valid `http/https` and non-Google.
+- If a safe direct URL cannot be resolved, return `url: null` (instead of returning a Google URL).
+- Keep response shape unchanged: `{ articles: [{ title, source, snippet, url }] }`.
 
-The `VITE_GEMINI_API_KEY` secret is already configured.
+2) Remove Google fallback from `src/components/command-center/NewsWidget.tsx`
+- Replace fallback from Google Search to a non-Google search URL (DuckDuckGo or Bing; defaulting to DuckDuckGo).
+- Keep full-row click behavior.
+- Label logic:
+  - `Read` when `article.url` exists (direct article link).
+  - `Search` when fallback search URL is used.
+- This guarantees no News click path uses `www.google.com`.
 
-## Changes
+3) Add a defensive guard in the UI click target
+- Build `targetUrl` from:
+  - safe article URL (if present), else
+  - non-Google search fallback.
+- Ensure the widget never passes a Google URL into `openExternalUrl`.
 
-### 1. Edge Function: `supabase/functions/ai-news/index.ts`
+Validation plan
+- Call `ai-news` edge function and confirm returned `articles[].url` contains no Google/vertex URLs.
+- In Command Center, click multiple news rows:
+  - No `ERR_BLOCKED_BY_RESPONSE` page.
+  - Links open externally (or clipboard fallback toast appears with a non-Google URL if popup is blocked).
+- Confirm current behavior remains unchanged for Calendar/Podcasts links.
 
-Replace the Lovable AI gateway call with a direct Gemini API call using the native REST endpoint:
-
-```
-POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent
-```
-
-- Pass `tools: [{ google_search: {} }]` to enable real-time Google Search grounding
-- Prompt: "What are the top 5 AI and technology news stories from today?"
-- Parse the response text AND `groundingMetadata.groundingChunks` to extract real source URLs
-- Use the structured tool call pattern to get clean article objects, but now grounded in actual search results
-- Fall back to Google Search links if direct URLs aren't available from grounding chunks
-
-### 2. Hook: `src/hooks/useAiNews.ts`
-
-- Add optional `url` field back to `NewsArticle` interface (now with real URLs from grounding)
-
-### 3. Widget: `src/components/command-center/NewsWidget.tsx`
-
-- When `article.url` exists, link directly to it instead of the Google Search fallback
-- Keep the Google Search fallback for articles without direct URLs
-
-## Technical Detail
-
-The Gemini Google Search grounding feature makes the model search the web in real-time, then synthesize results. The `groundingChunks` in the response metadata contain verified source URLs. This is fundamentally different from asking an LLM to "remember" news — it actually searches Google.
-
-## File Changes
-
-| File | Change |
-|------|--------|
-| `supabase/functions/ai-news/index.ts` | Switch to direct Gemini API with Google Search grounding |
-| `src/hooks/useAiNews.ts` | Add optional `url` field |
-| `src/components/command-center/NewsWidget.tsx` | Prefer real URL over search fallback |
-
+Files to update
+- `supabase/functions/ai-news/index.ts`
+- `src/components/command-center/NewsWidget.tsx`
