@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { generateTitle } from '@/utils/generateTitle';
 
 const DEFAULT_CATEGORY_ID = 'ecfc9834-8791-4199-9a2b-c4f49df4db9d';
 
