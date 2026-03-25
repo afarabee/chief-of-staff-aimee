@@ -116,7 +116,7 @@ export function AssetSuggestionsSection({ enrichment, assetName, assetId }: Prop
       await scheduleToCalendar.mutateAsync({
         enrichmentId: enrichment.id,
         suggestionIndex: idx,
-        summary: `${assetName || enrichment.item_title}: ${s.suggestion}`,
+        summary: `${assetName || enrichment.item_title}: ${generateTitle(s.suggestion)}`,
         description,
         startDate: s.recommended_due_date || new Date().toISOString().split('T')[0],
         frequency: freq,
