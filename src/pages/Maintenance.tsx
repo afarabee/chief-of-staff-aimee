@@ -360,7 +360,7 @@ export default function Maintenance() {
     await scheduleMutation.mutateAsync({
       enrichmentId: event.enrichmentId,
       suggestionIndex: event.suggestionIndex,
-      summary: `${event.assetName}: ${event.name}`,
+      summary: `${event.assetName}: ${generateTitle(event.name)}`,
       description,
       startDate: event.nextDueDate || event.recommendedDueDate || new Date().toISOString().split('T')[0],
       frequency: event.frequency ?? undefined,

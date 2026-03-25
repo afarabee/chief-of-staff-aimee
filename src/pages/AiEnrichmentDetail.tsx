@@ -56,7 +56,7 @@ export default function AiEnrichmentDetail() {
   // Title generation now uses shared utility
 
   const handleCreateFromResult = (idx: number, result: string, type: 'task' | 'idea') => {
-    const title = generateTitleFromResult(result);
+    const title = generateTitle(result);
     const key = `${idx}-${type}`;
 
     if (type === 'task') {

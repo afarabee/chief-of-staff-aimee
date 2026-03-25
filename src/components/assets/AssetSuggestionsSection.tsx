@@ -179,7 +179,7 @@ export function AssetSuggestionsSection({ enrichment, assetName, assetId }: Prop
       await scheduleToCalendar.mutateAsync({
         enrichmentId: enrichment.id,
         suggestionIndex: -1, // Won't update any existing suggestion
-        summary: `${assetName || enrichment.item_title}: ${manualForm.summary}`,
+        summary: `${assetName || enrichment.item_title}: ${generateTitle(manualForm.summary)}`,
         description: `Asset: ${assetName || enrichment.item_title}`,
         startDate: manualForm.start_date,
         frequency: freq,

@@ -21,8 +21,8 @@ export function useCreateSubtask() {
   return useMutation({
     mutationFn: async (params: CreateTaskFromSuggestionParams) => {
       const title = params.title
-        ? (params.title.length > 80 ? params.title.slice(0, 77) + '...' : params.title)
-        : (params.suggestion.length > 80 ? params.suggestion.slice(0, 77) + '...' : params.suggestion);
+        ? generateTitle(params.title)
+        : generateTitle(params.suggestion);
 
       const description = params.description
         || `From: ${params.parentTitle}\n\nFull suggestion: ${params.suggestion}\n\nCreated by AI Enrichment`;
