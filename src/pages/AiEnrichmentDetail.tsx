@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Zap, ListPlus, X, Copy, Check, Loader2, Eye, EyeOff, ChevronDown, Pencil, CalendarDays } from 'lucide-react';
+import { ArrowLeft, Zap, ListPlus, X, Copy, Check, Loader2, Eye, EyeOff, ChevronDown, Pencil, CalendarDays, Lightbulb } from 'lucide-react';
 import { format, parseISO, formatDistanceToNow } from 'date-fns';
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { useAiEnrichment } from '@/hooks/useAiEnrichment';
 import { useUpdateEnrichmentSuggestion } from '@/hooks/useUpdateEnrichmentSuggestion';
 import { useExecuteSuggestion } from '@/hooks/useExecuteSuggestion';
@@ -39,14 +41,62 @@ export default function AiEnrichmentDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: enrichment, isLoading } = useAiEnrichment(id);
+  const queryClient = useQueryClient();
   const updateSuggestion = useUpdateEnrichmentSuggestion();
   const executeSuggestion = useExecuteSuggestion();
   const createSubtask = useCreateSubtask();
   const [executingIdx, setExecutingIdx] = useState<number | null>(null);
   const [createdSubtaskIdx, setCreatedSubtaskIdx] = useState<Set<number>>(new Set());
+  const [createdFromResultIdx, setCreatedFromResultIdx] = useState<Set<string>>(new Set());
   const [showDismissed, setShowDismissed] = useState(false);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [editForm, setEditForm] = useState({ suggestion: '', frequency: '', recommended_due_date: '' });
+
+  const generateTitleFromResult = (result: string): string => {
+    const stripped = result
+      .replace(/\*\*(.+?)\*\*/g, '$1')
+      .replace(/\*(.+?)\*/g, '$1')
+      .replace(/^#+\s*/gm, '')
+      .replace(/^[-•]\s*/gm, '')
+      .replace(/^\d+\.\s*/gm, '');
+    const firstLine = stripped.split('\n').find((l) => l.trim().length > 0)?.trim() || 'AI Result';
+    return firstLine.length > 80 ? firstLine.slice(0, 77) + '...' : firstLine;
+  };
+
+  const handleCreateFromResult = (idx: number, result: string, type: 'task' | 'idea') => {
+    const title = generateTitleFromResult(result);
+    const key = `${idx}-${type}`;
+
+    if (type === 'task') {
+      createSubtask.mutate(
+        {
+          suggestion: result,
+          title,
+          description: `From AI execution of: ${enrichment!.item_title}\n\n${result}`,
+          parentTitle: enrichment!.item_title,
+          parentItemId: enrichment!.item_id,
+          parentItemType: enrichment!.item_type as 'task' | 'idea' | 'reminder',
+        },
+        { onSuccess: () => setCreatedFromResultIdx((prev) => new Set(prev).add(key)) }
+      );
+    } else {
+      (async () => {
+        try {
+          const { error } = await supabase.from('cos_ideas').insert({
+            title,
+            description: `From AI execution of: ${enrichment!.item_title}\n\n${result}`,
+            status: 'New',
+          } as any);
+          if (error) throw error;
+          queryClient.invalidateQueries({ queryKey: ['ideas'] });
+          setCreatedFromResultIdx((prev) => new Set(prev).add(key));
+          toast({ title: 'Idea created', description: 'A new idea has been created from the result.' });
+        } catch (err: any) {
+          toast({ title: 'Failed to create idea', description: err.message, variant: 'destructive' });
+        }
+      })();
+    }
+  };
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -324,7 +374,29 @@ export default function AiEnrichmentDetail() {
                     </CollapsibleTrigger>
                     <CollapsibleContent className="mt-2">
                       <div className="bg-muted/50 rounded-md p-3 space-y-2">
-                        <div className="flex items-center justify-end">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 gap-1.5 text-muted-foreground"
+                            disabled={createdFromResultIdx.has(`${realIdx}-task`)}
+                            onClick={() => handleCreateFromResult(realIdx, s.result!, 'task')}
+                          >
+                            {createdFromResultIdx.has(`${realIdx}-task`) ? <Check className="h-3 w-3" /> : <ListPlus className="h-3 w-3" />}
+                            {createdFromResultIdx.has(`${realIdx}-task`) ? 'Task Created' : 'Create Task'}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 gap-1.5 text-muted-foreground"
+                            disabled={createdFromResultIdx.has(`${realIdx}-idea`)}
+                            onClick={() => handleCreateFromResult(realIdx, s.result!, 'idea')}
+                          >
+                            {createdFromResultIdx.has(`${realIdx}-idea`) ? <Check className="h-3 w-3" /> : <Lightbulb className="h-3 w-3" />}
+                            {createdFromResultIdx.has(`${realIdx}-idea`) ? 'Idea Created' : 'Create Idea'}
+                          </Button>
                           <Button
                             type="button"
                             variant="ghost"
@@ -346,6 +418,7 @@ export default function AiEnrichmentDetail() {
                     </CollapsibleContent>
                   </Collapsible>
                 )}
+
               </CardContent>
             </Card>
           );
