@@ -418,14 +418,7 @@ export default function AiEnrichmentDetail() {
                     </CollapsibleContent>
                   </Collapsible>
                 )}
-                        <div
-                          className="text-sm text-foreground leading-relaxed prose-sm"
-                          dangerouslySetInnerHTML={{ __html: renderResultMarkdown(s.result) }}
-                        />
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                )}
+
               </CardContent>
             </Card>
           );
