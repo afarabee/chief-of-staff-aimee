@@ -374,7 +374,29 @@ export default function AiEnrichmentDetail() {
                     </CollapsibleTrigger>
                     <CollapsibleContent className="mt-2">
                       <div className="bg-muted/50 rounded-md p-3 space-y-2">
-                        <div className="flex items-center justify-end">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 gap-1.5 text-muted-foreground"
+                            disabled={createdFromResultIdx.has(`${realIdx}-task`)}
+                            onClick={() => handleCreateFromResult(realIdx, s.result!, 'task')}
+                          >
+                            {createdFromResultIdx.has(`${realIdx}-task`) ? <Check className="h-3 w-3" /> : <ListPlus className="h-3 w-3" />}
+                            {createdFromResultIdx.has(`${realIdx}-task`) ? 'Task Created' : 'Create Task'}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 gap-1.5 text-muted-foreground"
+                            disabled={createdFromResultIdx.has(`${realIdx}-idea`)}
+                            onClick={() => handleCreateFromResult(realIdx, s.result!, 'idea')}
+                          >
+                            {createdFromResultIdx.has(`${realIdx}-idea`) ? <Check className="h-3 w-3" /> : <Lightbulb className="h-3 w-3" />}
+                            {createdFromResultIdx.has(`${realIdx}-idea`) ? 'Idea Created' : 'Create Idea'}
+                          </Button>
                           <Button
                             type="button"
                             variant="ghost"
@@ -388,6 +410,14 @@ export default function AiEnrichmentDetail() {
                             <Copy className="h-3 w-3" />
                           </Button>
                         </div>
+                        <div
+                          className="text-sm text-foreground leading-relaxed prose-sm"
+                          dangerouslySetInnerHTML={{ __html: renderResultMarkdown(s.result) }}
+                        />
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
                         <div
                           className="text-sm text-foreground leading-relaxed prose-sm"
                           dangerouslySetInnerHTML={{ __html: renderResultMarkdown(s.result) }}
