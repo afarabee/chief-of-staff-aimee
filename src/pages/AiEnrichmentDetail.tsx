@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from '@/hooks/use-toast';
+import { generateTitle } from '@/utils/generateTitle';
 
 const typeBadge: Record<string, { label: string; className: string }> = {
   task: { label: 'Task', className: 'bg-primary/10 text-primary border-primary/20' },
