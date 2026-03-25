@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { generateTitle } from '@/utils/generateTitle';
 import type { MaintenanceEvent } from '@/types/maintenance';
 
 export function useBulkScheduleToCalendar() {
@@ -30,7 +31,7 @@ export function useBulkScheduleToCalendar() {
 
         const { data, error } = await supabase.functions.invoke('create-calendar-event', {
           body: {
-            summary: `${event.assetName}: ${event.name}`,
+            summary: `${event.assetName}: ${generateTitle(event.name)}`,
             description,
             start_date: event.nextDueDate || event.recommendedDueDate || new Date().toISOString().split('T')[0],
             frequency: event.frequency ?? undefined,

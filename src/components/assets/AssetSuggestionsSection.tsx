@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { generateTitle } from '@/utils/generateTitle';
 import { format, parseISO } from 'date-fns';
 import { CalendarDays, CalendarPlus, Check, Eye, EyeOff, ExternalLink, Layers, Loader2, Pencil, Plus, X } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -115,7 +116,7 @@ export function AssetSuggestionsSection({ enrichment, assetName, assetId }: Prop
       await scheduleToCalendar.mutateAsync({
         enrichmentId: enrichment.id,
         suggestionIndex: idx,
-        summary: `${assetName || enrichment.item_title}: ${s.suggestion}`,
+        summary: `${assetName || enrichment.item_title}: ${generateTitle(s.suggestion)}`,
         description,
         startDate: s.recommended_due_date || new Date().toISOString().split('T')[0],
         frequency: freq,
@@ -178,7 +179,7 @@ export function AssetSuggestionsSection({ enrichment, assetName, assetId }: Prop
       await scheduleToCalendar.mutateAsync({
         enrichmentId: enrichment.id,
         suggestionIndex: -1, // Won't update any existing suggestion
-        summary: `${assetName || enrichment.item_title}: ${manualForm.summary}`,
+        summary: `${assetName || enrichment.item_title}: ${generateTitle(manualForm.summary)}`,
         description: `Asset: ${assetName || enrichment.item_title}`,
         startDate: manualForm.start_date,
         frequency: freq,

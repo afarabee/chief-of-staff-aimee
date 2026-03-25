@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from '@/hooks/use-toast';
+import { generateTitle } from '@/utils/generateTitle';
 
 const typeBadge: Record<string, { label: string; className: string }> = {
   task: { label: 'Task', className: 'bg-primary/10 text-primary border-primary/20' },
@@ -52,19 +53,10 @@ export default function AiEnrichmentDetail() {
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [editForm, setEditForm] = useState({ suggestion: '', frequency: '', recommended_due_date: '' });
 
-  const generateTitleFromResult = (result: string): string => {
-    const stripped = result
-      .replace(/\*\*(.+?)\*\*/g, '$1')
-      .replace(/\*(.+?)\*/g, '$1')
-      .replace(/^#+\s*/gm, '')
-      .replace(/^[-•]\s*/gm, '')
-      .replace(/^\d+\.\s*/gm, '');
-    const firstLine = stripped.split('\n').find((l) => l.trim().length > 0)?.trim() || 'AI Result';
-    return firstLine.length > 80 ? firstLine.slice(0, 77) + '...' : firstLine;
-  };
+  // Title generation now uses shared utility
 
   const handleCreateFromResult = (idx: number, result: string, type: 'task' | 'idea') => {
-    const title = generateTitleFromResult(result);
+    const title = generateTitle(result);
     const key = `${idx}-${type}`;
 
     if (type === 'task') {
