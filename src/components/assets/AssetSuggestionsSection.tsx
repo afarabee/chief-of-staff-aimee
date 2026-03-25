@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { generateTitle } from '@/utils/generateTitle';
 import { format, parseISO } from 'date-fns';
 import { CalendarDays, CalendarPlus, Check, Eye, EyeOff, ExternalLink, Layers, Loader2, Pencil, Plus, X } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
