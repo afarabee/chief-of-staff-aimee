@@ -41,14 +41,62 @@ export default function AiEnrichmentDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: enrichment, isLoading } = useAiEnrichment(id);
+  const queryClient = useQueryClient();
   const updateSuggestion = useUpdateEnrichmentSuggestion();
   const executeSuggestion = useExecuteSuggestion();
   const createSubtask = useCreateSubtask();
   const [executingIdx, setExecutingIdx] = useState<number | null>(null);
   const [createdSubtaskIdx, setCreatedSubtaskIdx] = useState<Set<number>>(new Set());
+  const [createdFromResultIdx, setCreatedFromResultIdx] = useState<Set<string>>(new Set());
   const [showDismissed, setShowDismissed] = useState(false);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [editForm, setEditForm] = useState({ suggestion: '', frequency: '', recommended_due_date: '' });
+
+  const generateTitleFromResult = (result: string): string => {
+    const stripped = result
+      .replace(/\*\*(.+?)\*\*/g, '$1')
+      .replace(/\*(.+?)\*/g, '$1')
+      .replace(/^#+\s*/gm, '')
+      .replace(/^[-•]\s*/gm, '')
+      .replace(/^\d+\.\s*/gm, '');
+    const firstLine = stripped.split('\n').find((l) => l.trim().length > 0)?.trim() || 'AI Result';
+    return firstLine.length > 80 ? firstLine.slice(0, 77) + '...' : firstLine;
+  };
+
+  const handleCreateFromResult = (idx: number, result: string, type: 'task' | 'idea') => {
+    const title = generateTitleFromResult(result);
+    const key = `${idx}-${type}`;
+
+    if (type === 'task') {
+      createSubtask.mutate(
+        {
+          suggestion: result,
+          title,
+          description: `From AI execution of: ${enrichment!.item_title}\n\n${result}`,
+          parentTitle: enrichment!.item_title,
+          parentItemId: enrichment!.item_id,
+          parentItemType: enrichment!.item_type as 'task' | 'idea' | 'reminder',
+        },
+        { onSuccess: () => setCreatedFromResultIdx((prev) => new Set(prev).add(key)) }
+      );
+    } else {
+      (async () => {
+        try {
+          const { error } = await supabase.from('cos_ideas').insert({
+            title,
+            description: `From AI execution of: ${enrichment!.item_title}\n\n${result}`,
+            status: 'New',
+          } as any);
+          if (error) throw error;
+          queryClient.invalidateQueries({ queryKey: ['ideas'] });
+          setCreatedFromResultIdx((prev) => new Set(prev).add(key));
+          toast({ title: 'Idea created', description: 'A new idea has been created from the result.' });
+        } catch (err: any) {
+          toast({ title: 'Failed to create idea', description: err.message, variant: 'destructive' });
+        }
+      })();
+    }
+  };
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
