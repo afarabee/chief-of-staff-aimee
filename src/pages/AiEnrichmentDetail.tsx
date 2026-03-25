@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Zap, ListPlus, X, Copy, Check, Loader2, Eye, EyeOff, ChevronDown, Pencil, CalendarDays } from 'lucide-react';
+import { ArrowLeft, Zap, ListPlus, X, Copy, Check, Loader2, Eye, EyeOff, ChevronDown, Pencil, CalendarDays, Lightbulb } from 'lucide-react';
 import { format, parseISO, formatDistanceToNow } from 'date-fns';
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { useAiEnrichment } from '@/hooks/useAiEnrichment';
 import { useUpdateEnrichmentSuggestion } from '@/hooks/useUpdateEnrichmentSuggestion';
 import { useExecuteSuggestion } from '@/hooks/useExecuteSuggestion';

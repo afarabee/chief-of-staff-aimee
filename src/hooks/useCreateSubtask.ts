@@ -10,6 +10,8 @@ interface CreateTaskFromSuggestionParams {
   parentItemId: string;
   parentItemType: 'task' | 'idea' | 'reminder';
   categoryId?: string | null;
+  title?: string;
+  description?: string;
 }
 
 export function useCreateSubtask() {
@@ -17,11 +19,12 @@ export function useCreateSubtask() {
 
   return useMutation({
     mutationFn: async (params: CreateTaskFromSuggestionParams) => {
-      const title = params.suggestion.length > 80
-        ? params.suggestion.slice(0, 77) + '...'
-        : params.suggestion;
+      const title = params.title
+        ? (params.title.length > 80 ? params.title.slice(0, 77) + '...' : params.title)
+        : (params.suggestion.length > 80 ? params.suggestion.slice(0, 77) + '...' : params.suggestion);
 
-      const description = `From: ${params.parentTitle}\n\nFull suggestion: ${params.suggestion}\n\nCreated by AI Enrichment`;
+      const description = params.description
+        || `From: ${params.parentTitle}\n\nFull suggestion: ${params.suggestion}\n\nCreated by AI Enrichment`;
 
       const insertData: Record<string, any> = {
         title,
