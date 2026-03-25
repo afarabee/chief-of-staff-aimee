@@ -1,5 +1,6 @@
-import { Calendar, CalendarCheck, CheckSquare, Lightbulb, LayoutDashboard, Tags, Package, Wrench, Sparkles, ShoppingCart, BrainCircuit } from 'lucide-react';
+import { Calendar, CalendarCheck, CheckSquare, Lightbulb, LayoutDashboard, Tags, Package, Wrench, Sparkles, ShoppingCart, BrainCircuit, DollarSign, ExternalLink } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
+import { openExternalUrl } from '@/lib/openExternalUrl';
 import {
   Sidebar,
   SidebarContent,
@@ -9,6 +10,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
@@ -32,6 +34,13 @@ export function AppSidebar() {
   const isCollapsed = state === 'collapsed';
 
   const handleNavClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
+  const handleCfoClick = () => {
+    openExternalUrl('https://cfo-for-aimee.lovable.app');
     if (isMobile) {
       setOpenMobile(false);
     }
@@ -76,6 +85,24 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarSeparator />
+
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton tooltip="CFO Dashboard" onClick={handleCfoClick}>
+                  <DollarSign className="h-4 w-4" />
+                  <span className="flex items-center gap-2">
+                    CFO Dashboard
+                    <ExternalLink className="h-3 w-3 opacity-60" />
+                  </span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

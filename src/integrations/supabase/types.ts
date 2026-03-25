@@ -286,9 +286,11 @@ export type Database = {
           description: string
           due_date: string | null
           id: string
+          is_autopay: boolean | null
           is_recurring: boolean | null
           month_key: string
           notes: string | null
+          paid_date: string | null
           pay_period_id: string | null
           sort_order: number | null
           status: string
@@ -301,9 +303,11 @@ export type Database = {
           description: string
           due_date?: string | null
           id?: string
+          is_autopay?: boolean | null
           is_recurring?: boolean | null
           month_key: string
           notes?: string | null
+          paid_date?: string | null
           pay_period_id?: string | null
           sort_order?: number | null
           status?: string
@@ -316,9 +320,11 @@ export type Database = {
           description?: string
           due_date?: string | null
           id?: string
+          is_autopay?: boolean | null
           is_recurring?: boolean | null
           month_key?: string
           notes?: string | null
+          paid_date?: string | null
           pay_period_id?: string | null
           sort_order?: number | null
           status?: string
@@ -385,9 +391,11 @@ export type Database = {
           created_at: string | null
           default_amount: number
           description: string
+          due_day: number | null
           frequency: string
           id: string
           is_active: boolean | null
+          is_autopay: boolean | null
           notes: string | null
           sort_order: number | null
         }
@@ -396,9 +404,11 @@ export type Database = {
           created_at?: string | null
           default_amount?: number
           description: string
+          due_day?: number | null
           frequency?: string
           id?: string
           is_active?: boolean | null
+          is_autopay?: boolean | null
           notes?: string | null
           sort_order?: number | null
         }
@@ -407,15 +417,61 @@ export type Database = {
           created_at?: string | null
           default_amount?: number
           description?: string
+          due_day?: number | null
           frequency?: string
           id?: string
           is_active?: boolean | null
+          is_autopay?: boolean | null
           notes?: string | null
           sort_order?: number | null
         }
         Relationships: [
           {
             foreignKeyName: "cfo_recurring_templates_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "cfo_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cfo_transactions: {
+        Row: {
+          account_id: string | null
+          account_name: string
+          amount: number
+          category: string
+          created_at: string | null
+          description: string
+          id: string
+          transaction_date: string
+          upload_batch: string
+        }
+        Insert: {
+          account_id?: string | null
+          account_name: string
+          amount: number
+          category?: string
+          created_at?: string | null
+          description: string
+          id?: string
+          transaction_date: string
+          upload_batch: string
+        }
+        Update: {
+          account_id?: string | null
+          account_name?: string
+          amount?: number
+          category?: string
+          created_at?: string | null
+          description?: string
+          id?: string
+          transaction_date?: string
+          upload_batch?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cfo_transactions_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "cfo_accounts"
