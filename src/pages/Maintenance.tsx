@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { generateTitle } from '@/utils/generateTitle';
 import { format, parseISO } from 'date-fns';
 import { CalendarCheck, CalendarDays, CalendarPlus, ChevronDown, Circle, CheckCircle2, ExternalLink, Loader2, Pencil, RefreshCw, Trash2 } from 'lucide-react';
 import { usePageTitle } from '@/hooks/usePageTitle';
