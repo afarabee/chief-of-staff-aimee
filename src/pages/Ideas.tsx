@@ -58,8 +58,19 @@ export default function Ideas() {
     }
   }, [searchParams, ideas, isLoading]);
 
+  const idsFilter = searchParams.get('ids');
+  const idsSet = useMemo(() => idsFilter ? new Set(idsFilter.split(',')) : null, [idsFilter]);
+
+  const clearIdsFilter = () => {
+    searchParams.delete('ids');
+    setSearchParams(searchParams, { replace: true });
+  };
+
   const filteredIdeas = useMemo(() => {
     let result = ideas;
+    if (idsSet) {
+      return result.filter((idea) => idsSet.has(idea.id));
+    }
     if (statusFilter !== 'all') {
       result = result.filter((idea) => idea.status === statusFilter);
     }
@@ -71,7 +82,7 @@ export default function Ideas() {
       );
     }
     return result;
-  }, [ideas, statusFilter, debouncedKeyword]);
+  }, [ideas, statusFilter, debouncedKeyword, idsSet]);
 
   const handleOpenForm = (idea?: Idea) => {
     setEditingIdea(idea);
