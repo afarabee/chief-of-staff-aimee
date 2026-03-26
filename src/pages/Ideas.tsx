@@ -37,6 +37,12 @@ export default function Ideas() {
   const [editingIdea, setEditingIdea] = useState<Idea | undefined>();
   const [statusFilter, setStatusFilter] = useState<IdeaStatus | 'all'>('all');
   const [showPurgeDialog, setShowPurgeDialog] = useState(false);
+  const [keyword, setKeyword] = useState('');
+  const [debouncedKeyword, setDebouncedKeyword] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedKeyword(keyword), 300);
+    return () => clearTimeout(t);
+  }, [keyword]);
 
   // Auto-open edit dialog from search param
   useEffect(() => {
