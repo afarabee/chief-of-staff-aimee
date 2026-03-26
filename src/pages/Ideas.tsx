@@ -59,9 +59,19 @@ export default function Ideas() {
   }, [searchParams, ideas, isLoading]);
 
   const filteredIdeas = useMemo(() => {
-    if (statusFilter === 'all') return ideas;
-    return ideas.filter((idea) => idea.status === statusFilter);
-  }, [ideas, statusFilter]);
+    let result = ideas;
+    if (statusFilter !== 'all') {
+      result = result.filter((idea) => idea.status === statusFilter);
+    }
+    if (debouncedKeyword) {
+      const kw = debouncedKeyword.toLowerCase();
+      result = result.filter((idea) =>
+        idea.title.toLowerCase().includes(kw) ||
+        (idea.description && idea.description.toLowerCase().includes(kw))
+      );
+    }
+    return result;
+  }, [ideas, statusFilter, debouncedKeyword]);
 
   const handleOpenForm = (idea?: Idea) => {
     setEditingIdea(idea);
