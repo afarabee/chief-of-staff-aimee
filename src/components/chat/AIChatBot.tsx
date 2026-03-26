@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect, KeyboardEvent } from 'react';
-import { MessageCircle, X, SendHorizontal, Trash2, Mic, MicOff } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback, KeyboardEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { MessageCircle, X, SendHorizontal, Trash2, Mic, MicOff, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -109,9 +110,28 @@ async function fetchChatContext(): Promise<ChatContext> {
   return { assets, cos_tasks, cos_ideas, maintenance_tasks, providers, categories, cos_categories };
 }
 
+const typeToRoute: Record<string, string> = {
+  task: '/tasks',
+  idea: '/ideas',
+  provider: '/providers',
+  asset: '/assets',
+};
+
+function parseItemLinks(text: string): { type: string; id: string; label: string }[] {
+  const regex = /\[\[(\w+):([^\]|]+)\|([^\]]+)\]\]/g;
+  const items: { type: string; id: string; label: string }[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = regex.exec(text)) !== null) {
+    items.push({ type: m[1], id: m[2], label: m[3] });
+  }
+  return items;
+}
+
 function renderMarkdown(text: string) {
   let html = text
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    // Convert [[type:id|label]] into clickable links before other processing
+    .replace(/\[\[(\w+):([^\]|]+)\|([^\]]+)\]\]/g, '<a class="chat-item-link" data-item-type="$1" data-item-id="$2" href="#">$3</a>')
     .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre class="bg-muted rounded p-2 my-1 overflow-x-auto text-xs"><code>$2</code></pre>')
     .replace(/`([^`]+)`/g, '<code class="bg-muted rounded px-1 text-xs">$1</code>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
@@ -138,6 +158,7 @@ export function AIChatBot() {
   const contextRef = useRef<ChatContext | null>(null);
   const contextFetchedRef = useRef(false);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const sendFromVoiceRef = useRef<((text: string) => void) | null>(null);
 
   const { transcript, isListening, isSupported, startListening, stopListening, resetTranscript } =
@@ -248,6 +269,37 @@ export function AIChatBot() {
     contextRef.current = null;
   };
 
+  const handleChatClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const target = (e.target as HTMLElement).closest('.chat-item-link') as HTMLAnchorElement | null;
+    if (!target) return;
+    e.preventDefault();
+    const itemType = target.dataset.itemType;
+    const itemId = target.dataset.itemId;
+    if (!itemType || !itemId) return;
+    const route = typeToRoute[itemType];
+    if (!route) return;
+    setOpen(false);
+    navigate(`${route}?edit=${itemId}`);
+  }, [navigate]);
+
+  // Build "View all" buttons for messages with multiple items of the same type
+  const getViewAllButtons = useCallback((content: string) => {
+    const items = parseItemLinks(content);
+    const byType: Record<string, { type: string; ids: string[] }> = {};
+    items.forEach(({ type, id }) => {
+      if (!byType[type]) byType[type] = { type, ids: [] };
+      byType[type].ids.push(id);
+    });
+    return Object.values(byType).filter((g) => g.ids.length >= 2);
+  }, []);
+
+  const handleViewAll = useCallback((type: string, ids: string[]) => {
+    const route = typeToRoute[type];
+    if (!route) return;
+    setOpen(false);
+    navigate(`${route}?ids=${ids.join(',')}`);
+  }, [navigate]);
+
   const panelClasses = isMobile
     ? 'fixed inset-0 z-50 flex flex-col'
     : 'fixed bottom-24 right-6 z-50 w-[380px] h-[500px] flex flex-col';
@@ -270,19 +322,36 @@ export function AIChatBot() {
 
           <CardContent className="flex-1 p-0 overflow-hidden">
             <ScrollArea className="h-full">
-              <div className="p-4 space-y-3">
-                {messages.map((msg, i) => (
-                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div
-                      className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
-                        msg.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted text-foreground'
-                      }`}
-                      dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
-                    />
-                  </div>
-                ))}
+              <div className="p-4 space-y-3" onClick={handleChatClick}>
+                {messages.map((msg, i) => {
+                  const viewAllGroups = msg.role === 'assistant' ? getViewAllButtons(msg.content) : [];
+                  return (
+                    <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                      <div
+                        className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
+                          msg.role === 'user'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted text-foreground'
+                        } [&_.chat-item-link]:text-primary [&_.chat-item-link]:underline [&_.chat-item-link]:cursor-pointer [&_.chat-item-link]:font-medium`}
+                        dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
+                      />
+                      {viewAllGroups.length > 0 && (
+                        <div className="flex gap-1 mt-1">
+                          {viewAllGroups.map((g) => (
+                            <button
+                              key={g.type}
+                              onClick={() => handleViewAll(g.type, g.ids)}
+                              className="text-xs text-primary hover:underline flex items-center gap-1"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              View all {g.ids.length} {g.type}s
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
                 {loading && (
                   <div className="flex justify-start">
                     <div className="bg-muted rounded-lg px-3 py-2 text-sm flex gap-1 items-center">

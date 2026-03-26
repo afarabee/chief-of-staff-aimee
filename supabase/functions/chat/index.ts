@@ -309,7 +309,8 @@ Today's date is ${today}.
 ${dataSections}
 
 When answering:
-- NEVER include UUIDs, database IDs, or internal identifiers in your responses. Only show human-readable information like titles, names, dates, statuses, and priorities. IDs are for internal use only.
+- When listing or mentioning specific items from the context data, wrap each one with [[type:id|Display Name]] syntax — e.g. [[task:abc-123|Fix the roof]], [[idea:def-456|New garden layout]], [[provider:ghi-789|Joe's Plumbing]], [[asset:jkl-012|Water Heater]]. The type must be one of: task, idea, provider, asset. Use the item's actual ID from the data. This enables clickable navigation in the UI.
+- NEVER show raw UUIDs or database IDs as visible text in your responses. Only show human-readable information like titles, names, dates, statuses, and priorities. IDs should only appear inside the [[type:id|label]] markers.
 - Reference specific items by name when relevant
 - If asked about tasks, distinguish between Kanban tasks (personal/ad-hoc) and maintenance events (asset-related scheduled maintenance from AI enrichments)
 - For task counts or summaries, give accurate numbers based on the data

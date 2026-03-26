@@ -58,8 +58,19 @@ export default function Ideas() {
     }
   }, [searchParams, ideas, isLoading]);
 
+  const idsFilter = searchParams.get('ids');
+  const idsSet = useMemo(() => idsFilter ? new Set(idsFilter.split(',')) : null, [idsFilter]);
+
+  const clearIdsFilter = () => {
+    searchParams.delete('ids');
+    setSearchParams(searchParams, { replace: true });
+  };
+
   const filteredIdeas = useMemo(() => {
     let result = ideas;
+    if (idsSet) {
+      return result.filter((idea) => idsSet.has(idea.id));
+    }
     if (statusFilter !== 'all') {
       result = result.filter((idea) => idea.status === statusFilter);
     }
@@ -71,7 +82,7 @@ export default function Ideas() {
       );
     }
     return result;
-  }, [ideas, statusFilter, debouncedKeyword]);
+  }, [ideas, statusFilter, debouncedKeyword, idsSet]);
 
   const handleOpenForm = (idea?: Idea) => {
     setEditingIdea(idea);
@@ -138,6 +149,13 @@ export default function Ideas() {
           </p>
         </div>
       </div>
+
+      {idsSet && (
+        <div className="flex items-center gap-2 p-2 rounded-md bg-muted">
+          <span className="text-sm text-muted-foreground">Showing {idsSet.size} filtered result{idsSet.size !== 1 ? 's' : ''} from chat</span>
+          <Button variant="outline" size="sm" onClick={clearIdsFilter}>Clear filter</Button>
+        </div>
+      )}
 
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
