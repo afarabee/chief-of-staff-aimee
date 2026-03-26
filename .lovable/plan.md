@@ -1,40 +1,35 @@
 
 
-# Add Keyword Search Filter to Tasks, Ideas, and Providers
 
-## Changes
+# Clickable Item Links in AI Chat Responses
 
-### `src/pages/Tasks.tsx`
-- Add `keywordFilter` state (string, default `''`)
-- Add a debounced `Input` field in the filter bar (next to priority Select) with placeholder "Search tasks..."
-- Apply keyword filter in `filteredTasks` memo: match against `title` and `description` (case-insensitive)
-- Use a 300ms debounce via a `debouncedKeyword` state updated in a `useEffect` with `setTimeout`
+## Approach
 
-### `src/pages/Ideas.tsx`
-- Add `keywordFilter` state + same debounce pattern
-- Add `Input` in the filter bar next to status Select, placeholder "Search ideas..."
-- Apply keyword filter in `filteredIdeas` memo before status filter
+Two-part solution: (1) have the AI embed special link markers in its replies when referencing items, and (2) parse those markers in the frontend to render clickable links that navigate to the item or a filtered view.
 
-### `src/pages/Providers.tsx`
-- Add `keywordFilter` state + same debounce pattern
-- Add `Input` above the provider groups (in list view only), placeholder "Search providers..."
-- Filter `providers` array by `name` and `notes` before grouping
+## How it works
 
-### Implementation detail
-Each page gets its own local debounce (no shared hook needed — it's 4 lines):
+```text
+User asks: "Show me my high priority tasks"
+         ↓
+Gemini system prompt instructs: use [[task:uuid|Title]] syntax
+         ↓
+AI reply: "You have 3 high priority tasks: [[task:abc|Fix roof]], [[task:def|Call plumber]], [[task:ghi|Review budget]]"
+         ↓
+Frontend parses [[type:id|label]] markers
+         ↓
+Renders as clickable chips/links in chat
+         ↓
+Single item click → /tasks?edit=abc
+Multiple items → "View all on Tasks page" button → /tasks?ids=abc,def,ghi
 ```
-const [keyword, setKeyword] = useState('');
-const [debouncedKeyword, setDebouncedKeyword] = useState('');
-useEffect(() => {
-  const t = setTimeout(() => setDebouncedKeyword(keyword), 300);
-  return () => clearTimeout(t);
-}, [keyword]);
-```
-The `Input` uses `Search` icon from lucide as a visual hint, placed in the filter row.
+
+## Files
 
 | File | Change |
 |------|--------|
-| `src/pages/Tasks.tsx` | Add keyword search input + debounced filter |
-| `src/pages/Ideas.tsx` | Add keyword search input + debounced filter |
-| `src/pages/Providers.tsx` | Add keyword search input + debounced filter |
-
+| `supabase/functions/chat/index.ts` | Added link syntax instruction to system prompt |
+| `src/components/chat/AIChatBot.tsx` | Parse `[[type:id|label]]` into clickable links + "View all" button |
+| `src/pages/Tasks.tsx` | Support `?ids=` filter param |
+| `src/pages/Ideas.tsx` | Support `?ids=` filter param |
+| `src/pages/Providers.tsx` | Support `?ids=` filter param |
