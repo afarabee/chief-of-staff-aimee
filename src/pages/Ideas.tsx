@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Filter, Trash2 } from 'lucide-react';
+import { Plus, Filter, Trash2, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useApp } from '@/contexts/AppContext';
 import { Idea, IdeaStatus } from '@/types';
@@ -36,6 +37,12 @@ export default function Ideas() {
   const [editingIdea, setEditingIdea] = useState<Idea | undefined>();
   const [statusFilter, setStatusFilter] = useState<IdeaStatus | 'all'>('all');
   const [showPurgeDialog, setShowPurgeDialog] = useState(false);
+  const [keyword, setKeyword] = useState('');
+  const [debouncedKeyword, setDebouncedKeyword] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedKeyword(keyword), 300);
+    return () => clearTimeout(t);
+  }, [keyword]);
 
   // Auto-open edit dialog from search param
   useEffect(() => {
@@ -52,9 +59,19 @@ export default function Ideas() {
   }, [searchParams, ideas, isLoading]);
 
   const filteredIdeas = useMemo(() => {
-    if (statusFilter === 'all') return ideas;
-    return ideas.filter((idea) => idea.status === statusFilter);
-  }, [ideas, statusFilter]);
+    let result = ideas;
+    if (statusFilter !== 'all') {
+      result = result.filter((idea) => idea.status === statusFilter);
+    }
+    if (debouncedKeyword) {
+      const kw = debouncedKeyword.toLowerCase();
+      result = result.filter((idea) =>
+        idea.title.toLowerCase().includes(kw) ||
+        (idea.description && idea.description.toLowerCase().includes(kw))
+      );
+    }
+    return result;
+  }, [ideas, statusFilter, debouncedKeyword]);
 
   const handleOpenForm = (idea?: Idea) => {
     setEditingIdea(idea);
@@ -140,6 +157,16 @@ export default function Ideas() {
             <SelectItem value="done">Done</SelectItem>
           </SelectContent>
         </Select>
+
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search ideas..."
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            className="pl-9 w-[200px]"
+          />
+        </div>
 
         {ideasByStatus.done.length > 0 && (
           <Button variant="destructive" size="sm" className="gap-2 ml-auto" onClick={() => setShowPurgeDialog(true)}>

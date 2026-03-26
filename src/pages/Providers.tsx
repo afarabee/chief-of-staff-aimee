@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { icons } from 'lucide-react';
-import { ArrowLeft, Globe, Mail, MapPin, Pencil, Phone, Plus, Trash2, Wrench } from 'lucide-react';
+import { ArrowLeft, Globe, Mail, MapPin, Pencil, Phone, Plus, Search, Trash2, Wrench } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useProviders, useDeleteProvider } from '@/hooks/useProviders';
 import { ProviderCard } from '@/components/providers/ProviderCard';
@@ -41,6 +42,12 @@ export default function Providers() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProvider, setEditingProvider] = useState<Provider | undefined>(undefined);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [keyword, setKeyword] = useState('');
+  const [debouncedKeyword, setDebouncedKeyword] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedKeyword(keyword), 300);
+    return () => clearTimeout(t);
+  }, [keyword]);
   useEffect(() => {
     const editId = searchParams.get('edit');
     if (editId && !isLoading && providers.length > 0) {
@@ -63,7 +70,16 @@ export default function Providers() {
 
   const handleDelete = (id: string) => { deleteProvider.mutate(id, { onSuccess: backToList }); };
 
-  const grouped = providers.reduce<Record<string, { name: string; icon: string | null; color: string | null; providers: Provider[] }>>((acc, p) => {
+  const filteredProviders = useMemo(() => {
+    if (!debouncedKeyword) return providers;
+    const kw = debouncedKeyword.toLowerCase();
+    return providers.filter((p) =>
+      p.name.toLowerCase().includes(kw) ||
+      (p.notes && p.notes.toLowerCase().includes(kw))
+    );
+  }, [providers, debouncedKeyword]);
+
+  const grouped = filteredProviders.reduce<Record<string, { name: string; icon: string | null; color: string | null; providers: Provider[] }>>((acc, p) => {
     const key = p.categoryName ?? 'Uncategorized';
     if (!acc[key]) acc[key] = { name: key, icon: p.categoryIcon ?? null, color: p.categoryColor ?? null, providers: [] };
     acc[key].providers.push(p);
@@ -164,6 +180,16 @@ export default function Providers() {
           <Plus className="h-4 w-4" />
           Add Provider
         </Button>
+      </div>
+
+      <div className="relative">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search providers..."
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          className="pl-9 w-[300px]"
+        />
       </div>
 
       {isLoading ? (

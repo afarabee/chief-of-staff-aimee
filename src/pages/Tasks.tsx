@@ -2,7 +2,8 @@ import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { usePageTitle } from '@/hooks/usePageTitle';
-import { Plus, Filter, Trash2 } from 'lucide-react';
+import { Plus, Filter, Trash2, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { useApp } from '@/contexts/AppContext';
 import { Task, TaskStatus, TaskPriority } from '@/types';
 import { KanbanColumn } from '@/components/tasks/KanbanColumn';
@@ -40,6 +41,12 @@ export default function Tasks() {
   const [editingTask, setEditingTask] = useState<Task | undefined>();
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
   const [showPurgeDialog, setShowPurgeDialog] = useState(false);
+  const [keyword, setKeyword] = useState('');
+  const [debouncedKeyword, setDebouncedKeyword] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedKeyword(keyword), 300);
+    return () => clearTimeout(t);
+  }, [keyword]);
 
   // Auto-open edit dialog from search param
   useEffect(() => {
@@ -56,9 +63,19 @@ export default function Tasks() {
   }, [searchParams, tasks, isLoading]);
 
   const filteredTasks = useMemo(() => {
-    if (priorityFilter === 'all') return tasks;
-    return tasks.filter((task) => task.priority === priorityFilter);
-  }, [tasks, priorityFilter]);
+    let result = tasks;
+    if (priorityFilter !== 'all') {
+      result = result.filter((task) => task.priority === priorityFilter);
+    }
+    if (debouncedKeyword) {
+      const kw = debouncedKeyword.toLowerCase();
+      result = result.filter((task) =>
+        task.title.toLowerCase().includes(kw) ||
+        (task.description && task.description.toLowerCase().includes(kw))
+      );
+    }
+    return result;
+  }, [tasks, priorityFilter, debouncedKeyword]);
 
   const handleOpenForm = (task?: Task) => {
     setEditingTask(task);
@@ -171,6 +188,16 @@ export default function Tasks() {
             <SelectItem value="low">Low</SelectItem>
           </SelectContent>
         </Select>
+
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search tasks..."
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            className="pl-9 w-[200px]"
+          />
+        </div>
 
         {tasksByStatus.done.length > 0 && (
           <Button variant="destructive" size="sm" className="gap-2 ml-auto" onClick={() => setShowPurgeDialog(true)}>
