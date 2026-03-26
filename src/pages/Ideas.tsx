@@ -158,6 +158,16 @@ export default function Ideas() {
           </SelectContent>
         </Select>
 
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search ideas..."
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            className="pl-9 w-[200px]"
+          />
+        </div>
+
         {ideasByStatus.done.length > 0 && (
           <Button variant="destructive" size="sm" className="gap-2 ml-auto" onClick={() => setShowPurgeDialog(true)}>
             <Trash2 className="h-4 w-4" />
