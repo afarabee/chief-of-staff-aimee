@@ -158,6 +158,7 @@ export function AIChatBot() {
   const contextRef = useRef<ChatContext | null>(null);
   const contextFetchedRef = useRef(false);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const sendFromVoiceRef = useRef<((text: string) => void) | null>(null);
 
   const { transcript, isListening, isSupported, startListening, stopListening, resetTranscript } =
