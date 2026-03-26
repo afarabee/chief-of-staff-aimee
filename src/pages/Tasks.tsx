@@ -63,9 +63,19 @@ export default function Tasks() {
   }, [searchParams, tasks, isLoading]);
 
   const filteredTasks = useMemo(() => {
-    if (priorityFilter === 'all') return tasks;
-    return tasks.filter((task) => task.priority === priorityFilter);
-  }, [tasks, priorityFilter]);
+    let result = tasks;
+    if (priorityFilter !== 'all') {
+      result = result.filter((task) => task.priority === priorityFilter);
+    }
+    if (debouncedKeyword) {
+      const kw = debouncedKeyword.toLowerCase();
+      result = result.filter((task) =>
+        task.title.toLowerCase().includes(kw) ||
+        (task.description && task.description.toLowerCase().includes(kw))
+      );
+    }
+    return result;
+  }, [tasks, priorityFilter, debouncedKeyword]);
 
   const handleOpenForm = (task?: Task) => {
     setEditingTask(task);
