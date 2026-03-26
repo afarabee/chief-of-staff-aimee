@@ -110,9 +110,28 @@ async function fetchChatContext(): Promise<ChatContext> {
   return { assets, cos_tasks, cos_ideas, maintenance_tasks, providers, categories, cos_categories };
 }
 
+const typeToRoute: Record<string, string> = {
+  task: '/tasks',
+  idea: '/ideas',
+  provider: '/providers',
+  asset: '/assets',
+};
+
+function parseItemLinks(text: string): { type: string; id: string; label: string }[] {
+  const regex = /\[\[(\w+):([^\]|]+)\|([^\]]+)\]\]/g;
+  const items: { type: string; id: string; label: string }[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = regex.exec(text)) !== null) {
+    items.push({ type: m[1], id: m[2], label: m[3] });
+  }
+  return items;
+}
+
 function renderMarkdown(text: string) {
   let html = text
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    // Convert [[type:id|label]] into clickable links before other processing
+    .replace(/\[\[(\w+):([^\]|]+)\|([^\]]+)\]\]/g, '<a class="chat-item-link" data-item-type="$1" data-item-id="$2" href="#">$3</a>')
     .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre class="bg-muted rounded p-2 my-1 overflow-x-auto text-xs"><code>$2</code></pre>')
     .replace(/`([^`]+)`/g, '<code class="bg-muted rounded px-1 text-xs">$1</code>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
