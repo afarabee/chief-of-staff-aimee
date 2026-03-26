@@ -269,6 +269,37 @@ export function AIChatBot() {
     contextRef.current = null;
   };
 
+  const handleChatClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const target = (e.target as HTMLElement).closest('.chat-item-link') as HTMLAnchorElement | null;
+    if (!target) return;
+    e.preventDefault();
+    const itemType = target.dataset.itemType;
+    const itemId = target.dataset.itemId;
+    if (!itemType || !itemId) return;
+    const route = typeToRoute[itemType];
+    if (!route) return;
+    setOpen(false);
+    navigate(`${route}?edit=${itemId}`);
+  }, [navigate]);
+
+  // Build "View all" buttons for messages with multiple items of the same type
+  const getViewAllButtons = useCallback((content: string) => {
+    const items = parseItemLinks(content);
+    const byType: Record<string, { type: string; ids: string[] }> = {};
+    items.forEach(({ type, id }) => {
+      if (!byType[type]) byType[type] = { type, ids: [] };
+      byType[type].ids.push(id);
+    });
+    return Object.values(byType).filter((g) => g.ids.length >= 2);
+  }, []);
+
+  const handleViewAll = useCallback((type: string, ids: string[]) => {
+    const route = typeToRoute[type];
+    if (!route) return;
+    setOpen(false);
+    navigate(`${route}?ids=${ids.join(',')}`);
+  }, [navigate]);
+
   const panelClasses = isMobile
     ? 'fixed inset-0 z-50 flex flex-col'
     : 'fixed bottom-24 right-6 z-50 w-[380px] h-[500px] flex flex-col';
