@@ -70,7 +70,16 @@ export default function Providers() {
 
   const handleDelete = (id: string) => { deleteProvider.mutate(id, { onSuccess: backToList }); };
 
-  const grouped = providers.reduce<Record<string, { name: string; icon: string | null; color: string | null; providers: Provider[] }>>((acc, p) => {
+  const filteredProviders = useMemo(() => {
+    if (!debouncedKeyword) return providers;
+    const kw = debouncedKeyword.toLowerCase();
+    return providers.filter((p) =>
+      p.name.toLowerCase().includes(kw) ||
+      (p.notes && p.notes.toLowerCase().includes(kw))
+    );
+  }, [providers, debouncedKeyword]);
+
+  const grouped = filteredProviders.reduce<Record<string, { name: string; icon: string | null; color: string | null; providers: Provider[] }>>((acc, p) => {
     const key = p.categoryName ?? 'Uncategorized';
     if (!acc[key]) acc[key] = { name: key, icon: p.categoryIcon ?? null, color: p.categoryColor ?? null, providers: [] };
     acc[key].providers.push(p);
