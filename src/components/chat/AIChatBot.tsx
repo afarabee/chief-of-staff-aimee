@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect, KeyboardEvent } from 'react';
-import { MessageCircle, X, SendHorizontal, Trash2, Mic, MicOff } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback, KeyboardEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { MessageCircle, X, SendHorizontal, Trash2, Mic, MicOff, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
