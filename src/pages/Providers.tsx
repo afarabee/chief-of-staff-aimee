@@ -42,6 +42,12 @@ export default function Providers() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProvider, setEditingProvider] = useState<Provider | undefined>(undefined);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [keyword, setKeyword] = useState('');
+  const [debouncedKeyword, setDebouncedKeyword] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedKeyword(keyword), 300);
+    return () => clearTimeout(t);
+  }, [keyword]);
   useEffect(() => {
     const editId = searchParams.get('edit');
     if (editId && !isLoading && providers.length > 0) {
