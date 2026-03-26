@@ -62,8 +62,19 @@ export default function Tasks() {
     }
   }, [searchParams, tasks, isLoading]);
 
+  const idsFilter = searchParams.get('ids');
+  const idsSet = useMemo(() => idsFilter ? new Set(idsFilter.split(',')) : null, [idsFilter]);
+
+  const clearIdsFilter = () => {
+    searchParams.delete('ids');
+    setSearchParams(searchParams, { replace: true });
+  };
+
   const filteredTasks = useMemo(() => {
     let result = tasks;
+    if (idsSet) {
+      return result.filter((task) => idsSet.has(task.id));
+    }
     if (priorityFilter !== 'all') {
       result = result.filter((task) => task.priority === priorityFilter);
     }
@@ -75,7 +86,7 @@ export default function Tasks() {
       );
     }
     return result;
-  }, [tasks, priorityFilter, debouncedKeyword]);
+  }, [tasks, priorityFilter, debouncedKeyword, idsSet]);
 
   const handleOpenForm = (task?: Task) => {
     setEditingTask(task);
