@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Filter, Trash2 } from 'lucide-react';
+import { Plus, Filter, Trash2, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useApp } from '@/contexts/AppContext';
 import { Idea, IdeaStatus } from '@/types';
