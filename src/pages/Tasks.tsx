@@ -41,6 +41,12 @@ export default function Tasks() {
   const [editingTask, setEditingTask] = useState<Task | undefined>();
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
   const [showPurgeDialog, setShowPurgeDialog] = useState(false);
+  const [keyword, setKeyword] = useState('');
+  const [debouncedKeyword, setDebouncedKeyword] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedKeyword(keyword), 300);
+    return () => clearTimeout(t);
+  }, [keyword]);
 
   // Auto-open edit dialog from search param
   useEffect(() => {
