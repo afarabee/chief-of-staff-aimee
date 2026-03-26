@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { icons } from 'lucide-react';
-import { ArrowLeft, Globe, Mail, MapPin, Pencil, Phone, Plus, Trash2, Wrench } from 'lucide-react';
+import { ArrowLeft, Globe, Mail, MapPin, Pencil, Phone, Plus, Search, Trash2, Wrench } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useProviders, useDeleteProvider } from '@/hooks/useProviders';
 import { ProviderCard } from '@/components/providers/ProviderCard';
