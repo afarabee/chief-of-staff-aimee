@@ -70,14 +70,25 @@ export default function Providers() {
 
   const handleDelete = (id: string) => { deleteProvider.mutate(id, { onSuccess: backToList }); };
 
+  const idsFilter = searchParams.get('ids');
+  const idsSet = useMemo(() => idsFilter ? new Set(idsFilter.split(',')) : null, [idsFilter]);
+
+  const clearIdsFilter = () => {
+    searchParams.delete('ids');
+    setSearchParams(searchParams, { replace: true });
+  };
+
   const filteredProviders = useMemo(() => {
+    if (idsSet) {
+      return providers.filter((p) => idsSet.has(p.id));
+    }
     if (!debouncedKeyword) return providers;
     const kw = debouncedKeyword.toLowerCase();
     return providers.filter((p) =>
       p.name.toLowerCase().includes(kw) ||
       (p.notes && p.notes.toLowerCase().includes(kw))
     );
-  }, [providers, debouncedKeyword]);
+  }, [providers, debouncedKeyword, idsSet]);
 
   const grouped = filteredProviders.reduce<Record<string, { name: string; icon: string | null; color: string | null; providers: Provider[] }>>((acc, p) => {
     const key = p.categoryName ?? 'Uncategorized';
