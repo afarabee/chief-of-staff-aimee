@@ -322,19 +322,36 @@ export function AIChatBot() {
 
           <CardContent className="flex-1 p-0 overflow-hidden">
             <ScrollArea className="h-full">
-              <div className="p-4 space-y-3">
-                {messages.map((msg, i) => (
-                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div
-                      className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
-                        msg.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted text-foreground'
-                      }`}
-                      dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
-                    />
-                  </div>
-                ))}
+              <div className="p-4 space-y-3" onClick={handleChatClick}>
+                {messages.map((msg, i) => {
+                  const viewAllGroups = msg.role === 'assistant' ? getViewAllButtons(msg.content) : [];
+                  return (
+                    <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                      <div
+                        className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
+                          msg.role === 'user'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted text-foreground'
+                        } [&_.chat-item-link]:text-primary [&_.chat-item-link]:underline [&_.chat-item-link]:cursor-pointer [&_.chat-item-link]:font-medium`}
+                        dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
+                      />
+                      {viewAllGroups.length > 0 && (
+                        <div className="flex gap-1 mt-1">
+                          {viewAllGroups.map((g) => (
+                            <button
+                              key={g.type}
+                              onClick={() => handleViewAll(g.type, g.ids)}
+                              className="text-xs text-primary hover:underline flex items-center gap-1"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              View all {g.ids.length} {g.type}s
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
                 {loading && (
                   <div className="flex justify-start">
                     <div className="bg-muted rounded-lg px-3 py-2 text-sm flex gap-1 items-center">

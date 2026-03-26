@@ -150,6 +150,13 @@ export default function Ideas() {
         </div>
       </div>
 
+      {idsSet && (
+        <div className="flex items-center gap-2 p-2 rounded-md bg-muted">
+          <span className="text-sm text-muted-foreground">Showing {idsSet.size} filtered result{idsSet.size !== 1 ? 's' : ''} from chat</span>
+          <Button variant="outline" size="sm" onClick={clearIdsFilter}>Clear filter</Button>
+        </div>
+      )}
+
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
