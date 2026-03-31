@@ -66,12 +66,25 @@ interface CardProps {
   onScheduleOpen: () => void;
   isScheduling: boolean;
   schedulingProviderId: string;
+  schedulingTime: string;
+  schedulingReminder: number;
   onProviderChange: (id: string) => void;
+  onTimeChange: (time: string) => void;
+  onReminderChange: (reminder: number) => void;
   onScheduleConfirm: () => void;
   onScheduleCancel: () => void;
   isSchedulePending: boolean;
   allProviders: { id: string; name: string }[];
 }
+
+const REMINDER_OPTIONS = [
+  { value: 0, label: 'At time of event' },
+  { value: 5, label: '5 min before' },
+  { value: 15, label: '15 min before' },
+  { value: 30, label: '30 min before' },
+  { value: 60, label: '1 hour before' },
+  { value: 1440, label: '1 day before' },
+];
 
 function MaintenanceEventCard({
   event,
@@ -81,7 +94,11 @@ function MaintenanceEventCard({
   onScheduleOpen,
   isScheduling,
   schedulingProviderId,
+  schedulingTime,
+  schedulingReminder,
   onProviderChange,
+  onTimeChange,
+  onReminderChange,
   onScheduleConfirm,
   onScheduleCancel,
   isSchedulePending,
@@ -210,6 +227,25 @@ function MaintenanceEventCard({
                 ))}
               </SelectContent>
             </Select>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Time</label>
+                <Input type="time" value={schedulingTime} onChange={(e) => onTimeChange(e.target.value)} className="h-8" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Reminder</label>
+                <Select value={String(schedulingReminder)} onValueChange={(v) => onReminderChange(Number(v))}>
+                  <SelectTrigger className="h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REMINDER_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={String(opt.value)}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             <div className="flex gap-2">
               <Button
                 size="sm"
@@ -256,6 +292,8 @@ export default function Maintenance() {
   const [editState, setEditState] = useState<EditState | null>(null);
   const [schedulingKey, setSchedulingKey] = useState<string | null>(null);
   const [schedulingProviderId, setSchedulingProviderId] = useState('none');
+  const [schedulingTime, setSchedulingTime] = useState('09:00');
+  const [schedulingReminder, setSchedulingReminder] = useState(30);
   const [seriesChoice, setSeriesChoice] = useState<'pending' | null>(null);
   const [pendingSaveData, setPendingSaveData] = useState<{
     event: MaintenanceEvent;
@@ -385,6 +423,8 @@ export default function Maintenance() {
   const openSchedule = (event: MaintenanceEvent) => {
     setSchedulingKey(`${event.enrichmentId}-${event.suggestionIndex}`);
     setSchedulingProviderId('none');
+    setSchedulingTime('09:00');
+    setSchedulingReminder(30);
   };
 
   const handleScheduleConfirm = async (event: MaintenanceEvent) => {
@@ -407,6 +447,9 @@ export default function Maintenance() {
       frequency: event.frequency ?? undefined,
       providerName: provider?.name,
       providerId: provider?.id,
+      startTime: schedulingTime,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      reminders: [schedulingReminder],
     });
 
     setSchedulingKey(null);
@@ -427,7 +470,11 @@ export default function Maintenance() {
         onScheduleOpen={() => openSchedule(e)}
         isScheduling={schedulingKey === key}
         schedulingProviderId={schedulingProviderId}
+        schedulingTime={schedulingTime}
+        schedulingReminder={schedulingReminder}
         onProviderChange={setSchedulingProviderId}
+        onTimeChange={setSchedulingTime}
+        onReminderChange={setSchedulingReminder}
         onScheduleConfirm={() => handleScheduleConfirm(e)}
         onScheduleCancel={() => setSchedulingKey(null)}
         isSchedulePending={scheduleMutation.isPending}

@@ -110,7 +110,7 @@ serve(async (req) => {
   }
 
   try {
-    const { summary, description, start_date, frequency } = await req.json();
+    const { summary, description, start_date, frequency, start_time, time_zone, reminders } = await req.json();
 
     // Validate required fields
     if (!summary || !start_date) {
@@ -137,17 +137,38 @@ serve(async (req) => {
     // Get access token
     const accessToken = await getAccessToken(serviceKey);
 
-    // Build event body — all-day event
+    // Build event body
     const eventBody: Record<string, any> = {
       summary,
       description: description || "",
-      start: { date: start_date },
-      end: { date: start_date },
     };
+
+    if (start_time && time_zone) {
+      // Timed event — 1 hour duration
+      const startDateTime = `${start_date}T${start_time}:00`;
+      const [hours, minutes] = start_time.split(":").map(Number);
+      const endHours = hours + 1;
+      const endTime = `${String(endHours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+      const endDateTime = `${start_date}T${endTime}:00`;
+      eventBody.start = { dateTime: startDateTime, timeZone: time_zone };
+      eventBody.end = { dateTime: endDateTime, timeZone: time_zone };
+    } else {
+      // All-day event
+      eventBody.start = { date: start_date };
+      eventBody.end = { date: start_date };
+    }
 
     // Add recurrence if frequency provided
     if (frequency && frequency.interval && frequency.unit) {
       eventBody.recurrence = [frequencyToRRule(frequency)];
+    }
+
+    // Add reminders if provided
+    if (reminders && Array.isArray(reminders) && reminders.length > 0) {
+      eventBody.reminders = {
+        useDefault: false,
+        overrides: reminders.map((minutes: number) => ({ method: "popup", minutes })),
+      };
     }
 
     // Create event via Google Calendar API

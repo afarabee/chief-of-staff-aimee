@@ -44,6 +44,8 @@ export function AssetSuggestionsSection({ enrichment, assetName, assetId }: Prop
   const [customUnit, setCustomUnit] = useState<StructuredFrequency['unit']>('months');
   const [schedulingIdx, setSchedulingIdx] = useState<number | null>(null);
   const [selectedProviderId, setSelectedProviderId] = useState<string>('none');
+  const [schedulingTime, setSchedulingTime] = useState('09:00');
+  const [schedulingReminder, setSchedulingReminder] = useState(30);
   const [editBundledItems, setEditBundledItems] = useState<string[]>([]);
 
   // Manual add form state
@@ -85,6 +87,8 @@ export function AssetSuggestionsSection({ enrichment, assetName, assetId }: Prop
     } else {
       setSelectedProviderId('none');
     }
+    setSchedulingTime('09:00');
+    setSchedulingReminder(30);
     setSchedulingIdx(idx);
   };
 
@@ -122,6 +126,9 @@ export function AssetSuggestionsSection({ enrichment, assetName, assetId }: Prop
         frequency: freq,
         providerName: provider?.name,
         providerId: provider?.id,
+        startTime: schedulingTime,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        reminders: [schedulingReminder],
       });
     } finally {
       setSchedulingIdx(null);
@@ -513,8 +520,30 @@ export function AssetSuggestionsSection({ enrichment, assetName, assetId }: Prop
                                 {p.name}
                               </SelectItem>
                             ))}
-                        </SelectContent>
+                      </SelectContent>
                       </Select>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-xs text-muted-foreground">Time</label>
+                          <Input type="time" value={schedulingTime} onChange={(e) => setSchedulingTime(e.target.value)} className="h-8" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs text-muted-foreground">Reminder</label>
+                          <Select value={String(schedulingReminder)} onValueChange={(v) => setSchedulingReminder(Number(v))}>
+                            <SelectTrigger className="h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0">At time of event</SelectItem>
+                              <SelectItem value="5">5 min before</SelectItem>
+                              <SelectItem value="15">15 min before</SelectItem>
+                              <SelectItem value="30">30 min before</SelectItem>
+                              <SelectItem value="60">1 hour before</SelectItem>
+                              <SelectItem value="1440">1 day before</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
                       <div className="flex gap-2">
                         <Button
                           size="sm"

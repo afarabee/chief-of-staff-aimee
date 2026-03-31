@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { CalendarIcon, Lightbulb, Loader2, Sparkles, Trash2 } from 'lucide-react';
 import { useEnrichAndSave } from '@/hooks/useEnrichAndSave';
+import { useTaskToCalendar } from '@/hooks/useTaskToCalendar';
 import { Task, TaskStatus, TaskPriority } from '@/types';
 import { useApp } from '@/contexts/AppContext';
 import { useCategories } from '@/hooks/useCategories';
@@ -23,6 +24,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { Switch } from '@/components/ui/switch';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,6 +59,15 @@ const priorityOptions: { value: TaskPriority; label: string }[] = [
   { value: 'urgent', label: 'Urgent' },
 ];
 
+const REMINDER_OPTIONS = [
+  { value: 0, label: 'At time of event' },
+  { value: 5, label: '5 minutes before' },
+  { value: 15, label: '15 minutes before' },
+  { value: 30, label: '30 minutes before' },
+  { value: 60, label: '1 hour before' },
+  { value: 1440, label: '1 day before' },
+];
+
 const statusBadgeColors: Record<string, string> = {
   backlog: 'bg-muted text-muted-foreground',
   'to-do': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
@@ -76,9 +87,13 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
   const [priority, setPriority] = useState<TaskPriority>(task?.priority || 'medium');
   const [categoryId, setCategoryId] = useState<string | null>(task?.categoryId || null);
   const [imageUrl, setImageUrl] = useState<string | null>(task?.imageUrl || null);
+  const [addToCalendar, setAddToCalendar] = useState(false);
+  const [calendarTime, setCalendarTime] = useState('09:00');
+  const [calendarReminder, setCalendarReminder] = useState(30);
   const { enrich, isEnriching } = useEnrichAndSave();
+  const calendarMutation = useTaskToCalendar();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
@@ -95,6 +110,19 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
         status, priority, categoryId, imageUrl,
       });
     }
+
+    if (addToCalendar && dueDate) {
+      const dateStr = format(dueDate, 'yyyy-MM-dd');
+      await calendarMutation.mutateAsync({
+        summary: title,
+        description: description || '',
+        startDate: dateStr,
+        startTime: calendarTime,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        reminders: [calendarReminder],
+      });
+    }
+
     onClose();
   };
 
@@ -220,6 +248,49 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
             </Select>
           </div>
         </div>
+
+        {dueDate && (
+          <div className="space-y-3 rounded-md border p-3">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="add-to-calendar" className="text-sm font-medium cursor-pointer">
+                Add to Google Calendar
+              </Label>
+              <Switch
+                id="add-to-calendar"
+                checked={addToCalendar}
+                onCheckedChange={setAddToCalendar}
+              />
+            </div>
+            {addToCalendar && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="cal-time" className="text-xs text-muted-foreground">Time</Label>
+                  <Input
+                    id="cal-time"
+                    type="time"
+                    value={calendarTime}
+                    onChange={(e) => setCalendarTime(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="cal-reminder" className="text-xs text-muted-foreground">Reminder</Label>
+                  <Select value={String(calendarReminder)} onValueChange={(v) => setCalendarReminder(Number(v))}>
+                    <SelectTrigger id="cal-reminder">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {REMINDER_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={String(opt.value)}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         <Button
           type="button"
