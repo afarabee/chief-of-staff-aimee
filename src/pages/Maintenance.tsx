@@ -256,6 +256,14 @@ export default function Maintenance() {
   const [editState, setEditState] = useState<EditState | null>(null);
   const [schedulingKey, setSchedulingKey] = useState<string | null>(null);
   const [schedulingProviderId, setSchedulingProviderId] = useState('none');
+  const [seriesChoice, setSeriesChoice] = useState<'pending' | null>(null);
+  const [pendingSaveData, setPendingSaveData] = useState<{
+    event: MaintenanceEvent;
+    name: string;
+    frequency: { interval: number; unit: string } | null;
+    dueDate: string;
+    providerName: string;
+  } | null>(null);
 
   const { overdue, upcoming, scheduled, completed } = useMemo(() => {
     const overdue: MaintenanceEvent[] = [];
