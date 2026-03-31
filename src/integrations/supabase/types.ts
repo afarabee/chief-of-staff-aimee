@@ -278,6 +278,30 @@ export type Database = {
           },
         ]
       }
+      cfo_bill_matches: {
+        Row: {
+          bill_id: string
+          created_at: string | null
+          id: string
+          month_key: string
+          transaction_id: string
+        }
+        Insert: {
+          bill_id: string
+          created_at?: string | null
+          id?: string
+          month_key: string
+          transaction_id: string
+        }
+        Update: {
+          bill_id?: string
+          created_at?: string | null
+          id?: string
+          month_key?: string
+          transaction_id?: string
+        }
+        Relationships: []
+      }
       cfo_bills: {
         Row: {
           account_id: string | null
@@ -346,6 +370,140 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      cfo_budget_targets: {
+        Row: {
+          category: string
+          created_at: string | null
+          id: string
+          monthly_target: number
+          notes: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          id?: string
+          monthly_target: number
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          id?: string
+          monthly_target?: number
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      cfo_custom_categories: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      cfo_investment_snapshots: {
+        Row: {
+          account_id: string | null
+          avg_cost_basis: number | null
+          cost_basis_total: number | null
+          created_at: string | null
+          current_value: number
+          description: string
+          id: string
+          last_price: number | null
+          pct_of_account: number | null
+          position_type: string | null
+          quantity: number | null
+          snapshot_date: string
+          symbol: string
+          total_gain_loss: number | null
+          total_gain_loss_pct: number | null
+          upload_batch: string
+        }
+        Insert: {
+          account_id?: string | null
+          avg_cost_basis?: number | null
+          cost_basis_total?: number | null
+          created_at?: string | null
+          current_value: number
+          description: string
+          id?: string
+          last_price?: number | null
+          pct_of_account?: number | null
+          position_type?: string | null
+          quantity?: number | null
+          snapshot_date: string
+          symbol: string
+          total_gain_loss?: number | null
+          total_gain_loss_pct?: number | null
+          upload_batch: string
+        }
+        Update: {
+          account_id?: string | null
+          avg_cost_basis?: number | null
+          cost_basis_total?: number | null
+          created_at?: string | null
+          current_value?: number
+          description?: string
+          id?: string
+          last_price?: number | null
+          pct_of_account?: number | null
+          position_type?: string | null
+          quantity?: number | null
+          snapshot_date?: string
+          symbol?: string
+          total_gain_loss?: number | null
+          total_gain_loss_pct?: number | null
+          upload_batch?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cfo_investment_snapshots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "cfo_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cfo_merchant_notes: {
+        Row: {
+          created_at: string | null
+          id: string
+          merchant_name: string
+          notes: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          merchant_name: string
+          notes?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          merchant_name?: string
+          notes?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       cfo_pay_periods: {
         Row: {
@@ -435,6 +593,129 @@ export type Database = {
           },
         ]
       }
+      cfo_savings_config: {
+        Row: {
+          created_at: string | null
+          goal_name: string
+          goal_target: number
+          id: string
+          start_date: string
+          starting_balance: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          goal_name?: string
+          goal_target?: number
+          id?: string
+          start_date?: string
+          starting_balance?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          goal_name?: string
+          goal_target?: number
+          id?: string
+          start_date?: string
+          starting_balance?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      cfo_tax_documents: {
+        Row: {
+          created_at: string | null
+          document_name: string
+          document_type: string
+          id: string
+          notes: string | null
+          received: boolean | null
+          received_date: string | null
+          source: string
+          tax_year: number
+        }
+        Insert: {
+          created_at?: string | null
+          document_name: string
+          document_type: string
+          id?: string
+          notes?: string | null
+          received?: boolean | null
+          received_date?: string | null
+          source: string
+          tax_year: number
+        }
+        Update: {
+          created_at?: string | null
+          document_name?: string
+          document_type?: string
+          id?: string
+          notes?: string | null
+          received?: boolean | null
+          received_date?: string | null
+          source?: string
+          tax_year?: number
+        }
+        Relationships: []
+      }
+      cfo_tax_tags: {
+        Row: {
+          created_at: string | null
+          id: string
+          notes: string | null
+          tax_category: string
+          tax_year: number
+          transaction_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          tax_category: string
+          tax_year: number
+          transaction_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          tax_category?: string
+          tax_year?: number
+          transaction_id?: string
+        }
+        Relationships: []
+      }
+      cfo_tax_withholdings: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          notes: string | null
+          period: string
+          source: string
+          tax_year: number
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          period: string
+          source: string
+          tax_year: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          period?: string
+          source?: string
+          tax_year?: number
+        }
+        Relationships: []
+      }
       cfo_transactions: {
         Row: {
           account_id: string | null
@@ -444,6 +725,7 @@ export type Database = {
           created_at: string | null
           description: string
           id: string
+          notes: string | null
           transaction_date: string
           upload_batch: string
         }
@@ -455,6 +737,7 @@ export type Database = {
           created_at?: string | null
           description: string
           id?: string
+          notes?: string | null
           transaction_date: string
           upload_batch: string
         }
@@ -466,6 +749,7 @@ export type Database = {
           created_at?: string | null
           description?: string
           id?: string
+          notes?: string | null
           transaction_date?: string
           upload_batch?: string
         }
@@ -478,6 +762,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      cfo_watchout_acks: {
+        Row: {
+          created_at: string | null
+          id: string
+          month_key: string
+          status: string
+          watchout_key: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          month_key: string
+          status?: string
+          watchout_key: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          month_key?: string
+          status?: string
+          watchout_key?: string
+        }
+        Relationships: []
       }
       command_center_config: {
         Row: {

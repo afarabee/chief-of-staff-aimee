@@ -256,6 +256,14 @@ export default function Maintenance() {
   const [editState, setEditState] = useState<EditState | null>(null);
   const [schedulingKey, setSchedulingKey] = useState<string | null>(null);
   const [schedulingProviderId, setSchedulingProviderId] = useState('none');
+  const [seriesChoice, setSeriesChoice] = useState<'pending' | null>(null);
+  const [pendingSaveData, setPendingSaveData] = useState<{
+    event: MaintenanceEvent;
+    name: string;
+    frequency: { interval: number; unit: string } | null;
+    dueDate: string;
+    providerName: string;
+  } | null>(null);
 
   const { overdue, upcoming, scheduled, completed } = useMemo(() => {
     const overdue: MaintenanceEvent[] = [];
@@ -307,38 +315,71 @@ export default function Maintenance() {
       frequency = FREQUENCY_PRESETS[parseInt(frequencyKey)]?.value ?? null;
     }
 
+    const originalDueDate = event.nextDueDate || event.recommendedDueDate || '';
+    const isRecurring = frequencyKey !== 'none';
+    const dateChanged = dueDate !== originalDueDate;
+
+    if (isRecurring && dateChanged) {
+      setPendingSaveData({ event, name, frequency, dueDate, providerName });
+      setSeriesChoice('pending');
+      return;
+    }
+
+    executeSave({ event, name, frequency, dueDate, providerName, mode: 'all' });
+  };
+
+  const executeSave = ({ event, name, frequency, dueDate, providerName, mode }: {
+    event: MaintenanceEvent;
+    name: string;
+    frequency: { interval: number; unit: string } | null;
+    dueDate: string;
+    providerName: string;
+    mode: 'single' | 'all';
+  }) => {
     if (event.taskId) {
-      // Update a tasks-table item
       const unitMap: Record<string, string> = { days: 'd', weeks: 'w', months: 'm', years: 'y' };
-      const recurrenceRule = frequency ? `${frequency.interval}${unitMap[frequency.unit] || 'm'}` : null;
+      const updates: Record<string, any> = { next_due_date: dueDate || null };
+      if (mode === 'all') {
+        updates.name = name.trim();
+        updates.recurrence_rule = frequency ? `${frequency.interval}${unitMap[frequency.unit] || 'm'}` : null;
+      }
       updateDirectTask.mutate(
-        {
-          taskId: event.taskId,
-          updates: {
-            name: name.trim(),
-            next_due_date: dueDate || null,
-            recurrence_rule: recurrenceRule,
-          },
-        },
-        { onSuccess: () => setEditState(null) }
+        { taskId: event.taskId, updates },
+        { onSuccess: () => { setEditState(null); setSeriesChoice(null); setPendingSaveData(null); } }
       );
     } else {
-      // Update an ai_enrichments suggestion
-      updateMutation.mutate(
-        {
-          enrichmentId: event.enrichmentId,
-          suggestionIndex: event.suggestionIndex,
-          calendarEventId: event.calendarEventId,
-          updates: {
-            suggestion: name.trim(),
-            frequency,
-            recommended_due_date: dueDate || null,
-            provider_name: providerName.trim() || null,
+      if (mode === 'single') {
+        updateMutation.mutate(
+          {
+            enrichmentId: event.enrichmentId,
+            suggestionIndex: event.suggestionIndex,
+            calendarEventId: event.calendarEventId,
+            updates: { recommended_due_date: dueDate || null },
           },
-        },
-        { onSuccess: () => setEditState(null) }
-      );
+          { onSuccess: () => { setEditState(null); setSeriesChoice(null); setPendingSaveData(null); } }
+        );
+      } else {
+        updateMutation.mutate(
+          {
+            enrichmentId: event.enrichmentId,
+            suggestionIndex: event.suggestionIndex,
+            calendarEventId: event.calendarEventId,
+            updates: {
+              suggestion: name.trim(),
+              frequency,
+              recommended_due_date: dueDate || null,
+              provider_name: providerName.trim() || null,
+            },
+          },
+          { onSuccess: () => { setEditState(null); setSeriesChoice(null); setPendingSaveData(null); } }
+        );
+      }
     }
+  };
+
+  const handleSeriesConfirm = (choice: 'single' | 'all') => {
+    if (!pendingSaveData) return;
+    executeSave({ ...pendingSaveData, mode: choice });
   };
 
   const openSchedule = (event: MaintenanceEvent) => {
@@ -563,6 +604,27 @@ export default function Maintenance() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Series choice AlertDialog */}
+        <AlertDialog open={seriesChoice === 'pending'} onOpenChange={(open) => { if (!open) { setSeriesChoice(null); setPendingSaveData(null); } }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Update recurring task</AlertDialogTitle>
+              <AlertDialogDescription>
+                Do you want to change just this occurrence, or all future occurrences?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <Button variant="outline" onClick={() => handleSeriesConfirm('single')}>
+                Just this one
+              </Button>
+              <Button onClick={() => handleSeriesConfirm('all')}>
+                All future tasks
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </TooltipProvider>
   );
