@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckSquare, Lightbulb } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
