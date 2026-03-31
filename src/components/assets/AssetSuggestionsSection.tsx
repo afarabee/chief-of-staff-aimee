@@ -44,6 +44,8 @@ export function AssetSuggestionsSection({ enrichment, assetName, assetId }: Prop
   const [customUnit, setCustomUnit] = useState<StructuredFrequency['unit']>('months');
   const [schedulingIdx, setSchedulingIdx] = useState<number | null>(null);
   const [selectedProviderId, setSelectedProviderId] = useState<string>('none');
+  const [schedulingTime, setSchedulingTime] = useState('09:00');
+  const [schedulingReminder, setSchedulingReminder] = useState(30);
   const [editBundledItems, setEditBundledItems] = useState<string[]>([]);
 
   // Manual add form state
