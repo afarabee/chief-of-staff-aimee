@@ -87,6 +87,8 @@ export function AssetSuggestionsSection({ enrichment, assetName, assetId }: Prop
     } else {
       setSelectedProviderId('none');
     }
+    setSchedulingTime('09:00');
+    setSchedulingReminder(30);
     setSchedulingIdx(idx);
   };
 
