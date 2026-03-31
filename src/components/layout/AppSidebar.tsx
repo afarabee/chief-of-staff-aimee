@@ -41,9 +41,12 @@ export function AppSidebar() {
 
   const handleCfoClick = () => {
     openExternalUrl('https://cfo-for-aimee.lovable.app');
-    if (isMobile) {
-      setOpenMobile(false);
-    }
+    if (isMobile) setOpenMobile(false);
+  };
+
+  const handleWorkoutClick = () => {
+    openExternalUrl('https://repsheet.ai-with-aims.studio/');
+    if (isMobile) setOpenMobile(false);
   };
 
   return (
