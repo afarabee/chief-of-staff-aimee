@@ -315,43 +315,71 @@ export default function Maintenance() {
       frequency = FREQUENCY_PRESETS[parseInt(frequencyKey)]?.value ?? null;
     }
 
+    const originalDueDate = event.nextDueDate || event.recommendedDueDate || '';
+    const isRecurring = frequencyKey !== 'none';
+    const dateChanged = dueDate !== originalDueDate;
+
+    if (isRecurring && dateChanged) {
+      setPendingSaveData({ event, name, frequency, dueDate, providerName });
+      setSeriesChoice('pending');
+      return;
+    }
+
+    executeSave({ event, name, frequency, dueDate, providerName, mode: 'all' });
+  };
+
+  const executeSave = ({ event, name, frequency, dueDate, providerName, mode }: {
+    event: MaintenanceEvent;
+    name: string;
+    frequency: { interval: number; unit: string } | null;
+    dueDate: string;
+    providerName: string;
+    mode: 'single' | 'all';
+  }) => {
     if (event.taskId) {
-      // Update a tasks-table item
       const unitMap: Record<string, string> = { days: 'd', weeks: 'w', months: 'm', years: 'y' };
-      const recurrenceRule = frequency ? `${frequency.interval}${unitMap[frequency.unit] || 'm'}` : null;
+      const updates: Record<string, any> = { next_due_date: dueDate || null };
+      if (mode === 'all') {
+        updates.name = name.trim();
+        updates.recurrence_rule = frequency ? `${frequency.interval}${unitMap[frequency.unit] || 'm'}` : null;
+      }
       updateDirectTask.mutate(
-        {
-          taskId: event.taskId,
-          updates: {
-            name: name.trim(),
-            next_due_date: dueDate || null,
-            recurrence_rule: recurrenceRule,
-          },
-        },
-        { onSuccess: () => setEditState(null) }
+        { taskId: event.taskId, updates },
+        { onSuccess: () => { setEditState(null); setSeriesChoice(null); setPendingSaveData(null); } }
       );
     } else {
-      // Update an ai_enrichments suggestion
-      updateMutation.mutate(
-        {
-          enrichmentId: event.enrichmentId,
-          suggestionIndex: event.suggestionIndex,
-          calendarEventId: event.calendarEventId,
-          updates: {
-            suggestion: name.trim(),
-            frequency,
-            recommended_due_date: dueDate || null,
-            provider_name: providerName.trim() || null,
+      if (mode === 'single') {
+        updateMutation.mutate(
+          {
+            enrichmentId: event.enrichmentId,
+            suggestionIndex: event.suggestionIndex,
+            calendarEventId: event.calendarEventId,
+            updates: { recommended_due_date: dueDate || null },
           },
-        },
-        { onSuccess: () => setEditState(null) }
-      );
+          { onSuccess: () => { setEditState(null); setSeriesChoice(null); setPendingSaveData(null); } }
+        );
+      } else {
+        updateMutation.mutate(
+          {
+            enrichmentId: event.enrichmentId,
+            suggestionIndex: event.suggestionIndex,
+            calendarEventId: event.calendarEventId,
+            updates: {
+              suggestion: name.trim(),
+              frequency,
+              recommended_due_date: dueDate || null,
+              provider_name: providerName.trim() || null,
+            },
+          },
+          { onSuccess: () => { setEditState(null); setSeriesChoice(null); setPendingSaveData(null); } }
+        );
+      }
     }
   };
 
-  const openSchedule = (event: MaintenanceEvent) => {
-    setSchedulingKey(`${event.enrichmentId}-${event.suggestionIndex}`);
-    setSchedulingProviderId('none');
+  const handleSeriesConfirm = (choice: 'single' | 'all') => {
+    if (!pendingSaveData) return;
+    executeSave({ ...pendingSaveData, mode: choice });
   };
 
   const handleScheduleConfirm = async (event: MaintenanceEvent) => {
