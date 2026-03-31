@@ -227,6 +227,25 @@ function MaintenanceEventCard({
                 ))}
               </SelectContent>
             </Select>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Time</label>
+                <Input type="time" value={schedulingTime} onChange={(e) => onTimeChange(e.target.value)} className="h-8" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Reminder</label>
+                <Select value={String(schedulingReminder)} onValueChange={(v) => onReminderChange(Number(v))}>
+                  <SelectTrigger className="h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REMINDER_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={String(opt.value)}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             <div className="flex gap-2">
               <Button
                 size="sm"
