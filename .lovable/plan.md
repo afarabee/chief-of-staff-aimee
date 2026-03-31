@@ -1,40 +1,23 @@
 
 
-# Add Timed Events + Reminders to Google Calendar (Tasks & Maintenance)
+# Fix: Show Google Calendar Option on All Tasks
 
-## Overview
-Upgraded calendar event creation to support specific times and reminders for both COS tasks and maintenance tasks.
+## Problem
+The "Add to Google Calendar" section is conditionally rendered only when `dueDate` is set. Most tasks don't have a due date, so the calendar option is hidden.
 
-## What changed
+## Solution
+Always show the "Add to Google Calendar" toggle in the TaskForm. When the user enables it without a due date set, auto-require them to pick a date (or show a hint). The simplest approach: always render the calendar section, but disable the toggle with a hint if no due date is selected.
 
-### Edge Function (`create-calendar-event`)
-- Accepts optional `start_time` (HH:mm), `time_zone`, and `reminders` (array of minutes)
-- When `start_time` provided: creates timed 1-hour event using `dateTime` instead of all-day `date`
-- When `reminders` provided: sets custom popup reminders on the event
-- Backward compatible — omitting these fields keeps all-day behavior
+## Change
 
-### COS Tasks (`TaskForm.tsx`)
-- "Add to Google Calendar" toggle appears when a due date is set
-- Time picker (defaults to 09:00) and reminder dropdown (6 presets matching Google Calendar)
-- On submit, creates calendar event after saving the task
+### `src/components/tasks/TaskForm.tsx`
+- Remove the `{dueDate && (...)}` conditional wrapper around the calendar section (line 252)
+- Always show the section, but when no due date is set:
+  - Show the toggle as disabled with helper text like "Set a due date to enable"
+- When toggling on without a due date, it stays disabled with the message
+- When a due date is cleared while `addToCalendar` is true, auto-turn off the toggle
 
-### Maintenance Tasks (`Maintenance.tsx`)
-- Schedule-to-calendar flow now includes time picker and reminder dropdown
-- Passes `start_time`, `time_zone`, `reminders` to the edge function
+| File | Change |
+|------|--------|
+| `src/components/tasks/TaskForm.tsx` | Always show calendar section; disable toggle when no due date |
 
-### Asset Suggestions (`AssetSuggestionsSection.tsx`)
-- Same time/reminder inputs added to the scheduling confirmation UI
-
-### Hooks
-- New `useTaskToCalendar.ts` hook for COS task → calendar
-- Updated `useScheduleToCalendar.ts` to accept optional `startTime`, `timeZone`, `reminders`
-
-## Reminder options
-| Label | Minutes |
-|-------|---------|
-| At time of event | 0 |
-| 5 minutes before | 5 |
-| 15 minutes before | 15 |
-| 30 minutes before | 30 |
-| 1 hour before | 60 |
-| 1 day before | 1440 |
