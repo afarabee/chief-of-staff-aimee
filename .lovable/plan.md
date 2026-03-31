@@ -1,40 +1,40 @@
 
 
-# "This instance or all?" prompt for recurring maintenance edits
+# Add Timed Events + Reminders to Google Calendar (Tasks & Maintenance)
 
-## How it works
+## Overview
+Upgraded calendar event creation to support specific times and reminders for both COS tasks and maintenance tasks.
 
-When editing a recurring maintenance task and the user changes the **next due date**, clicking Save shows an AlertDialog asking:
+## What changed
 
-- **"Just this one"** — Updates only the next due date, leaves the recurrence rule unchanged
-- **"All future tasks"** — Updates both the due date AND recalculates the series (updates the recurrence rule if frequency also changed)
+### Edge Function (`create-calendar-event`)
+- Accepts optional `start_time` (HH:mm), `time_zone`, and `reminders` (array of minutes)
+- When `start_time` provided: creates timed 1-hour event using `dateTime` instead of all-day `date`
+- When `reminders` provided: sets custom popup reminders on the event
+- Backward compatible — omitting these fields keeps all-day behavior
 
-If the task has no recurrence (frequency is "none"), or the due date wasn't changed, no prompt appears — it saves directly as today.
+### COS Tasks (`TaskForm.tsx`)
+- "Add to Google Calendar" toggle appears when a due date is set
+- Time picker (defaults to 09:00) and reminder dropdown (6 presets matching Google Calendar)
+- On submit, creates calendar event after saving the task
 
-## Changes
+### Maintenance Tasks (`Maintenance.tsx`)
+- Schedule-to-calendar flow now includes time picker and reminder dropdown
+- Passes `start_time`, `time_zone`, `reminders` to the edge function
 
-### `src/pages/Maintenance.tsx`
+### Asset Suggestions (`AssetSuggestionsSection.tsx`)
+- Same time/reminder inputs added to the scheduling confirmation UI
 
-**New state**: Add `seriesChoice` state (`null | 'pending'`) to track whether the series prompt is showing.
+### Hooks
+- New `useTaskToCalendar.ts` hook for COS task → calendar
+- Updated `useScheduleToCalendar.ts` to accept optional `startTime`, `timeZone`, `reminders`
 
-**Edit dialog save flow**:
-1. In `handleSave`, before executing the mutation, check if:
-   - The task has a recurrence (frequencyKey !== 'none')
-   - AND the due date was changed from the original
-2. If both true, set `seriesChoice = 'pending'` to show the AlertDialog instead of saving immediately
-3. Add `handleSeriesConfirm(choice: 'single' | 'all')`:
-   - **'single'**: Call the mutation with the new due date but preserve the original frequency/recurrence rule unchanged. For ai_enrichments, only update `recommended_due_date`. For tasks-table items, only update `next_due_date`.
-   - **'all'**: Call the mutation with all changes (due date + frequency + name + provider), same as current behavior.
-4. Close the series dialog and edit dialog on success.
-
-**New AlertDialog** (after the edit Dialog):
-- Title: "Update recurring task"
-- Description: "Do you want to change just this occurrence, or all future occurrences?"
-- Two action buttons: "Just this one" and "All future tasks"
-- Cancel button to go back to editing
-
-### Files
-| File | Change |
-|------|--------|
-| `src/pages/Maintenance.tsx` | Add series choice AlertDialog in save flow |
-
+## Reminder options
+| Label | Minutes |
+|-------|---------|
+| At time of event | 0 |
+| 5 minutes before | 5 |
+| 15 minutes before | 15 |
+| 30 minutes before | 30 |
+| 1 hour before | 60 |
+| 1 day before | 1440 |
