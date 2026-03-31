@@ -87,7 +87,11 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
   const [priority, setPriority] = useState<TaskPriority>(task?.priority || 'medium');
   const [categoryId, setCategoryId] = useState<string | null>(task?.categoryId || null);
   const [imageUrl, setImageUrl] = useState<string | null>(task?.imageUrl || null);
+  const [addToCalendar, setAddToCalendar] = useState(false);
+  const [calendarTime, setCalendarTime] = useState('09:00');
+  const [calendarReminder, setCalendarReminder] = useState(30);
   const { enrich, isEnriching } = useEnrichAndSave();
+  const calendarMutation = useTaskToCalendar();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
