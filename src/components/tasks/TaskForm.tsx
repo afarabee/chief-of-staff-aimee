@@ -59,6 +59,15 @@ const priorityOptions: { value: TaskPriority; label: string }[] = [
   { value: 'urgent', label: 'Urgent' },
 ];
 
+const REMINDER_OPTIONS = [
+  { value: 0, label: 'At time of event' },
+  { value: 5, label: '5 minutes before' },
+  { value: 15, label: '15 minutes before' },
+  { value: 30, label: '30 minutes before' },
+  { value: 60, label: '1 hour before' },
+  { value: 1440, label: '1 day before' },
+];
+
 const statusBadgeColors: Record<string, string> = {
   backlog: 'bg-muted text-muted-foreground',
   'to-do': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
