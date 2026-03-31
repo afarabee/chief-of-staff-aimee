@@ -11,6 +11,9 @@ interface ScheduleParams {
   frequency?: { interval: number; unit: string };
   providerName?: string;
   providerId?: string;
+  startTime?: string;
+  timeZone?: string;
+  reminders?: number[];
 }
 
 export function useScheduleToCalendar() {
