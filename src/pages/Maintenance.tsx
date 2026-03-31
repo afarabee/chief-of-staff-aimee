@@ -470,7 +470,11 @@ export default function Maintenance() {
         onScheduleOpen={() => openSchedule(e)}
         isScheduling={schedulingKey === key}
         schedulingProviderId={schedulingProviderId}
+        schedulingTime={schedulingTime}
+        schedulingReminder={schedulingReminder}
         onProviderChange={setSchedulingProviderId}
+        onTimeChange={setSchedulingTime}
+        onReminderChange={setSchedulingReminder}
         onScheduleConfirm={() => handleScheduleConfirm(e)}
         onScheduleCancel={() => setSchedulingKey(null)}
         isSchedulePending={scheduleMutation.isPending}
