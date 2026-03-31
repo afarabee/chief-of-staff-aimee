@@ -53,7 +53,7 @@ export function useCreateCategory() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
-      toast({ title: 'Category created', description: 'Your category has been saved.' });
+      toast({ title: 'Category created' });
     },
     onError: (error) => {
       console.error('Failed to create category:', error);
@@ -86,7 +86,7 @@ export function useUpdateCategory() {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['ideas'] });
-      toast({ title: 'Category updated', description: 'The category has been updated.' });
+      toast({ title: 'Category updated' });
     },
     onError: (error) => {
       console.error('Failed to update category:', error);
@@ -116,7 +116,7 @@ export function useDeleteCategory() {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['ideas'] });
-      toast({ title: 'Category deleted', description: 'The category has been removed.' });
+      toast({ title: 'Category deleted' });
     },
     onError: (error) => {
       console.error('Failed to delete category:', error);

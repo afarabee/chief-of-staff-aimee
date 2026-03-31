@@ -44,9 +44,12 @@ export function useCreateProvider() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (created) => {
       qc.invalidateQueries({ queryKey: ['providers'] });
-      toast({ title: 'Provider added' });
+      toast({
+        title: 'Provider added',
+        onClick: () => { window.location.href = `/providers?edit=${created.id}`; },
+      });
     },
     onError: (e: Error) => {
       toast({ title: 'Error', description: e.message, variant: 'destructive' });

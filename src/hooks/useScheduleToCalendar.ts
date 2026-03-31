@@ -79,8 +79,11 @@ export function useScheduleToCalendar() {
 
       return data;
     },
-    onSuccess: () => {
-      toast({ title: 'Scheduled to Google Calendar!' });
+    onSuccess: (data) => {
+      toast({
+        title: 'Scheduled to Google Calendar!',
+        onClick: data?.htmlLink ? () => { window.open(data.htmlLink, '_blank', 'noopener,noreferrer'); } : undefined,
+      });
       queryClient.invalidateQueries({ queryKey: ['ai-enrichment-for-asset'] });
       queryClient.invalidateQueries({ queryKey: ['ai-enrichments'] });
       queryClient.invalidateQueries({ queryKey: ['all-maintenance-events'] });
