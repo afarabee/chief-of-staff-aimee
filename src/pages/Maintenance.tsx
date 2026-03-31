@@ -292,6 +292,8 @@ export default function Maintenance() {
   const [editState, setEditState] = useState<EditState | null>(null);
   const [schedulingKey, setSchedulingKey] = useState<string | null>(null);
   const [schedulingProviderId, setSchedulingProviderId] = useState('none');
+  const [schedulingTime, setSchedulingTime] = useState('09:00');
+  const [schedulingReminder, setSchedulingReminder] = useState(30);
   const [seriesChoice, setSeriesChoice] = useState<'pending' | null>(null);
   const [pendingSaveData, setPendingSaveData] = useState<{
     event: MaintenanceEvent;
