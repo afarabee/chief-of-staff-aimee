@@ -93,7 +93,7 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
   const { enrich, isEnriching } = useEnrichAndSave();
   const calendarMutation = useTaskToCalendar();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
@@ -110,6 +110,19 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
         status, priority, categoryId, imageUrl,
       });
     }
+
+    if (addToCalendar && dueDate) {
+      const dateStr = format(dueDate, 'yyyy-MM-dd');
+      await calendarMutation.mutateAsync({
+        summary: title,
+        description: description || '',
+        startDate: dateStr,
+        startTime: calendarTime,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        reminders: [calendarReminder],
+      });
+    }
+
     onClose();
   };
 
