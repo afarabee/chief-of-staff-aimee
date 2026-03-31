@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { CalendarIcon, Lightbulb, Loader2, Sparkles, Trash2 } from 'lucide-react';
 import { useEnrichAndSave } from '@/hooks/useEnrichAndSave';
+import { useTaskToCalendar } from '@/hooks/useTaskToCalendar';
 import { Task, TaskStatus, TaskPriority } from '@/types';
 import { useApp } from '@/contexts/AppContext';
 import { useCategories } from '@/hooks/useCategories';
