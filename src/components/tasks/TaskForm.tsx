@@ -249,6 +249,49 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
           </div>
         </div>
 
+        {dueDate && (
+          <div className="space-y-3 rounded-md border p-3">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="add-to-calendar" className="text-sm font-medium cursor-pointer">
+                Add to Google Calendar
+              </Label>
+              <Switch
+                id="add-to-calendar"
+                checked={addToCalendar}
+                onCheckedChange={setAddToCalendar}
+              />
+            </div>
+            {addToCalendar && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="cal-time" className="text-xs text-muted-foreground">Time</Label>
+                  <Input
+                    id="cal-time"
+                    type="time"
+                    value={calendarTime}
+                    onChange={(e) => setCalendarTime(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="cal-reminder" className="text-xs text-muted-foreground">Reminder</Label>
+                  <Select value={String(calendarReminder)} onValueChange={(v) => setCalendarReminder(Number(v))}>
+                    <SelectTrigger id="cal-reminder">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {REMINDER_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={String(opt.value)}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <Button
           type="button"
           variant="outline"
