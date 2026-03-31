@@ -77,6 +77,15 @@ interface CardProps {
   allProviders: { id: string; name: string }[];
 }
 
+const REMINDER_OPTIONS = [
+  { value: 0, label: 'At time of event' },
+  { value: 5, label: '5 min before' },
+  { value: 15, label: '15 min before' },
+  { value: 30, label: '30 min before' },
+  { value: 60, label: '1 hour before' },
+  { value: 1440, label: '1 day before' },
+];
+
 function MaintenanceEventCard({
   event,
   onComplete,
@@ -85,7 +94,11 @@ function MaintenanceEventCard({
   onScheduleOpen,
   isScheduling,
   schedulingProviderId,
+  schedulingTime,
+  schedulingReminder,
   onProviderChange,
+  onTimeChange,
+  onReminderChange,
   onScheduleConfirm,
   onScheduleCancel,
   isSchedulePending,
