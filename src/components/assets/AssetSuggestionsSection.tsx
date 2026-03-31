@@ -126,6 +126,9 @@ export function AssetSuggestionsSection({ enrichment, assetName, assetId }: Prop
         frequency: freq,
         providerName: provider?.name,
         providerId: provider?.id,
+        startTime: schedulingTime,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        reminders: [schedulingReminder],
       });
     } finally {
       setSchedulingIdx(null);
