@@ -189,7 +189,7 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
                 <Calendar
                   mode="single"
                   selected={dueDate}
-                  onSelect={setDueDate}
+                  onSelect={handleSetDueDate}
                   initialFocus
                   className="p-3 pointer-events-auto"
                 />
