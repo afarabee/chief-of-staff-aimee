@@ -93,6 +93,12 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
   const { enrich, isEnriching } = useEnrichAndSave();
   const calendarMutation = useTaskToCalendar();
 
+  // Auto-disable calendar toggle when due date is cleared
+  const handleSetDueDate = (date: Date | undefined) => {
+    setDueDate(date);
+    if (!date) setAddToCalendar(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
