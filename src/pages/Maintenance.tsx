@@ -447,6 +447,9 @@ export default function Maintenance() {
       frequency: event.frequency ?? undefined,
       providerName: provider?.name,
       providerId: provider?.id,
+      startTime: schedulingTime,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      reminders: [schedulingReminder],
     });
 
     setSchedulingKey(null);
