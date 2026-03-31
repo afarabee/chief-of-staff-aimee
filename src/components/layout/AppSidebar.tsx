@@ -106,6 +106,15 @@ export function AppSidebar() {
                   </span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton tooltip="Workout Tracker" onClick={handleWorkoutClick}>
+                  <Dumbbell className="h-4 w-4" />
+                  <span className="flex items-center gap-2">
+                    Workout Tracker
+                    <ExternalLink className="h-3 w-3 opacity-60" />
+                  </span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
