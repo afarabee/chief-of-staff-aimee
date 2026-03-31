@@ -382,6 +382,11 @@ export default function Maintenance() {
     executeSave({ ...pendingSaveData, mode: choice });
   };
 
+  const openSchedule = (event: MaintenanceEvent) => {
+    setSchedulingKey(`${event.enrichmentId}-${event.suggestionIndex}`);
+    setSchedulingProviderId('none');
+  };
+
   const handleScheduleConfirm = async (event: MaintenanceEvent) => {
     const provider = schedulingProviderId !== 'none'
       ? allProviders.find((p) => p.id === schedulingProviderId)
