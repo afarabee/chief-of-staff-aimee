@@ -21,7 +21,7 @@ export function useScheduleToCalendar() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ enrichmentId, suggestionIndex, summary, description, startDate, frequency, providerName, providerId }: ScheduleParams) => {
+    mutationFn: async ({ enrichmentId, suggestionIndex, summary, description, startDate, frequency, providerName, providerId, startTime, timeZone, reminders }: ScheduleParams) => {
       // Call the Edge Function
       const { data, error } = await supabase.functions.invoke('create-calendar-event', {
         body: {
@@ -29,6 +29,8 @@ export function useScheduleToCalendar() {
           description,
           start_date: startDate,
           frequency,
+          ...(startTime ? { start_time: startTime, time_zone: timeZone } : {}),
+          ...(reminders && reminders.length > 0 ? { reminders } : {}),
         },
       });
 
