@@ -604,6 +604,27 @@ export default function Maintenance() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Series choice AlertDialog */}
+        <AlertDialog open={seriesChoice === 'pending'} onOpenChange={(open) => { if (!open) { setSeriesChoice(null); setPendingSaveData(null); } }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Update recurring task</AlertDialogTitle>
+              <AlertDialogDescription>
+                Do you want to change just this occurrence, or all future occurrences?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <Button variant="outline" onClick={() => handleSeriesConfirm('single')}>
+                Just this one
+              </Button>
+              <Button onClick={() => handleSeriesConfirm('all')}>
+                All future tasks
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </TooltipProvider>
   );
