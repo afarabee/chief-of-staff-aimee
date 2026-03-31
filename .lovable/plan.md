@@ -1,40 +1,64 @@
 
 
-# "This instance or all?" prompt for recurring maintenance edits
+# Add Timed Events + Reminders to Google Calendar (Tasks & Maintenance)
 
-## How it works
-
-When editing a recurring maintenance task and the user changes the **next due date**, clicking Save shows an AlertDialog asking:
-
-- **"Just this one"** — Updates only the next due date, leaves the recurrence rule unchanged
-- **"All future tasks"** — Updates both the due date AND recalculates the series (updates the recurrence rule if frequency also changed)
-
-If the task has no recurrence (frequency is "none"), or the due date wasn't changed, no prompt appears — it saves directly as today.
+## Overview
+Upgrade calendar event creation to support specific times and reminders, for both COS tasks (TaskForm) and maintenance tasks (Maintenance page + AssetSuggestionsSection).
 
 ## Changes
 
-### `src/pages/Maintenance.tsx`
+### 1. `supabase/functions/create-calendar-event/index.ts`
+- Accept optional `start_time` (HH:mm) and `reminders` (array of minutes, e.g. `[30]`) and `time_zone` (string)
+- When `start_time` provided: use `dateTime` format with 1-hour duration instead of all-day `date` format
+- When `reminders` provided: set `reminders: { useDefault: false, overrides: [{ method: 'popup', minutes }] }`
+- When neither provided, keep current all-day behavior (backward compatible)
 
-**New state**: Add `seriesChoice` state (`null | 'pending'`) to track whether the series prompt is showing.
+### 2. `src/hooks/useTaskToCalendar.ts` (new)
+- Mutation hook calling `create-calendar-event` with summary, description, start_date, start_time, time_zone, reminders
+- Returns `{ mutateAsync, isPending }`
+- Shows toast with calendar link on success
 
-**Edit dialog save flow**:
-1. In `handleSave`, before executing the mutation, check if:
-   - The task has a recurrence (frequencyKey !== 'none')
-   - AND the due date was changed from the original
-2. If both true, set `seriesChoice = 'pending'` to show the AlertDialog instead of saving immediately
-3. Add `handleSeriesConfirm(choice: 'single' | 'all')`:
-   - **'single'**: Call the mutation with the new due date but preserve the original frequency/recurrence rule unchanged. For ai_enrichments, only update `recommended_due_date`. For tasks-table items, only update `next_due_date`.
-   - **'all'**: Call the mutation with all changes (due date + frequency + name + provider), same as current behavior.
-4. Close the series dialog and edit dialog on success.
+### 3. `src/components/tasks/TaskForm.tsx`
+- Add states: `addToCalendar`, `calendarTime` (default "09:00"), `calendarReminder` (default 30)
+- When due date is set, show "Add to Google Calendar" toggle
+- When toggled on, show time input + reminder dropdown
+- Reminder options: At event (0), 5 min, 15 min, 30 min, 1 hour, 1 day
+- On submit, after saving task, call calendar mutation if toggled on
 
-**New AlertDialog** (after the edit Dialog):
-- Title: "Update recurring task"
-- Description: "Do you want to change just this occurrence, or all future occurrences?"
-- Two action buttons: "Just this one" and "All future tasks"
-- Cancel button to go back to editing
+### 4. `src/pages/Maintenance.tsx` — Schedule flow
+- Add time + reminder fields to the schedule confirmation UI in `MaintenanceEventCard`
+- Pass `start_time`, `time_zone`, `reminders` to `scheduleMutation.mutateAsync()`
 
-### Files
+### 5. `src/hooks/useScheduleToCalendar.ts`
+- Accept optional `startTime`, `timeZone`, `reminders` in `ScheduleParams`
+- Forward to edge function call
+
+### 6. `src/components/assets/AssetSuggestionsSection.tsx`
+- Add time + reminder inputs to the scheduling form for individual suggestions
+- Pass new params through to `scheduleToCalendar.mutateAsync()`
+
+### 7. `src/hooks/useBulkScheduleToCalendar.ts`
+- No time/reminder for bulk (stays all-day) — bulk is a batch convenience
+
+## Reminder options (matching Google Calendar)
+
+| Label | Minutes |
+|-------|---------|
+| At time of event | 0 |
+| 5 minutes before | 5 |
+| 15 minutes before | 15 |
+| 30 minutes before | 30 |
+| 1 hour before | 60 |
+| 1 day before | 1440 |
+
+## Files
+
 | File | Change |
 |------|--------|
-| `src/pages/Maintenance.tsx` | Add series choice AlertDialog in save flow |
+| `supabase/functions/create-calendar-event/index.ts` | Support `start_time`, `time_zone`, `reminders` |
+| `src/hooks/useTaskToCalendar.ts` | New hook for task → calendar |
+| `src/hooks/useScheduleToCalendar.ts` | Add optional time/reminder params |
+| `src/components/tasks/TaskForm.tsx` | Calendar toggle + time/reminder UI |
+| `src/pages/Maintenance.tsx` | Time/reminder in schedule flow |
+| `src/components/assets/AssetSuggestionsSection.tsx` | Time/reminder in schedule flow |
 
