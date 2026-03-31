@@ -1,4 +1,4 @@
-import { Calendar, CalendarCheck, CheckSquare, Lightbulb, LayoutDashboard, Tags, Package, Wrench, Sparkles, ShoppingCart, BrainCircuit, DollarSign, ExternalLink } from 'lucide-react';
+import { Calendar, CalendarCheck, CheckSquare, Lightbulb, LayoutDashboard, Tags, Package, Wrench, Sparkles, ShoppingCart, BrainCircuit, DollarSign, Dumbbell, ExternalLink } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { openExternalUrl } from '@/lib/openExternalUrl';
 import {
