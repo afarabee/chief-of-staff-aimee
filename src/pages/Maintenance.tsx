@@ -423,6 +423,8 @@ export default function Maintenance() {
   const openSchedule = (event: MaintenanceEvent) => {
     setSchedulingKey(`${event.enrichmentId}-${event.suggestionIndex}`);
     setSchedulingProviderId('none');
+    setSchedulingTime('09:00');
+    setSchedulingReminder(30);
   };
 
   const handleScheduleConfirm = async (event: MaintenanceEvent) => {
