@@ -167,7 +167,7 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
             <div className="flex items-center justify-between">
               <Label>Due Date</Label>
               {dueDate && (
-                <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs text-muted-foreground" onClick={() => setDueDate(undefined)}>
+                <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs text-muted-foreground" onClick={() => handleSetDueDate(undefined)}>
                   Clear
                 </Button>
               )}
