@@ -84,9 +84,12 @@ export function useCreateIdea() {
       if (error) throw error;
       return dbIdeaToIdea(data);
     },
-    onSuccess: () => {
+    onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['ideas'] });
-      toast({ title: 'Idea captured', description: 'Your idea has been saved.' });
+      toast({
+        title: 'Idea captured',
+        onClick: () => { window.location.href = `/ideas?edit=${created.id}`; },
+      });
     },
     onError: (error) => {
       console.error('Failed to create idea:', error);

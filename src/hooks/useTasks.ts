@@ -110,10 +110,13 @@ export function useCreateTask() {
       if (error) throw error;
       return dbTaskToTask(data);
     },
-    onSuccess: () => {
+    onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['calendar-kanban-tasks'] });
-      toast({ title: 'Task created', description: 'Your task has been saved.' });
+      toast({
+        title: 'Task created',
+        onClick: () => { window.location.href = `/tasks?edit=${created.id}`; },
+      });
     },
     onError: (error) => {
       console.error('Failed to create task:', error);

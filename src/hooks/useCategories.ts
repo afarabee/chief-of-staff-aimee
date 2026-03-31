@@ -53,7 +53,7 @@ export function useCreateCategory() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
-      toast({ title: 'Category created', description: 'Your category has been saved.' });
+      toast({ title: 'Category created' });
     },
     onError: (error) => {
       console.error('Failed to create category:', error);
