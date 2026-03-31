@@ -66,7 +66,11 @@ interface CardProps {
   onScheduleOpen: () => void;
   isScheduling: boolean;
   schedulingProviderId: string;
+  schedulingTime: string;
+  schedulingReminder: number;
   onProviderChange: (id: string) => void;
+  onTimeChange: (time: string) => void;
+  onReminderChange: (reminder: number) => void;
   onScheduleConfirm: () => void;
   onScheduleCancel: () => void;
   isSchedulePending: boolean;
