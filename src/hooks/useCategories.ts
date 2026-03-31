@@ -86,7 +86,7 @@ export function useUpdateCategory() {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['ideas'] });
-      toast({ title: 'Category updated', description: 'The category has been updated.' });
+      toast({ title: 'Category updated' });
     },
     onError: (error) => {
       console.error('Failed to update category:', error);
