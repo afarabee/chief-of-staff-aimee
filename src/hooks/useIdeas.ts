@@ -147,7 +147,7 @@ export function useDeleteIdea() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ideas'] });
-      toast({ title: 'Idea deleted', description: 'The idea has been removed.' });
+      toast({ title: 'Idea deleted' });
     },
     onError: (error) => {
       console.error('Failed to delete idea:', error);

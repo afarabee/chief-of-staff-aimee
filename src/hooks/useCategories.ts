@@ -116,7 +116,7 @@ export function useDeleteCategory() {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['ideas'] });
-      toast({ title: 'Category deleted', description: 'The category has been removed.' });
+      toast({ title: 'Category deleted' });
     },
     onError: (error) => {
       console.error('Failed to delete category:', error);

@@ -176,7 +176,7 @@ export function useDeleteTask() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['calendar-kanban-tasks'] });
-      toast({ title: 'Task deleted', description: 'The task has been removed.' });
+      toast({ title: 'Task deleted' });
     },
     onError: (error) => {
       console.error('Failed to delete task:', error);
