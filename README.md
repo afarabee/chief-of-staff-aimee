@@ -1,6 +1,6 @@
 # Chief of Staff
 
-A personal life operations app that brings together home maintenance, financial planning, pet care, and everything else into one place — with an AI assistant that can read and write across the entire system.
+Your AI-powered personal life operations dashboard — bringing together home maintenance, task management, financial planning, and everything else into one place.
 
 ## The Problem
 
@@ -8,57 +8,73 @@ Managing a household means tracking insurance renewals, vehicle maintenance, hom
 
 ## Key Features
 
+- **Command Center** — Personalized daily dashboard with weather, calendar, AI briefing, news, podcasts, and idea spotlight widgets (drag to reorder, hide/show)
 - **Kanban Board** — Drag-and-drop task management with backlog, to-do, in-progress, blocked, and done columns
 - **Asset Library** — Track everything you own, organized by category (Home, Auto, Boat, Property, Pets, Health, Personal)
-- **Maintenance Scheduler** — Recurring and one-time reminders linked to specific assets, with automatic next-occurrence generation
+- **Maintenance Scheduler** — Recurring and one-time reminders linked to specific assets, with automatic next-occurrence generation and "this instance or all future" editing for recurring tasks
+- **Google Calendar Integration** — Schedule any task or maintenance event to Google Calendar with custom times, reminders, and timezone support
 - **AI Chatbot** — Gemini-powered assistant with full database read/write via function calling (8 CRUD operations)
-- **AI Enrichment System** — Generate actionable AI suggestions for any task, idea, or reminder. Suggestions are managed on a dedicated AI Activity page (`/ai-activity`) with execute, dismiss, and create-subtask actions
-- **Calendar Views** — Monthly, weekly, and daily views pulling from both task systems, with color-coded task types and double-click to create
+- **AI Enrichment System** — Generate actionable AI suggestions for any task, idea, or reminder. Manage suggestions on a dedicated AI Activity page with execute, dismiss, and create-subtask actions
+- **Daily Briefing** — AI-generated daily summary with smart suggestions (reschedule, focus, unblock) linked to actionable items
+- **Calendar Views** — Monthly, weekly, and daily views pulling from both task systems, with color-coded task types
+- **Shopping List** — Quick-capture checklist for shopping items
 - **Service Provider Directory** — Track contacts for mechanics, vets, contractors, linked to assets and tasks
-- **Ideas Board** — Capture and track ideas separately from actionable tasks
-- **CLI Integration** — Terminal-based task management via Claude Code slash commands
+- **Ideas Board** — Capture and track ideas separately from actionable tasks, with two-way task/idea conversion
+- **Global Search** — Search across all tasks, ideas, assets, and providers from any page
+- **Smart Toast Notifications** — Auto-dismissing, clickable notifications that navigate to the relevant item
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|------------|
 | Framework | React 18 + TypeScript |
-| Build | Vite |
-| Styling | Tailwind CSS + shadcn/ui |
+| Build | Vite 5 |
+| Styling | Tailwind CSS v3 + shadcn/ui |
 | Backend | Supabase (Database, Auth, Edge Functions) |
-| State | TanStack Query |
+| State | TanStack Query v5 |
 | AI | Google Gemini 2.0 Flash (via Edge Functions) |
 | Drag & Drop | @hello-pangea/dnd |
 | Routing | React Router v6 |
+| Charts | Recharts |
 
 ## Project Structure
 
 ```
 src/
 ├── components/
-│   ├── assets/          # Asset cards and forms
-│   ├── calendar/        # Monthly, weekly, daily views
-│   ├── chat/            # AI chatbot
-│   ├── dashboard/       # Dashboard widgets
+│   ├── assets/          # Asset cards, forms, and AI suggestions
+│   ├── calendar/        # Monthly, weekly, daily views + task popovers
+│   ├── chat/            # AI chatbot with voice input
+│   ├── command-center/  # Dashboard widgets (briefing, weather, calendar, news, podcasts)
+│   ├── dashboard/       # Quick-add capture
 │   ├── ideas/           # Idea cards and forms
-│   ├── layout/          # AppLayout, AppSidebar
+│   ├── layout/          # AppLayout, AppSidebar, NotificationBell
 │   ├── links/           # Linked assets/providers sections
-│   ├── maintenance/     # Maintenance task cards and forms
 │   ├── providers/       # Provider cards and forms
 │   ├── search/          # InlineSearch, SearchModal
 │   ├── tasks/           # TaskCard, TaskForm, KanbanColumn
 │   └── ui/              # shadcn/ui primitives
-├── contexts/            # AppContext (global state)
-├── hooks/               # Data hooks (useTasks, useIdeas, useAiEnrichments, etc.)
-├── pages/               # Route pages
+├── contexts/            # AppContext (global state with task/idea CRUD + conversions)
+├── hooks/               # 30+ custom hooks (data fetching, AI enrichment, calendar sync, etc.)
+├── pages/               # Route pages (14 pages)
 ├── types/               # TypeScript interfaces
-└── integrations/        # Supabase client and types
+├── utils/               # Frequency calculations, title generation
+└── integrations/        # Supabase client and generated types
 
 supabase/
 └── functions/
-    ├── chat/            # AI chatbot edge function
-    ├── enrich-item/     # AI suggestion generation
-    └── execute-suggestion/ # AI suggestion execution
+    ├── ai-news/                # AI-curated news feed
+    ├── chat/                   # AI chatbot with function calling
+    ├── create-calendar-event/  # Google Calendar event creation (timed + reminders)
+    ├── daily-briefing/         # AI daily briefing generation
+    ├── enrich-item/            # AI suggestion generation
+    ├── execute-suggestion/     # AI suggestion execution
+    ├── fetch-podcasts/         # Podcast RSS feed fetching
+    ├── get-todays-calendar/    # Today's Google Calendar events
+    ├── parse-asset-document/   # Document parsing for assets
+    ├── send-daily-digest/      # Email digest delivery
+    ├── sync-calendar-events/   # Calendar sync
+    └── update-calendar-event/  # Calendar event updates
 ```
 
 ## Architecture Highlights
@@ -74,12 +90,25 @@ AI suggestions are decoupled from item records and stored in a dedicated `ai_enr
 
 Executed suggestions are also logged to an append-only `ai_executions` table for historical tracking.
 
+### Google Calendar Integration
+
+Tasks and maintenance events can be scheduled to Google Calendar with:
+- Specific start times (or all-day events)
+- Configurable reminders (5min to 1 week before)
+- Timezone-aware scheduling
+- Direct links back to the calendar event from toast notifications
+
 ### Two Task Systems
 
-- **Kanban tasks** (`cos_tasks`): Ad-hoc tasks with status, priority, due dates, and subtask support
-- **Maintenance reminders** (`tasks`): Asset-linked recurring tasks with recurrence rules and cost tracking
+- **Kanban tasks** (`cos_tasks`): Ad-hoc tasks with status, priority, due dates, subtask support, and category organization
+- **Maintenance reminders** (`tasks`): Asset-linked recurring tasks with recurrence rules, cost tracking, and provider associations
 
 Both systems feed into the unified calendar views.
+
+### Companion Apps
+
+- **CFO Dashboard** — Financial planning and budget tracking (separate Lovable app)
+- **Workout Tracker** — Exercise logging and rep tracking (separate app)
 
 ## Getting Started
 
