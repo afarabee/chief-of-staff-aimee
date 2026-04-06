@@ -277,19 +277,28 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, supabaseServiceKey);
 
+    const ChatSchema = z.object({
+      message: z.string().min(1).max(10000),
+      history: z.array(z.object({
+        role: z.enum(["user", "assistant"]),
+        content: z.string().max(20000),
+      })).max(100).optional(),
+      context: z.record(z.any()).optional(),
+      assets: z.array(z.any()).optional(),
+    });
+
     const body = await req.json();
-    const message = body.message;
-    const history = body.history || [];
-    const context = body.context || {};
-    const assets = context.assets || body.assets || [];
-
-    console.log("Chat request. Message length:", message?.length, "Context keys:", Object.keys(context));
-
-    if (!message) {
-      return new Response(JSON.stringify({ error: "Message is required" }), {
+    const parsed = ChatSchema.safeParse(body);
+    if (!parsed.success) {
+      return new Response(JSON.stringify({ error: "Invalid input", details: parsed.error.flatten().fieldErrors }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const { message, history = [], context = {}, assets: bodyAssets } = parsed.data;
+    const assets = context.assets || bodyAssets || [];
+
+    console.log("Chat request. Message length:", message?.length, "Context keys:", Object.keys(context));
 
     // Build data sections for the system prompt
     const dataSections = [
