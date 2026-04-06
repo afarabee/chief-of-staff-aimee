@@ -129,7 +129,7 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton tooltip="AI with Aimee" onClick={() => handleExternalClick('https://ai-with-aimee.example.com')}>
+                <SidebarMenuButton tooltip="AI with Aimee" onClick={() => handleExternalClick('https://ai-with-aims.studio')}>
                   <Bot className="h-4 w-4" />
                   <span className="flex items-center gap-2">
                     AI with Aimee
@@ -138,7 +138,7 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton tooltip="AI with Aimee Admin" onClick={() => handleExternalClick('https://admin.ai-with-aimee.example.com')}>
+                <SidebarMenuButton tooltip="AI with Aimee Admin" onClick={() => handleExternalClick('https://ai-with-aims.studio/admin')}>
                   <Settings className="h-4 w-4" />
                   <span className="flex items-center gap-2">
                     AI with Aimee Admin
