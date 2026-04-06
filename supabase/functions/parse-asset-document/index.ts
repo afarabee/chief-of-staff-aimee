@@ -55,8 +55,11 @@ Extract the following fields from the document:
 - name: The primary product/asset name (be specific, include brand and model if visible)
 - description: A brief description of the asset
 - purchase_date: The purchase/transaction date in YYYY-MM-DD format (null if not found)
-- notes: Any relevant details like warranty info, serial number, store name, order number, price
+- purchase_price: The total price/amount paid (number, null if not found)
+- notes: Any relevant details like serial number, store name, order number
 - category_hint: Suggest a category from common home categories (e.g., "Appliances", "Electronics", "Furniture", "HVAC", "Plumbing", "Electrical", "Outdoor", "Kitchen", "Bathroom", "Tools")
+- warranty_expiry_date: Warranty expiration date in YYYY-MM-DD format (null if not found)
+- warranty_notes: Warranty coverage details (null if not found)
 
 If the document contains multiple items, focus on the most prominent/expensive one.
 If a field cannot be determined, use null.`;
@@ -92,8 +95,11 @@ If a field cannot be determined, use null.`;
                       name: { type: "string", description: "Asset name" },
                       description: { type: "string", description: "Brief description", nullable: true },
                       purchase_date: { type: "string", description: "Date in YYYY-MM-DD format", nullable: true },
+                      purchase_price: { type: "number", description: "Total price paid", nullable: true },
                       notes: { type: "string", description: "Additional details", nullable: true },
                       category_hint: { type: "string", description: "Suggested category", nullable: true },
+                      warranty_expiry_date: { type: "string", description: "Warranty expiry in YYYY-MM-DD format", nullable: true },
+                      warranty_notes: { type: "string", description: "Warranty coverage details", nullable: true },
                     },
                     required: ["name"],
                   },
@@ -125,15 +131,36 @@ If a field cannot be determined, use null.`;
     const functionCall = parts.find((p: any) => p.functionCall);
 
     if (functionCall) {
-      const args = functionCall.functionCall.arguments;
-      return new Response(JSON.stringify({ parsed: args }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      // Gemini API may use either "arguments" or "args" depending on version
+      const args = functionCall.functionCall.arguments || functionCall.functionCall.args;
+      if (args) {
+        return new Response(JSON.stringify({ parsed: args }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      console.error("Function call found but no arguments:", JSON.stringify(functionCall));
     }
 
-    // Fallback: try to parse text response
+    // Fallback: try to parse text response as JSON
     const rawText = parts[0]?.text || "";
-    console.error("No function call in response, raw text:", rawText);
+    if (rawText) {
+      try {
+        // Try to extract JSON from the text (may be wrapped in markdown code block)
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          if (parsed.name) {
+            return new Response(JSON.stringify({ parsed }), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+        }
+      } catch {
+        // JSON parsing failed, fall through to error
+      }
+    }
+
+    console.error("No function call in response. Full response:", JSON.stringify(geminiData));
     return new Response(JSON.stringify({ error: "Could not extract asset details from document" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

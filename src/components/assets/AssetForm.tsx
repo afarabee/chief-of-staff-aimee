@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { CalendarIcon, Trash2, Plus, FileText } from 'lucide-react';
 import { AssetAttachments } from '@/components/assets/AssetAttachments';
@@ -50,9 +50,12 @@ export interface AssetInitialValues {
   name?: string;
   description?: string;
   purchaseDate?: string;
+  purchasePrice?: number;
   notes?: string;
   categoryHint?: string;
   documentUrl?: string;
+  warrantyExpiryDate?: string;
+  warrantyNotes?: string;
 }
 
 interface AssetFormProps {
@@ -72,7 +75,18 @@ export function AssetForm({ asset, onClose, initialValues }: AssetFormProps) {
       : asset?.purchaseDate ? new Date(asset.purchaseDate + 'T00:00:00') : undefined
   );
   const [notes, setNotes] = useState(initialValues?.notes ?? asset?.notes ?? '');
-  
+  const [purchasePrice, setPurchasePrice] = useState<string>(
+    initialValues?.purchasePrice != null ? String(initialValues.purchasePrice) : asset?.purchasePrice != null ? String(asset.purchasePrice) : ''
+  );
+  const [currentValue, setCurrentValue] = useState<string>(asset?.currentValue != null ? String(asset.currentValue) : '');
+  const [warrantyExpiryDate, setWarrantyExpiryDate] = useState<Date | undefined>(
+    initialValues?.warrantyExpiryDate
+      ? new Date(initialValues.warrantyExpiryDate + 'T00:00:00')
+      : asset?.warrantyExpiryDate ? new Date(asset.warrantyExpiryDate + 'T00:00:00') : undefined
+  );
+  const [warrantyProvider, setWarrantyProvider] = useState(asset?.warrantyProvider ?? '');
+  const [warrantyNotes, setWarrantyNotes] = useState(initialValues?.warrantyNotes ?? asset?.warrantyNotes ?? '');
+
   const [selectedProviderId, setSelectedProviderId] = useState<string>('');
 
   // New provider dialog state
@@ -85,8 +99,8 @@ export function AssetForm({ asset, onClose, initialValues }: AssetFormProps) {
 
   const { data: categories = [] } = useAssetCategories();
 
-  // Fuzzy-match categoryHint to an existing category
-  useState(() => {
+  // Fuzzy-match categoryHint to an existing category when categories load
+  useEffect(() => {
     if (initialValues?.categoryHint && !categoryId && categories.length > 0) {
       const hint = initialValues.categoryHint.toLowerCase();
       const match = categories.find(
@@ -94,19 +108,7 @@ export function AssetForm({ asset, onClose, initialValues }: AssetFormProps) {
       );
       if (match) setCategoryId(match.id);
     }
-  });
-  // Re-run when categories load
-  const [categoryMatched, setCategoryMatched] = useState(false);
-  if (initialValues?.categoryHint && !categoryMatched && !categoryId && categories.length > 0) {
-    const hint = initialValues.categoryHint.toLowerCase();
-    const match = categories.find(
-      (cat) => cat.name.toLowerCase() === hint || cat.name.toLowerCase().includes(hint) || hint.includes(cat.name.toLowerCase())
-    );
-    if (match) {
-      setCategoryId(match.id);
-    }
-    setCategoryMatched(true);
-  }
+  }, [categories, initialValues?.categoryHint]);
   const { data: providers = [] } = useProviders();
   const createAsset = useCreateAsset();
   const updateAsset = useUpdateAsset();
@@ -155,6 +157,11 @@ export function AssetForm({ asset, onClose, initialValues }: AssetFormProps) {
       purchase_date: purchaseDate ? format(purchaseDate, 'yyyy-MM-dd') : null,
       notes: notes.trim() || null,
       attachment_url: null,
+      purchase_price: purchasePrice ? parseFloat(purchasePrice) : null,
+      current_value: currentValue ? parseFloat(currentValue) : null,
+      warranty_expiry_date: warrantyExpiryDate ? format(warrantyExpiryDate, 'yyyy-MM-dd') : null,
+      warranty_provider: warrantyProvider.trim() || null,
+      warranty_notes: warrantyNotes.trim() || null,
     };
 
     if (isEdit) {
@@ -253,6 +260,74 @@ export function AssetForm({ asset, onClose, initialValues }: AssetFormProps) {
               />
             </PopoverContent>
           </Popover>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="asset-purchase-price">Purchase Price ($)</Label>
+            <Input
+              id="asset-purchase-price"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="0.00"
+              value={purchasePrice}
+              onChange={(e) => setPurchasePrice(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="asset-current-value">Current Value ($)</Label>
+            <Input
+              id="asset-current-value"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="0.00"
+              value={currentValue}
+              onChange={(e) => setCurrentValue(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label>Warranty Expiry</Label>
+            {warrantyExpiryDate && (
+              <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs text-muted-foreground" onClick={() => setWarrantyExpiryDate(undefined)}>
+                Clear
+              </Button>
+            )}
+          </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn('w-full justify-start text-left font-normal', !warrantyExpiryDate && 'text-muted-foreground')}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {warrantyExpiryDate ? format(warrantyExpiryDate, 'PPP') : 'Pick a date'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={warrantyExpiryDate}
+                onSelect={setWarrantyExpiryDate}
+                initialFocus
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="asset-warranty-provider">Warranty Provider</Label>
+          <Input id="asset-warranty-provider" value={warrantyProvider} onChange={(e) => setWarrantyProvider(e.target.value)} placeholder="e.g., Manufacturer, extended warranty company" />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="asset-warranty-notes">Warranty Notes</Label>
+          <Textarea id="asset-warranty-notes" value={warrantyNotes} onChange={(e) => setWarrantyNotes(e.target.value)} rows={2} placeholder="Coverage details, claim instructions, etc." />
         </div>
 
         {!isEdit && (

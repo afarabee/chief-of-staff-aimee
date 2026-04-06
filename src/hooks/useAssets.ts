@@ -14,6 +14,11 @@ function mapRow(row: any): Asset {
     categoryColor: cat?.color ?? null,
     description: row.description,
     purchaseDate: row.purchase_date,
+    purchasePrice: row.purchase_price ?? null,
+    currentValue: row.current_value ?? null,
+    warrantyExpiryDate: row.warranty_expiry_date ?? null,
+    warrantyProvider: row.warranty_provider ?? null,
+    warrantyNotes: row.warranty_notes ?? null,
     notes: row.notes,
     attachmentUrl: row.attachment_url ?? null,
     createdAt: row.created_at,
@@ -53,7 +58,7 @@ export function useAssetCategories() {
 export function useCreateAsset() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (asset: { name: string; category_id?: string | null; description?: string | null; purchase_date?: string | null; notes?: string | null; attachment_url?: string | null }) => {
+    mutationFn: async (asset: { name: string; category_id?: string | null; description?: string | null; purchase_date?: string | null; notes?: string | null; attachment_url?: string | null; purchase_price?: number | null; current_value?: number | null; warranty_expiry_date?: string | null; warranty_provider?: string | null; warranty_notes?: string | null }) => {
       const { data, error } = await supabase.from('assets').insert(asset).select('id').single();
       if (error) throw error;
       return data;
@@ -71,7 +76,7 @@ export function useCreateAsset() {
 export function useUpdateAsset() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; name?: string; category_id?: string | null; description?: string | null; purchase_date?: string | null; notes?: string | null; show_on_kanban?: boolean; attachment_url?: string | null }) => {
+    mutationFn: async ({ id, ...updates }: { id: string; name?: string; category_id?: string | null; description?: string | null; purchase_date?: string | null; notes?: string | null; show_on_kanban?: boolean; attachment_url?: string | null; purchase_price?: number | null; current_value?: number | null; warranty_expiry_date?: string | null; warranty_provider?: string | null; warranty_notes?: string | null }) => {
       const { error } = await supabase.from('assets').update(updates).eq('id', id);
       if (error) throw error;
     },

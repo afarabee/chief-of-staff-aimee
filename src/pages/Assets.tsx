@@ -106,9 +106,12 @@ export default function Assets() {
         name: parsed.name || '',
         description: parsed.description || '',
         purchaseDate: parsed.purchase_date || undefined,
+        purchasePrice: parsed.purchase_price || undefined,
         notes: parsed.notes || '',
         categoryHint: parsed.category_hint || '',
         documentUrl: publicUrl,
+        warrantyExpiryDate: parsed.warranty_expiry_date || undefined,
+        warrantyNotes: parsed.warranty_notes || undefined,
       });
       setIsFormOpen(true);
     } catch (err) {
@@ -220,6 +223,36 @@ export default function Assets() {
               <p className="text-foreground">{format(parseISO(fresh.purchaseDate), 'MMMM d, yyyy')}</p>
             </div>
           )}
+          {(fresh.purchasePrice != null || fresh.currentValue != null) && (
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-6">
+              {fresh.purchasePrice != null && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Purchase Price</p>
+                  <p className="text-foreground">${fresh.purchasePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                </div>
+              )}
+              {fresh.currentValue != null && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Current Value</p>
+                  <p className="text-foreground">${fresh.currentValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                </div>
+              )}
+            </div>
+          )}
+          {(fresh.warrantyExpiryDate || fresh.warrantyProvider || fresh.warrantyNotes) && (
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-muted-foreground">Warranty</p>
+              {fresh.warrantyExpiryDate && (
+                <p className="text-foreground">Expires: {format(parseISO(fresh.warrantyExpiryDate), 'MMMM d, yyyy')}</p>
+              )}
+              {fresh.warrantyProvider && (
+                <p className="text-foreground">Provider: {fresh.warrantyProvider}</p>
+              )}
+              {fresh.warrantyNotes && (
+                <p className="text-foreground text-sm">{fresh.warrantyNotes}</p>
+              )}
+            </div>
+          )}
           {fresh.notes && (
             <div>
               <p className="text-sm font-medium text-muted-foreground">Notes</p>
@@ -273,7 +306,7 @@ export default function Assets() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h1 className="text-2xl font-bold text-foreground">Assets</h1>
         <div className="flex gap-2">
           <input
@@ -283,11 +316,12 @@ export default function Assets() {
             className="hidden"
             onChange={handleScanDocument}
           />
-          <Button variant="outline" onClick={() => scanInputRef.current?.click()} disabled={isScanningDoc}>
+          <Button variant="outline" onClick={() => scanInputRef.current?.click()} disabled={isScanningDoc} className="flex-1 sm:flex-none">
             {isScanningDoc ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />}
-            {isScanningDoc ? 'Scanning…' : 'Scan Document'}
+            <span className="hidden sm:inline">{isScanningDoc ? 'Scanning…' : 'Scan Document'}</span>
+            <span className="sm:hidden">{isScanningDoc ? 'Scanning…' : 'Scan'}</span>
           </Button>
-          <Button onClick={openAdd}>
+          <Button onClick={openAdd} className="flex-1 sm:flex-none">
             <Plus className="h-4 w-4" />
             Add Asset
           </Button>

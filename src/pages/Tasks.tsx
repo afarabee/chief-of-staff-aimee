@@ -30,6 +30,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from '@/hooks/use-toast';
+import { sortTasksByDateAndPriority } from '@/utils/taskSort';
 
 const statusOrder: TaskStatus[] = ['backlog', 'to-do', 'in-progress', 'blocked', 'done'];
 
@@ -112,14 +113,7 @@ export default function Tasks() {
     });
 
     Object.keys(grouped).forEach((status) => {
-      grouped[status as TaskStatus].sort((a, b) => {
-        if (a.dueDate && !b.dueDate) return -1;
-        if (!a.dueDate && b.dueDate) return 1;
-        if (a.dueDate && b.dueDate) {
-          return a.dueDate.getTime() - b.dueDate.getTime();
-        }
-        return 0;
-      });
+      grouped[status as TaskStatus] = sortTasksByDateAndPriority(grouped[status as TaskStatus]);
     });
 
     return grouped;
@@ -188,14 +182,14 @@ export default function Tasks() {
         </div>
       )}
 
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex flex-wrap items-center gap-3 mb-6">
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">Filter:</span>
         </div>
 
         <Select value={priorityFilter} onValueChange={(v) => setPriorityFilter(v as TaskPriority | 'all')}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-full sm:w-[140px]">
             <SelectValue placeholder="Priority" />
           </SelectTrigger>
           <SelectContent>
@@ -207,20 +201,22 @@ export default function Tasks() {
           </SelectContent>
         </Select>
 
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search tasks..."
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
-            className="pl-9 w-[200px]"
+            className="pl-9 w-full sm:w-[200px]"
           />
         </div>
 
         {tasksByStatus.done.length > 0 && (
           <Button variant="destructive" size="sm" className="gap-2 ml-auto" onClick={() => setShowPurgeDialog(true)}>
             <Trash2 className="h-4 w-4" />
-            Purge Done ({tasksByStatus.done.length})
+            <span className="hidden sm:inline">Purge Done</span>
+            <span className="sm:hidden">Purge</span>
+            ({tasksByStatus.done.length})
           </Button>
         )}
       </div>

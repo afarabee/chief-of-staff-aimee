@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useState } from 'react';
-import { Search } from 'lucide-react';
+import { Search, ExternalLink } from 'lucide-react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { Button } from '@/components/ui/button';
@@ -42,7 +42,16 @@ export function AppLayout({ children }: AppLayoutProps) {
               <span className="sr-only">Search (⌘K)</span>
             </Button>
             <InlineSearch />
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => window.open(window.location.pathname, '_blank', 'noopener,noreferrer')}
+                title="Open in new window"
+              >
+                <ExternalLink className="h-4 w-4" />
+                <span className="sr-only">Open in new window</span>
+              </Button>
               <NotificationBell />
             </div>
           </header>
