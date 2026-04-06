@@ -6,10 +6,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 const WIDGET_LABELS: Record<string, string> = {
   briefing: 'Daily Brief',
   weather: 'Weather',
-  calendar: "Today's Calendar",
+  calendar: 'Calendar (3-Day)',
   ideaSpotlight: 'Idea Spotlight',
   news: 'Top AI News',
   podcasts: 'My Podcasts',
+  handoffScanner: 'Handoff Scanner',
 };
 
 interface CustomizeDialogProps {

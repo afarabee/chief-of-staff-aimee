@@ -6,6 +6,7 @@ import { useWeather } from '@/hooks/useWeather';
 import { useDailyBriefing } from '@/hooks/useDailyBriefing';
 import { useAiNews } from '@/hooks/useAiNews';
 import { useCommandCenterConfig } from '@/hooks/useCommandCenterConfig';
+import { useHandoffSummaries } from '@/hooks/useHandoffSummaries';
 import { Button } from '@/components/ui/button';
 import { QuickAdd } from '@/components/dashboard/QuickAdd';
 import { BriefingWidget } from '@/components/command-center/BriefingWidget';
@@ -14,6 +15,7 @@ import { CalendarWidget } from '@/components/command-center/CalendarWidget';
 import { IdeaSpotlightWidget } from '@/components/command-center/IdeaSpotlightWidget';
 import { NewsWidget } from '@/components/command-center/NewsWidget';
 import { PodcastWidget } from '@/components/command-center/PodcastWidget';
+import { HandoffWidget } from '@/components/command-center/HandoffWidget';
 import { CustomizeDialog } from '@/components/command-center/CustomizeDialog';
 
 const CommandCenter = () => {
@@ -24,6 +26,7 @@ const CommandCenter = () => {
   const { data: weather, isLoading: weatherLoading } = useWeather();
   const { data: briefing, isLoading: briefingLoading, refetch: refetchBriefing } = useDailyBriefing();
   const { data: news, isLoading: newsLoading, refetch: refetchNews } = useAiNews();
+  const { data: handoffSummaries, isLoading: handoffLoading } = useHandoffSummaries();
   const { widgetOrder, hiddenWidgets, toggleWidget, moveWidget } = useCommandCenterConfig();
 
   const handleRefresh = () => {
@@ -31,6 +34,7 @@ const CommandCenter = () => {
     refetchNews();
     queryClient.invalidateQueries({ queryKey: ['weather'] });
     queryClient.invalidateQueries({ queryKey: ['todays-calendar'] });
+    queryClient.invalidateQueries({ queryKey: ['handoff-summaries'] });
     podcastRefetchRef.current?.();
   };
 
@@ -54,6 +58,8 @@ const CommandCenter = () => {
         return <NewsWidget key={id} news={news} isLoading={newsLoading} />;
       case 'podcasts':
         return <PodcastWidget key={id} onRefetchRef={podcastRefetchRef} />;
+      case 'handoffScanner':
+        return <HandoffWidget key={id} summaries={handoffSummaries} isLoading={handoffLoading} />;
       default:
         return null;
     }

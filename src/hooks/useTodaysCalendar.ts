@@ -10,8 +10,10 @@ export interface CalendarEvent {
   allDay: boolean;
 }
 
-async function fetchTodaysEvents(): Promise<CalendarEvent[]> {
-  const { data, error } = await supabase.functions.invoke('get-todays-calendar');
+async function fetchCalendarEvents(): Promise<CalendarEvent[]> {
+  const { data, error } = await supabase.functions.invoke('get-todays-calendar', {
+    body: { days: 3 },
+  });
   if (error) throw error;
   if (data?.error) throw new Error(data.error);
   return data?.events || [];
@@ -20,7 +22,7 @@ async function fetchTodaysEvents(): Promise<CalendarEvent[]> {
 export function useTodaysCalendar() {
   return useQuery({
     queryKey: ['todays-calendar'],
-    queryFn: fetchTodaysEvents,
+    queryFn: fetchCalendarEvents,
     staleTime: 10 * 60 * 1000,
     refetchInterval: 10 * 60 * 1000,
     retry: 1,
