@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -175,14 +176,25 @@ serve(async (req) => {
   }
 
   try {
-    const { item_type, item } = await req.json();
+    const EnrichSchema = z.object({
+      item_type: z.enum(["task", "idea", "reminder", "asset"]),
+      item: z.object({
+        id: z.string().min(1),
+        title: z.string().max(1000).optional(),
+        name: z.string().max(1000).optional(),
+      }).passthrough(),
+    });
 
-    if (!item_type || !item || !item.id) {
-      return new Response(JSON.stringify({ error: "Missing item_type or item" }), {
+    const body = await req.json();
+    const parsed = EnrichSchema.safeParse(body);
+    if (!parsed.success) {
+      return new Response(JSON.stringify({ error: "Invalid input", details: parsed.error.flatten().fieldErrors }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const { item_type, item } = parsed.data;
 
     const GEMINI_API_KEY =
       Deno.env.get("GEMINI_API_KEY") || Deno.env.get("VITE_GEMINI_API_KEY");
@@ -198,10 +210,10 @@ serve(async (req) => {
       : buildDefaultPrompt(item_type, item);
 
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
         }),

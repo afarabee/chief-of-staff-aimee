@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -276,19 +277,28 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, supabaseServiceKey);
 
+    const ChatSchema = z.object({
+      message: z.string().min(1).max(10000),
+      history: z.array(z.object({
+        role: z.enum(["user", "assistant"]),
+        content: z.string().max(20000),
+      })).max(100).optional(),
+      context: z.record(z.any()).optional(),
+      assets: z.array(z.any()).optional(),
+    });
+
     const body = await req.json();
-    const message = body.message;
-    const history = body.history || [];
-    const context = body.context || {};
-    const assets = context.assets || body.assets || [];
-
-    console.log("Chat request. Message length:", message?.length, "Context keys:", Object.keys(context));
-
-    if (!message) {
-      return new Response(JSON.stringify({ error: "Message is required" }), {
+    const parsed = ChatSchema.safeParse(body);
+    if (!parsed.success) {
+      return new Response(JSON.stringify({ error: "Invalid input", details: parsed.error.flatten().fieldErrors }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const { message, history = [], context = {}, assets: bodyAssets } = parsed.data;
+    const assets = context.assets || bodyAssets || [];
+
+    console.log("Chat request. Message length:", message?.length, "Context keys:", Object.keys(context));
 
     // Build data sections for the system prompt
     const dataSections = [
@@ -337,7 +347,7 @@ For updates, identify the correct item from the context data using the IDs provi
     }
     contents.push({ role: "user", parts: [{ text: message }] });
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+    const geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
     const geminiPayload: any = {
       system_instruction: { parts: [{ text: systemPrompt }] },
@@ -348,7 +358,7 @@ For updates, identify the correct item from the context data using the IDs provi
     console.log("Calling Gemini API (with tools)...");
     const geminiRes = await fetch(geminiUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY },
       body: JSON.stringify(geminiPayload),
     });
 
@@ -384,7 +394,7 @@ For updates, identify the correct item from the context data using the IDs provi
 
       const followUpRes = await fetch(geminiUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY },
         body: JSON.stringify({
           system_instruction: { parts: [{ text: systemPrompt }] },
           contents: followUpContents,

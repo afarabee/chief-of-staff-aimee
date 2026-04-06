@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,14 +14,25 @@ serve(async (req) => {
   }
 
   try {
-    const { suggestion, item_type, item_title, item_description, item_id, suggestion_index } = await req.json();
+    const ExecuteSchema = z.object({
+      suggestion: z.string().min(1).max(5000),
+      item_type: z.enum(["task", "idea", "reminder"]),
+      item_title: z.string().max(1000).optional(),
+      item_description: z.string().max(10000).optional(),
+      item_id: z.string().min(1),
+      suggestion_index: z.number().int().min(0),
+    });
 
-    if (!suggestion || !item_type || !item_id || suggestion_index === undefined) {
-      return new Response(JSON.stringify({ error: "Missing required fields" }), {
+    const body = await req.json();
+    const parsed = ExecuteSchema.safeParse(body);
+    if (!parsed.success) {
+      return new Response(JSON.stringify({ error: "Invalid input", details: parsed.error.flatten().fieldErrors }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const { suggestion, item_type, item_title, item_description, item_id, suggestion_index } = parsed.data;
 
     const GEMINI_API_KEY =
       Deno.env.get("GEMINI_API_KEY") || Deno.env.get("VITE_GEMINI_API_KEY");
@@ -40,10 +52,10 @@ They want you to execute the following suggestion:
 Do this task thoroughly and provide a complete, useful result. Format your response clearly with headers, bullet points, or tables as appropriate. Be specific and actionable — provide real information, not placeholder text.`;
 
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
         }),
