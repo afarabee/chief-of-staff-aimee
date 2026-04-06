@@ -65,6 +65,18 @@ async function fetchUpcomingMaintenance(supabase: any) {
   return data ?? [];
 }
 
+async function fetchHandoffSummaries(supabase: any) {
+  const threeDaysAgo = new Date();
+  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+  const cutoff = threeDaysAgo.toISOString().slice(0, 10);
+  const { data } = await supabase
+    .from("handoff_summaries")
+    .select("session_date, project_name, tools, completed, in_progress, next_steps, resume_command")
+    .gte("session_date", cutoff)
+    .order("session_date", { ascending: false });
+  return data ?? [];
+}
+
 async function callEdgeFunction(
   supabaseUrl: string,
   serviceRoleKey: string,
@@ -127,13 +139,14 @@ function buildBriefingHtml(data: {
   upcomingTasks: any[];
   ideasInProgress: any[];
   upcomingMaintenance: any[];
+  handoffSummaries: any[];
   calendarData: any;
   newsData: any;
   appUrl: string;
 }): string {
   const {
     briefing, overdueTasks, todayTasks, upcomingTasks,
-    ideasInProgress, upcomingMaintenance, calendarData, newsData, appUrl,
+    ideasInProgress, upcomingMaintenance, handoffSummaries, calendarData, newsData, appUrl,
   } = data;
 
   const now = new Date();
@@ -255,8 +268,36 @@ function buildBriefingHtml(data: {
   }
   html += section("&#x1F5D3;&#xFE0F;", "Calendar (3-Day Look)", calContent);
 
-  // Handoff Scanner (placeholder)
-  html += section("&#x1F504;", "Handoff Scanner", `<p style="color:#9ca3af; font-size:14px;">Coming soon — handoff note scanning will appear here.</p>`);
+  // Handoff Scanner
+  if (handoffSummaries.length === 0) {
+    html += section("&#x1F504;", "Handoff Scanner", `<p style="color:#9ca3af; font-size:14px;">No recent handoff notes.</p>`);
+  } else {
+    let handoffContent = "";
+    for (const h of handoffSummaries) {
+      handoffContent += `<div style="margin-bottom:12px;">`;
+      handoffContent += `<strong style="color:#1a1a1a; font-size:14px;">${h.project_name}</strong>`;
+      if (h.tools?.length > 0) {
+        handoffContent += `<div style="color:#6b7280; font-size:12px; margin-top:2px;">Tools: ${h.tools.join(", ")}</div>`;
+      }
+      if (h.completed?.length > 0) {
+        handoffContent += `<div style="color:#6b7280; font-size:12px; margin-top:4px;">Completed:</div>`;
+        for (const item of h.completed) {
+          handoffContent += `<div style="color:#374151; font-size:13px; padding:1px 0;">• ${item}</div>`;
+        }
+      }
+      if (h.next_steps?.length > 0) {
+        handoffContent += `<div style="color:#6b7280; font-size:12px; margin-top:4px;">Pick up here:</div>`;
+        for (const step of h.next_steps) {
+          handoffContent += `<div style="color:#374151; font-size:13px; padding:1px 0;">&#x27A1;&#xFE0F; ${step}</div>`;
+        }
+      }
+      if (h.resume_command) {
+        handoffContent += `<div style="color:#2563eb; font-size:12px; margin-top:4px; font-family:monospace;">${h.resume_command}</div>`;
+      }
+      handoffContent += `</div>`;
+    }
+    html += section("&#x1F504;", "Handoff Scanner", handoffContent);
+  }
 
   // Flagged Gmail (placeholder)
   html += section("&#x1F4E7;", "Flagged Emails", `<p style="color:#9ca3af; font-size:14px;">Coming soon — flagged Gmail summary will appear here.</p>`);
@@ -320,6 +361,7 @@ serve(async (req) => {
       upcomingTasks,
       ideasInProgress,
       upcomingMaintenance,
+      handoffSummaries,
       briefing,
       calendarData,
       newsData,
@@ -329,6 +371,7 @@ serve(async (req) => {
       fetchUpcomingTasks(supabase),
       fetchIdeasInProgress(supabase),
       fetchUpcomingMaintenance(supabase),
+      fetchHandoffSummaries(supabase),
       callEdgeFunction(supabaseUrl, serviceRoleKey, "daily-briefing"),
       callEdgeFunction(supabaseUrl, serviceRoleKey, "get-todays-calendar", { days: 3 }),
       callEdgeFunction(supabaseUrl, serviceRoleKey, "ai-news"),
@@ -342,6 +385,7 @@ serve(async (req) => {
       upcomingTasks,
       ideasInProgress,
       upcomingMaintenance,
+      handoffSummaries,
       calendarData,
       newsData,
       appUrl,
@@ -384,6 +428,7 @@ serve(async (req) => {
           upcoming: upcomingTasks.length,
           ideas: ideasInProgress.length,
           maintenance: upcomingMaintenance.length,
+          handoffs: handoffSummaries.length,
           briefing: !!briefing,
           calendar: !!calendarData,
           news: newsData?.articles?.length ?? 0,
