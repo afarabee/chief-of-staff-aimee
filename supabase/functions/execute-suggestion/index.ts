@@ -40,10 +40,10 @@ They want you to execute the following suggestion:
 Do this task thoroughly and provide a complete, useful result. Format your response clearly with headers, bullet points, or tables as appropriate. Be specific and actionable — provide real information, not placeholder text.`;
 
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
         }),

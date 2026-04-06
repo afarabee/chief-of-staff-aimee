@@ -384,7 +384,7 @@ For updates, identify the correct item from the context data using the IDs provi
 
       const followUpRes = await fetch(geminiUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY },
         body: JSON.stringify({
           system_instruction: { parts: [{ text: systemPrompt }] },
           contents: followUpContents,
