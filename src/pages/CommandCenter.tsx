@@ -1,14 +1,13 @@
-import { useState, useRef } from 'react';
+import { useRef } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useWeather } from '@/hooks/useWeather';
 import { useDailyBriefing } from '@/hooks/useDailyBriefing';
 import { useAiNews } from '@/hooks/useAiNews';
-import { useApp } from '@/contexts/AppContext';
 import { useCommandCenterConfig } from '@/hooks/useCommandCenterConfig';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { QuickAdd } from '@/components/dashboard/QuickAdd';
 import { BriefingWidget } from '@/components/command-center/BriefingWidget';
 import { WeatherWidget } from '@/components/command-center/WeatherWidget';
 import { CalendarWidget } from '@/components/command-center/CalendarWidget';
@@ -20,8 +19,6 @@ import { CustomizeDialog } from '@/components/command-center/CustomizeDialog';
 const CommandCenter = () => {
   usePageTitle('Command Center');
   const queryClient = useQueryClient();
-  const { addIdea } = useApp();
-  const [captureText, setCaptureText] = useState('');
   const podcastRefetchRef = useRef<(() => void) | null>(null);
 
   const { data: weather, isLoading: weatherLoading } = useWeather();
@@ -35,12 +32,6 @@ const CommandCenter = () => {
     queryClient.invalidateQueries({ queryKey: ['weather'] });
     queryClient.invalidateQueries({ queryKey: ['todays-calendar'] });
     podcastRefetchRef.current?.();
-  };
-
-  const handleQuickCapture = () => {
-    if (!captureText.trim()) return;
-    addIdea({ title: captureText.trim(), description: '', status: 'new', categoryId: null, imageUrl: null });
-    setCaptureText('');
   };
 
   const visibleWidgets = widgetOrder.filter((id) => !hiddenWidgets.includes(id));
@@ -81,6 +72,7 @@ const CommandCenter = () => {
           </p>
         </div>
         <div className="flex gap-2 self-start">
+          <QuickAdd />
           <CustomizeDialog
             widgetOrder={widgetOrder}
             hiddenWidgets={hiddenWidgets}
@@ -91,20 +83,6 @@ const CommandCenter = () => {
             <RefreshCw className="h-4 w-4" /> Refresh
           </Button>
         </div>
-      </div>
-
-      {/* Quick Capture */}
-      <div className="flex gap-2">
-        <Input
-          placeholder="Quick add..."
-          value={captureText}
-          onChange={(e) => setCaptureText(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleQuickCapture()}
-          className="flex-1"
-        />
-        <Button onClick={handleQuickCapture} disabled={!captureText.trim()} className="min-h-[44px]">
-          Save
-        </Button>
       </div>
 
       {/* Grid widgets */}
