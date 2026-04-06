@@ -337,7 +337,7 @@ For updates, identify the correct item from the context data using the IDs provi
     }
     contents.push({ role: "user", parts: [{ text: message }] });
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+    const geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
     const geminiPayload: any = {
       system_instruction: { parts: [{ text: systemPrompt }] },
@@ -348,7 +348,7 @@ For updates, identify the correct item from the context data using the IDs provi
     console.log("Calling Gemini API (with tools)...");
     const geminiRes = await fetch(geminiUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY },
       body: JSON.stringify(geminiPayload),
     });
 
