@@ -6,8 +6,11 @@ export interface ParsedAssetData {
   name: string;
   description?: string | null;
   purchase_date?: string | null;
+  purchase_price?: number | null;
   notes?: string | null;
   category_hint?: string | null;
+  warranty_expiry_date?: string | null;
+  warranty_notes?: string | null;
 }
 
 export function useParseAssetDocument() {

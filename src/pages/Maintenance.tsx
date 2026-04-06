@@ -227,7 +227,7 @@ function MaintenanceEventCard({
                 ))}
               </SelectContent>
             </Select>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div className="space-y-1">
                 <label className="text-xs text-muted-foreground">Time</label>
                 <Input type="time" value={schedulingTime} onChange={(e) => onTimeChange(e.target.value)} className="h-8" />

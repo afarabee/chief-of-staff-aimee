@@ -96,7 +96,7 @@ const CommandCenter = () => {
       {/* Quick Capture */}
       <div className="flex gap-2">
         <Input
-          placeholder="Capture a thought..."
+          placeholder="Quick add..."
           value={captureText}
           onChange={(e) => setCaptureText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleQuickCapture()}

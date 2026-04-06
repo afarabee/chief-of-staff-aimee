@@ -44,6 +44,7 @@ export function useSpeechRecognition(
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const finalTranscriptRef = useRef('');
+  const processedIndexRef = useRef(0);
 
   const isSupported = typeof window !== 'undefined' && getSpeechRecognition() !== null;
 
@@ -73,6 +74,7 @@ export function useSpeechRecognition(
     }
 
     finalTranscriptRef.current = '';
+    processedIndexRef.current = 0;
     setTranscript('');
 
     const recognition = new SpeechRecognition();
@@ -82,22 +84,19 @@ export function useSpeechRecognition(
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       let interim = '';
-      let final = '';
 
-      for (let i = 0; i < event.results.length; i++) {
+      // Only process new results to avoid duplication
+      for (let i = processedIndexRef.current; i < event.results.length; i++) {
         const result = event.results[i];
         if (result.isFinal) {
-          final += result[0].transcript;
+          finalTranscriptRef.current += result[0].transcript;
+          processedIndexRef.current = i + 1;
         } else {
           interim += result[0].transcript;
         }
       }
 
-      if (final) {
-        finalTranscriptRef.current = final;
-      }
-
-      setTranscript(final || interim);
+      setTranscript(finalTranscriptRef.current + interim);
 
       // Reset silence timer on any speech activity
       clearSilenceTimer();

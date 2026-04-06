@@ -206,7 +206,7 @@ export default function Providers() {
           placeholder="Search providers..."
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
-          className="pl-9 w-[300px]"
+          className="pl-9 w-full sm:w-[300px]"
         />
       </div>
 

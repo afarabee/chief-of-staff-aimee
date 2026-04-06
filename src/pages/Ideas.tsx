@@ -157,14 +157,14 @@ export default function Ideas() {
         </div>
       )}
 
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">Filter:</span>
         </div>
-        
+
         <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as IdeaStatus | 'all')}>
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="w-full sm:w-[160px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -176,13 +176,13 @@ export default function Ideas() {
           </SelectContent>
         </Select>
 
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search ideas..."
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
-            className="pl-9 w-[200px]"
+            className="pl-9 w-full sm:w-[200px]"
           />
         </div>
 

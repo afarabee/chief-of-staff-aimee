@@ -144,37 +144,52 @@ export type Database = {
           attachment_url: string | null
           category_id: string | null
           created_at: string | null
+          current_value: number | null
           description: string | null
           id: string
           name: string
           notes: string | null
           purchase_date: string | null
+          purchase_price: number | null
           show_on_kanban: boolean | null
           updated_at: string | null
+          warranty_expiry_date: string | null
+          warranty_notes: string | null
+          warranty_provider: string | null
         }
         Insert: {
           attachment_url?: string | null
           category_id?: string | null
           created_at?: string | null
+          current_value?: number | null
           description?: string | null
           id?: string
           name: string
           notes?: string | null
           purchase_date?: string | null
+          purchase_price?: number | null
           show_on_kanban?: boolean | null
           updated_at?: string | null
+          warranty_expiry_date?: string | null
+          warranty_notes?: string | null
+          warranty_provider?: string | null
         }
         Update: {
           attachment_url?: string | null
           category_id?: string | null
           created_at?: string | null
+          current_value?: number | null
           description?: string | null
           id?: string
           name?: string
           notes?: string | null
           purchase_date?: string | null
+          purchase_price?: number | null
           show_on_kanban?: boolean | null
           updated_at?: string | null
+          warranty_expiry_date?: string | null
+          warranty_notes?: string | null
+          warranty_provider?: string | null
         }
         Relationships: [
           {

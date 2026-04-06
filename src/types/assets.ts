@@ -7,6 +7,11 @@ export interface Asset {
   categoryColor?: string | null;
   description: string | null;
   purchaseDate: string | null;
+  purchasePrice: number | null;
+  currentValue: number | null;
+  warrantyExpiryDate: string | null;
+  warrantyProvider: string | null;
+  warrantyNotes: string | null;
   notes: string | null;
   attachmentUrl: string | null;
   createdAt: string | null;
