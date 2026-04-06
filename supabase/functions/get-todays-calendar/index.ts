@@ -94,13 +94,23 @@ serve(async (req) => {
       );
     }
 
+    // Accept optional { days } param for multi-day lookahead (default: 1)
+    let days = 1;
+    try {
+      const body = await req.json();
+      if (body?.days && Number.isInteger(body.days) && body.days > 0 && body.days <= 7) {
+        days = body.days;
+      }
+    } catch {
+      // No body or invalid JSON — use default
+    }
+
     const serviceKey = JSON.parse(serviceKeyJson);
     const accessToken = await getAccessToken(serviceKey);
 
-    // Get today's boundaries in UTC (could accept timezone param later)
     const now = new Date();
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+    const endOfDay = new Date(startOfDay.getTime() + days * 24 * 60 * 60 * 1000);
 
     const params = new URLSearchParams({
       timeMin: startOfDay.toISOString(),

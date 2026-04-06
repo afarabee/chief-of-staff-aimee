@@ -7,208 +7,296 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-function advanceDate(dateStr: string, freq: { interval: number; unit: string }): string {
-  const d = new Date(dateStr + "T00:00:00Z");
-  switch (freq.unit) {
-    case "days":
-      d.setUTCDate(d.getUTCDate() + freq.interval);
-      break;
-    case "weeks":
-      d.setUTCDate(d.getUTCDate() + freq.interval * 7);
-      break;
-    case "months":
-      d.setUTCMonth(d.getUTCMonth() + freq.interval);
-      break;
-    case "years":
-      d.setUTCFullYear(d.getUTCFullYear() + freq.interval);
-      break;
-    default:
-      d.setUTCMonth(d.getUTCMonth() + freq.interval);
-  }
-  return d.toISOString().slice(0, 10);
-}
+// --- Data fetching helpers ---
 
-interface DigestItem {
-  title: string;
-  type: "task" | "maintenance";
-  assetName?: string;
-  dueDate: string;
-  urgency: "overdue" | "upcoming";
-  daysOffset: number;
-  deepLink: string; // relative path e.g. /tasks?edit=ID or /ai-activity/ID
-}
-
-async function gatherItems(supabase: any): Promise<DigestItem[]> {
-  const today = new Date();
-  const todayStr = today.toISOString().slice(0, 10);
-  const sevenOut = new Date(today);
-  sevenOut.setDate(sevenOut.getDate() + 7);
-  const sevenStr = sevenOut.toISOString().slice(0, 10);
-  const items: DigestItem[] = [];
-
-  // cos_tasks with due dates
-  const { data: tasks } = await supabase
+async function fetchOverdueTasks(supabase: any) {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data } = await supabase
     .from("cos_tasks")
-    .select("id, title, due_date, status")
+    .select("id, title, due_date, priority, status")
     .not("due_date", "is", null)
     .neq("status", "done")
-    .lte("due_date", sevenStr);
-
-  for (const t of tasks ?? []) {
-    const due = t.due_date;
-    const diff = Math.round(
-      (new Date(due).getTime() - today.getTime()) / 86400000
-    );
-    items.push({
-      title: t.title,
-      type: "task",
-      dueDate: due,
-      urgency: due < todayStr ? "overdue" : "upcoming",
-      daysOffset: diff,
-      deepLink: `/tasks?edit=${t.id}`,
-    });
-  }
-
-  // Maintenance from ai_enrichments
-  const { data: enrichments } = await supabase
-    .from("ai_enrichments")
-    .select("*")
-    .eq("item_type", "asset");
-
-  const { data: completions } = await supabase
-    .from("tasks")
-    .select("name, asset_id, date_completed")
-    .eq("status", "completed")
-    .not("date_completed", "is", null)
-    .order("date_completed", { ascending: false });
-
-  const completionMap = new Map<string, string>();
-  for (const c of completions ?? []) {
-    const key = `${c.name}|${c.asset_id}`;
-    if (!completionMap.has(key)) completionMap.set(key, c.date_completed);
-  }
-
-  for (const enrichment of enrichments ?? []) {
-    const suggestions = Array.isArray(enrichment.suggestions)
-      ? enrichment.suggestions
-      : [];
-    for (const s of suggestions) {
-      if (s.status !== "scheduled") continue;
-
-      const freq =
-        typeof s.frequency === "object" && s.frequency ? s.frequency : null;
-      const completionKey = `${s.suggestion}|${enrichment.item_id}`;
-      const lastCompleted = completionMap.get(completionKey) || null;
-
-      let nextDueDate = s.recommended_due_date || null;
-      if (lastCompleted && freq) {
-        let candidate = advanceDate(lastCompleted, freq);
-        let safety = 0;
-        while (candidate < todayStr && safety < 100) {
-          candidate = advanceDate(candidate, freq);
-          safety++;
-        }
-        nextDueDate = candidate;
-      } else if (nextDueDate && freq && nextDueDate < todayStr) {
-        let candidate = nextDueDate;
-        let safety = 0;
-        while (candidate < todayStr && safety < 100) {
-          candidate = advanceDate(candidate, freq);
-          safety++;
-        }
-        nextDueDate = candidate;
-      }
-
-      if (!nextDueDate) continue;
-
-      // Skip if completed within current period
-      if (lastCompleted && freq) {
-        const nextAfter = advanceDate(lastCompleted, freq);
-        if (nextAfter > todayStr) continue;
-      }
-
-      const isOverdue = nextDueDate < todayStr;
-      const isUpcoming = nextDueDate >= todayStr && nextDueDate <= sevenStr;
-      if (!isOverdue && !isUpcoming) continue;
-
-      const diff = Math.round(
-        (new Date(nextDueDate).getTime() - today.getTime()) / 86400000
-      );
-      items.push({
-        title: s.suggestion,
-        type: "maintenance",
-        assetName: enrichment.item_title,
-        dueDate: nextDueDate,
-        urgency: isOverdue ? "overdue" : "upcoming",
-        daysOffset: diff,
-        deepLink: `/ai-activity/${enrichment.id}`,
-      });
-    }
-  }
-
-  items.sort((a, b) => a.daysOffset - b.daysOffset);
-  return items;
+    .lt("due_date", today)
+    .order("due_date", { ascending: true });
+  return data ?? [];
 }
 
-function buildEmailHtml(items: DigestItem[], appUrl: string): string {
-  const overdue = items.filter((i) => i.urgency === "overdue");
-  const upcoming = items.filter((i) => i.urgency === "upcoming");
+async function fetchTodayTasks(supabase: any) {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data } = await supabase
+    .from("cos_tasks")
+    .select("id, title, priority, status")
+    .neq("status", "done")
+    .eq("due_date", today)
+    .order("priority", { ascending: false });
+  return data ?? [];
+}
 
-  let html = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">`;
-  html += `<h2 style="color: #1a1a1a; margin-bottom: 24px;">CoS Daily Digest</h2>`;
+async function fetchUpcomingTasks(supabase: any) {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data } = await supabase
+    .from("cos_tasks")
+    .select("id, title, due_date, priority")
+    .neq("status", "done")
+    .gt("due_date", today)
+    .order("due_date", { ascending: true })
+    .limit(3);
+  return data ?? [];
+}
 
-  if (items.length === 0) {
-    html += `<p style="color: #6b7280;">Nothing needs attention right now.</p>`;
-  }
+async function fetchIdeasInProgress(supabase: any) {
+  const { data } = await supabase
+    .from("cos_ideas")
+    .select("id, title, description")
+    .eq("status", "in-progress")
+    .order("updated_at", { ascending: false });
+  return data ?? [];
+}
 
-  if (overdue.length > 0) {
-    html += `<h3 style="color: #dc2626; margin-top: 20px;">Overdue (${overdue.length})</h3>`;
-    html += `<table style="width:100%; border-collapse:collapse;">`;
-    for (const item of overdue) {
-      const days = Math.abs(item.daysOffset);
-      const label = `${days} day${days !== 1 ? "s" : ""} overdue`;
-      const typeLabel = item.type === "task" ? "Task" : "Maintenance";
-      const subtitle = item.assetName ? ` &middot; ${item.assetName}` : "";
-      const itemUrl = `${appUrl}${item.deepLink}`;
-      html += `<tr style="border-bottom: 1px solid #e5e7eb;">
-        <td style="padding: 10px 0;">
-          <a href="${itemUrl}" style="color: #1a1a1a; text-decoration: none; font-weight: 600;">${item.title}</a>
-          <span style="color:#6b7280; font-size:13px;">${subtitle}</span>
-          <br/><span style="color:#9ca3af; font-size:12px;">${typeLabel}</span>
-        </td>
-        <td style="padding: 10px 0; text-align:right; color:#dc2626; white-space:nowrap; font-size:13px;">${label}</td>
-      </tr>`;
+async function fetchUpcomingMaintenance(supabase: any) {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data } = await supabase
+    .from("tasks")
+    .select("id, name, next_due_date, status, notes")
+    .eq("status", "pending")
+    .gte("next_due_date", today)
+    .order("next_due_date", { ascending: true })
+    .limit(3);
+  return data ?? [];
+}
+
+async function callEdgeFunction(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  functionName: string,
+  body?: object
+): Promise<any> {
+  try {
+    const url = `${supabaseUrl}/functions/v1/${functionName}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${serviceRoleKey}`,
+        "Content-Type": "application/json",
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok) {
+      console.error(`${functionName} call failed: ${res.status}`);
+      return null;
     }
-    html += `</table>`;
+    return res.json();
+  } catch (e) {
+    console.error(`${functionName} call error:`, e);
+    return null;
+  }
+}
+
+// --- Date helpers ---
+
+const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
+  return `${MONTHS[d.getMonth()]} ${d.getDate()}`;
+}
+
+function daysOverdue(dateStr: string): number {
+  const today = new Date();
+  const due = new Date(dateStr + "T00:00:00");
+  return Math.round((today.getTime() - due.getTime()) / 86400000);
+}
+
+function priorityDot(priority: string | null): string {
+  if (!priority) return "";
+  switch (priority.toLowerCase()) {
+    case "high": return `<span style="color:#dc2626;">&#x1F534;</span>`;
+    case "medium": return `<span style="color:#d97706;">&#x1F7E1;</span>`;
+    case "low": return `<span style="color:#16a34a;">&#x1F7E2;</span>`;
+    default: return "";
+  }
+}
+
+// --- HTML builder ---
+
+function buildBriefingHtml(data: {
+  briefing: any;
+  overdueTasks: any[];
+  todayTasks: any[];
+  upcomingTasks: any[];
+  ideasInProgress: any[];
+  upcomingMaintenance: any[];
+  calendarData: any;
+  newsData: any;
+  appUrl: string;
+}): string {
+  const {
+    briefing, overdueTasks, todayTasks, upcomingTasks,
+    ideasInProgress, upcomingMaintenance, calendarData, newsData, appUrl,
+  } = data;
+
+  const now = new Date();
+  const dayName = DAYS[now.getDay()];
+  const dateStr = `${MONTHS[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+
+  const section = (emoji: string, title: string, content: string) => `
+    <div style="background:#f9fafb; border-radius:8px; padding:16px; margin-bottom:16px;">
+      <h3 style="margin:0 0 10px 0; color:#1a1a1a; font-size:16px;">${emoji} ${title}</h3>
+      ${content}
+    </div>`;
+
+  const bullet = (text: string) => `<div style="padding:3px 0; color:#374151; font-size:14px;">• ${text}</div>`;
+
+  let html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; max-width:600px; margin:0 auto; padding:20px; background:#ffffff;">`;
+
+  // Greeting
+  const greeting = briefing?.greeting || `Good morning! Happy ${dayName}.`;
+  html += `<h2 style="color:#1a1a1a; margin-bottom:4px;">&#x2600;&#xFE0F; ${greeting}</h2>`;
+  html += `<p style="color:#6b7280; margin-top:0; font-size:14px;">${dayName}, ${dateStr}</p>`;
+
+  // Focus on first
+  if (briefing?.suggestions?.length > 0) {
+    let focusContent = "";
+    const icons = ["&#x1F525;", "&#x1F4B0;", "&#x270D;&#xFE0F;", "&#x1F3AF;"];
+    briefing.suggestions.slice(0, 3).forEach((s: any, i: number) => {
+      focusContent += bullet(`${icons[i] || "&#x27A1;&#xFE0F;"} <strong>${s.text}</strong>`);
+    });
+    html += section("&#x1F3AF;", "Here's what to focus on first", focusContent);
+  } else if (briefing?.summary) {
+    html += section("&#x1F3AF;", "Here's what to focus on first", `<p style="color:#374151; font-size:14px;">${briefing.summary}</p>`);
   }
 
-  if (upcoming.length > 0) {
-    html += `<h3 style="color: #d97706; margin-top: 20px;">Upcoming (${upcoming.length})</h3>`;
-    html += `<table style="width:100%; border-collapse:collapse;">`;
-    for (const item of upcoming) {
-      const label =
-        item.daysOffset === 0
-          ? "Due today"
-          : `${item.daysOffset} day${item.daysOffset !== 1 ? "s" : ""}`;
-      const typeLabel = item.type === "task" ? "Task" : "Maintenance";
-      const subtitle = item.assetName ? ` &middot; ${item.assetName}` : "";
-      const itemUrl = `${appUrl}${item.deepLink}`;
-      html += `<tr style="border-bottom: 1px solid #e5e7eb;">
-        <td style="padding: 10px 0;">
-          <a href="${itemUrl}" style="color: #1a1a1a; text-decoration: none; font-weight: 600;">${item.title}</a>
-          <span style="color:#6b7280; font-size:13px;">${subtitle}</span>
-          <br/><span style="color:#9ca3af; font-size:12px;">${typeLabel}</span>
-        </td>
-        <td style="padding: 10px 0; text-align:right; color:#d97706; white-space:nowrap; font-size:13px;">${label}</td>
-      </tr>`;
+  // Overdue
+  if (overdueTasks.length > 0) {
+    let content = "";
+    for (const t of overdueTasks) {
+      const days = daysOverdue(t.due_date);
+      content += bullet(`<strong>${t.title}</strong> — ${days} day${days !== 1 ? "s" : ""} overdue ${priorityDot(t.priority)}`);
     }
-    html += `</table>`;
+    html += section("&#x1F6A8;", `Overdue (${overdueTasks.length})`, content);
+  } else {
+    html += section("&#x1F6A8;", "Overdue", `<p style="color:#16a34a; font-size:14px;">&#x2705; All caught up — nothing overdue.</p>`);
   }
 
-  html += `<p style="margin-top: 32px;"><a href="${appUrl}" style="color: #2563eb; text-decoration: none;">Open CoS Dashboard &rarr;</a></p>`;
+  // Due Today
+  if (todayTasks.length > 0) {
+    let content = "";
+    for (const t of todayTasks) {
+      content += bullet(`<strong>${t.title}</strong> ${priorityDot(t.priority)}`);
+    }
+    html += section("&#x1F4CC;", `Due Today (${todayTasks.length})`, content);
+  } else {
+    html += section("&#x1F4CC;", "Due Today", `<p style="color:#6b7280; font-size:14px;">&#x2728; Clear slate today.</p>`);
+  }
+
+  // Coming Up
+  if (upcomingTasks.length > 0) {
+    let content = "";
+    for (const t of upcomingTasks) {
+      content += bullet(`<strong>${t.title}</strong> — ${formatDate(t.due_date)} ${priorityDot(t.priority)}`);
+    }
+    html += section("&#x1F4C5;", "Coming Up (Next 3)", content);
+  } else {
+    html += section("&#x1F4C5;", "Coming Up", `<p style="color:#6b7280; font-size:14px;">Nothing on the horizon.</p>`);
+  }
+
+  // Ideas In Progress
+  if (ideasInProgress.length > 0) {
+    let content = "";
+    for (const idea of ideasInProgress) {
+      const desc = idea.description ? ` — ${idea.description.slice(0, 80)}` : "";
+      content += bullet(`<strong>${idea.title}</strong>${desc}`);
+    }
+    html += section("&#x1F4A1;", "Ideas In Progress", content);
+  } else {
+    html += section("&#x1F4A1;", "Ideas In Progress", `<p style="color:#6b7280; font-size:14px;">No active ideas right now.</p>`);
+  }
+
+  // Maintenance
+  if (upcomingMaintenance.length > 0) {
+    let content = "";
+    for (const m of upcomingMaintenance) {
+      const note = m.notes ? ` &#x26A1; ${m.notes}` : "";
+      content += bullet(`<strong>${m.name}</strong> — due ${formatDate(m.next_due_date)}${note}`);
+    }
+    html += section("&#x1F527;", "Maintenance Check", content);
+  } else {
+    html += section("&#x1F527;", "Maintenance Check", `<p style="color:#6b7280; font-size:14px;">No upcoming maintenance.</p>`);
+  }
+
+  // Calendar (3-day)
+  const events = calendarData?.events ?? [];
+  const today = new Date();
+  const calDays: { label: string; events: any[] }[] = [];
+  for (let i = 0; i < 3; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    const dStr = d.toISOString().slice(0, 10);
+    const label = i === 0 ? `Today (${DAYS[d.getDay()]})` : i === 1 ? `Tomorrow (${DAYS[d.getDay()]})` : DAYS[d.getDay()];
+    const dayEvents = events.filter((e: any) => {
+      const eDate = (e.start || "").slice(0, 10);
+      return eDate === dStr;
+    });
+    calDays.push({ label, events: dayEvents });
+  }
+  let calContent = "";
+  for (const day of calDays) {
+    calContent += `<div style="margin-bottom:8px;"><strong>${day.label}:</strong><br/>`;
+    if (day.events.length === 0) {
+      calContent += `<span style="color:#6b7280; font-size:14px;">&#x1F389; Nothing scheduled</span>`;
+    } else {
+      for (const e of day.events) {
+        const time = e.allDay ? "(all day)" : "";
+        calContent += `<span style="color:#374151; font-size:14px;">• ${e.summary} ${time}</span><br/>`;
+      }
+    }
+    calContent += `</div>`;
+  }
+  html += section("&#x1F5D3;&#xFE0F;", "Calendar (3-Day Look)", calContent);
+
+  // Handoff Scanner (placeholder)
+  html += section("&#x1F504;", "Handoff Scanner", `<p style="color:#9ca3af; font-size:14px;">Coming soon — handoff note scanning will appear here.</p>`);
+
+  // Flagged Gmail (placeholder)
+  html += section("&#x1F4E7;", "Flagged Emails", `<p style="color:#9ca3af; font-size:14px;">Coming soon — flagged Gmail summary will appear here.</p>`);
+
+  // AI News
+  const articles = newsData?.articles ?? [];
+  if (articles.length > 0) {
+    let content = "";
+    for (const a of articles) {
+      const link = a.url ? `<a href="${a.url}" style="color:#2563eb; text-decoration:none;">${a.title}</a>` : a.title;
+      content += bullet(`${link} — <span style="color:#6b7280;">${a.source}</span>`);
+    }
+    html += section("&#x1F4F0;", "AI News", content);
+  } else {
+    html += section("&#x1F4F0;", "AI News", `<p style="color:#6b7280; font-size:14px;">&#x1F937; Quiet day in AI land.</p>`);
+  }
+
+  // Idea Spotlight (from daily-briefing)
+  if (briefing?.ideaSpotlight) {
+    const spot = briefing.ideaSpotlight;
+    let content = `<p style="color:#374151; font-size:14px;"><strong>${spot.title}</strong></p>`;
+    if (spot.reason) content += `<p style="color:#6b7280; font-size:13px;">${spot.reason}</p>`;
+    if (spot.steps?.length > 0) {
+      content += `<p style="color:#6b7280; font-size:13px; margin-top:4px;">Next steps:</p>`;
+      for (const step of spot.steps) {
+        content += `<div style="color:#374151; font-size:13px; padding:2px 0;">• ${step}</div>`;
+      }
+    }
+    html += section("&#x2728;", "Idea Spotlight", content);
+  }
+
+  // Footer
+  html += `<div style="margin-top:24px; padding-top:16px; border-top:1px solid #e5e7eb;">
+    <a href="${appUrl}" style="color:#2563eb; text-decoration:none; font-size:14px;">Open CoS Dashboard &rarr;</a>
+  </div>`;
   html += `</div>`;
   return html;
 }
+
+// --- Main handler ---
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -219,27 +307,52 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
-
-    const items = await gatherItems(supabase);
-
-    if (items.length === 0) {
-      return new Response(
-        JSON.stringify({ sent: false, reason: "No items need attention" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     const resendKey = Deno.env.get("RESEND_API_KEY");
     if (!resendKey) throw new Error("RESEND_API_KEY not set");
-
     const recipientEmail = Deno.env.get("DIGEST_RECIPIENT_EMAIL");
     if (!recipientEmail) throw new Error("DIGEST_RECIPIENT_EMAIL not set");
+    const appUrl = Deno.env.get("APP_URL") || "https://chief-of-staff-aimee.lovable.app";
 
-    const appUrl = Deno.env.get("APP_URL") || "https://your-app.lovable.app";
+    // Fetch all data in parallel
+    const [
+      overdueTasks,
+      todayTasks,
+      upcomingTasks,
+      ideasInProgress,
+      upcomingMaintenance,
+      briefing,
+      calendarData,
+      newsData,
+    ] = await Promise.all([
+      fetchOverdueTasks(supabase),
+      fetchTodayTasks(supabase),
+      fetchUpcomingTasks(supabase),
+      fetchIdeasInProgress(supabase),
+      fetchUpcomingMaintenance(supabase),
+      callEdgeFunction(supabaseUrl, serviceRoleKey, "daily-briefing"),
+      callEdgeFunction(supabaseUrl, serviceRoleKey, "get-todays-calendar", { days: 3 }),
+      callEdgeFunction(supabaseUrl, serviceRoleKey, "ai-news"),
+    ]);
 
-    const subject = `CoS Daily Digest — ${items.length} item${items.length !== 1 ? "s" : ""} need attention`;
-    const html = buildEmailHtml(items, appUrl);
+    // Build email
+    const htmlContent = buildBriefingHtml({
+      briefing,
+      overdueTasks,
+      todayTasks,
+      upcomingTasks,
+      ideasInProgress,
+      upcomingMaintenance,
+      calendarData,
+      newsData,
+      appUrl,
+    });
 
+    const now = new Date();
+    const dayName = DAYS[now.getDay()];
+    const dateStr = `${MONTHS[now.getMonth()]} ${now.getDate()}`;
+    const subject = `Good morning, Aimee — Your ${dayName} Briefing (${dateStr})`;
+
+    // Send email via Resend
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -250,7 +363,7 @@ serve(async (req) => {
         from: "CoS Digest <cos@genai-aims.com>",
         to: [recipientEmail],
         subject,
-        html,
+        html: htmlContent,
       }),
     });
 
@@ -261,36 +374,21 @@ serve(async (req) => {
 
     const result = await res.json();
 
-    // --- SMS via email-to-SMS gateway ---
-    let smsSent = false;
-    const smsAddress = Deno.env.get("DIGEST_SMS_ADDRESS");
-    if (smsAddress) {
-      const overdue = items.filter((i) => i.urgency === "overdue");
-      const upcoming = items.filter((i) => i.urgency === "upcoming");
-      // Keep it short for SMS (160 char segments)
-      let smsText = `CoS: ${items.length} items need attention.`;
-      if (overdue.length > 0) smsText += ` ${overdue.length} overdue.`;
-      if (upcoming.length > 0) smsText += ` ${upcoming.length} upcoming.`;
-      smsText += ` ${appUrl}`;
-
-      const smsRes = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${resendKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: "CoS <cos@genai-aims.com>",
-          to: [smsAddress],
-          subject: "CoS Alert",
-          text: smsText,
-        }),
-      });
-      smsSent = smsRes.ok;
-    }
-
     return new Response(
-      JSON.stringify({ sent: true, smsSent, itemCount: items.length, resendId: result.id }),
+      JSON.stringify({
+        sent: true,
+        resendId: result.id,
+        sections: {
+          overdue: overdueTasks.length,
+          today: todayTasks.length,
+          upcoming: upcomingTasks.length,
+          ideas: ideasInProgress.length,
+          maintenance: upcomingMaintenance.length,
+          briefing: !!briefing,
+          calendar: !!calendarData,
+          news: newsData?.articles?.length ?? 0,
+        },
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
