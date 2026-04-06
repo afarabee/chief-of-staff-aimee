@@ -1019,6 +1019,51 @@ export type Database = {
         }
         Relationships: []
       }
+      prescriptions: {
+        Row: {
+          created_at: string | null
+          dosage: string | null
+          end_date: string | null
+          frequency: string | null
+          id: string
+          is_active: boolean
+          medication_name: string
+          notes: string | null
+          pharmacy: string | null
+          prescriber: string | null
+          start_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dosage?: string | null
+          end_date?: string | null
+          frequency?: string | null
+          id?: string
+          is_active?: boolean
+          medication_name: string
+          notes?: string | null
+          pharmacy?: string | null
+          prescriber?: string | null
+          start_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dosage?: string | null
+          end_date?: string | null
+          frequency?: string | null
+          id?: string
+          is_active?: boolean
+          medication_name?: string
+          notes?: string | null
+          pharmacy?: string | null
+          prescriber?: string | null
+          start_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       service_providers: {
         Row: {
           address: string | null
