@@ -176,14 +176,25 @@ serve(async (req) => {
   }
 
   try {
-    const { item_type, item } = await req.json();
+    const EnrichSchema = z.object({
+      item_type: z.enum(["task", "idea", "reminder", "asset"]),
+      item: z.object({
+        id: z.string().min(1),
+        title: z.string().max(1000).optional(),
+        name: z.string().max(1000).optional(),
+      }).passthrough(),
+    });
 
-    if (!item_type || !item || !item.id) {
-      return new Response(JSON.stringify({ error: "Missing item_type or item" }), {
+    const body = await req.json();
+    const parsed = EnrichSchema.safeParse(body);
+    if (!parsed.success) {
+      return new Response(JSON.stringify({ error: "Invalid input", details: parsed.error.flatten().fieldErrors }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const { item_type, item } = parsed.data;
 
     const GEMINI_API_KEY =
       Deno.env.get("GEMINI_API_KEY") || Deno.env.get("VITE_GEMINI_API_KEY");
