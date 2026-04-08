@@ -159,7 +159,12 @@ function buildBriefingHtml(data: {
       ${content}
     </div>`;
 
-  const bullet = (text: string) => `<div style="padding:3px 0; color:#374151; font-size:14px;">• ${text}</div>`;
+  const bullet = (text: string, href?: string) => {
+    if (href) {
+      return `<div style="padding:3px 0; font-size:14px;">• <a href="${href}" style="color:#2563eb; text-decoration:none;">${text}</a></div>`;
+    }
+    return `<div style="padding:3px 0; color:#374151; font-size:14px;">• ${text}</div>`;
+  };
 
   let html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; max-width:600px; margin:0 auto; padding:20px; background:#ffffff;">`;
 
@@ -173,7 +178,9 @@ function buildBriefingHtml(data: {
     let focusContent = "";
     const icons = ["&#x1F525;", "&#x1F4B0;", "&#x270D;&#xFE0F;", "&#x1F3AF;"];
     briefing.suggestions.slice(0, 3).forEach((s: any, i: number) => {
-      focusContent += bullet(`${icons[i] || "&#x27A1;&#xFE0F;"} <strong>${s.text}</strong>`);
+      const ids: string[] | undefined = s.relatedItemIds || s.related_item_ids;
+      const href = ids && ids.length > 0 ? `${appUrl}/briefing-items?ids=${ids.join(",")}` : undefined;
+      focusContent += bullet(`${icons[i] || "&#x27A1;&#xFE0F;"} <strong>${s.text}</strong>`, href);
     });
     html += section("&#x1F3AF;", "Here's what to focus on first", focusContent);
   } else if (briefing?.summary) {
@@ -185,7 +192,7 @@ function buildBriefingHtml(data: {
     let content = "";
     for (const t of overdueTasks) {
       const days = daysOverdue(t.due_date);
-      content += bullet(`<strong>${t.title}</strong> — ${days} day${days !== 1 ? "s" : ""} overdue ${priorityDot(t.priority)}`);
+      content += bullet(`<strong>${t.title}</strong> — ${days} day${days !== 1 ? "s" : ""} overdue ${priorityDot(t.priority)}`, `${appUrl}/tasks?edit=${t.id}`);
     }
     html += section("&#x1F6A8;", `Overdue (${overdueTasks.length})`, content);
   } else {
@@ -196,7 +203,7 @@ function buildBriefingHtml(data: {
   if (todayTasks.length > 0) {
     let content = "";
     for (const t of todayTasks) {
-      content += bullet(`<strong>${t.title}</strong> ${priorityDot(t.priority)}`);
+      content += bullet(`<strong>${t.title}</strong> ${priorityDot(t.priority)}`, `${appUrl}/tasks?edit=${t.id}`);
     }
     html += section("&#x1F4CC;", `Due Today (${todayTasks.length})`, content);
   } else {
@@ -207,7 +214,7 @@ function buildBriefingHtml(data: {
   if (upcomingTasks.length > 0) {
     let content = "";
     for (const t of upcomingTasks) {
-      content += bullet(`<strong>${t.title}</strong> — ${formatDate(t.due_date)} ${priorityDot(t.priority)}`);
+      content += bullet(`<strong>${t.title}</strong> — ${formatDate(t.due_date)} ${priorityDot(t.priority)}`, `${appUrl}/tasks?edit=${t.id}`);
     }
     html += section("&#x1F4C5;", "Coming Up (Next 3)", content);
   } else {
@@ -219,7 +226,7 @@ function buildBriefingHtml(data: {
     let content = "";
     for (const idea of ideasInProgress) {
       const desc = idea.description ? ` — ${idea.description.slice(0, 80)}` : "";
-      content += bullet(`<strong>${idea.title}</strong>${desc}`);
+      content += bullet(`<strong>${idea.title}</strong>${desc}`, `${appUrl}/ideas?edit=${idea.id}`);
     }
     html += section("&#x1F4A1;", "Ideas In Progress", content);
   } else {
@@ -231,7 +238,7 @@ function buildBriefingHtml(data: {
     let content = "";
     for (const m of upcomingMaintenance) {
       const note = m.notes ? ` &#x26A1; ${m.notes}` : "";
-      content += bullet(`<strong>${m.name}</strong> — due ${formatDate(m.next_due_date)}${note}`);
+      content += bullet(`<strong>${m.name}</strong> — due ${formatDate(m.next_due_date)}${note}`, `${appUrl}/maintenance`);
     }
     html += section("&#x1F527;", "Maintenance Check", content);
   } else {
