@@ -66,15 +66,24 @@ async function fetchUpcomingMaintenance(supabase: any) {
 }
 
 async function fetchHandoffSummaries(supabase: any) {
-  const threeDaysAgo = new Date();
-  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-  const cutoff = threeDaysAgo.toISOString().slice(0, 10);
-  const { data } = await supabase
-    .from("handoff_summaries")
-    .select("session_date, project_name, tools, completed, in_progress, next_steps, resume_command")
-    .gte("session_date", cutoff)
-    .order("session_date", { ascending: false });
-  return data ?? [];
+  try {
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+    const cutoff = threeDaysAgo.toISOString().slice(0, 10);
+    const { data, error } = await supabase
+      .from("handoff_summaries")
+      .select("session_date, project_name, tools, completed, in_progress, next_steps, resume_command")
+      .gte("session_date", cutoff)
+      .order("session_date", { ascending: false });
+    if (error) {
+      console.error("fetchHandoffSummaries error:", error.message);
+      return [];
+    }
+    return data ?? [];
+  } catch (e) {
+    console.error("fetchHandoffSummaries exception:", e);
+    return [];
+  }
 }
 
 async function callEdgeFunction(
