@@ -109,7 +109,7 @@ serve(async (req) => {
     const accessToken = await getAccessToken(serviceKey);
 
     const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     const endOfDay = new Date(startOfDay.getTime() + days * 24 * 60 * 60 * 1000);
 
     const params = new URLSearchParams({
