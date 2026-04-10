@@ -16,14 +16,14 @@ async function fetchHandoffSummaries(): Promise<HandoffSummary[]> {
   threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
   const cutoff = threeDaysAgo.toISOString().slice(0, 10);
 
-  const { data, error } = await supabase
-    .from('handoff_summaries')
+  const { data, error } = await (supabase
+    .from('handoff_summaries' as any)
     .select('session_date, project_name, tools, completed, in_progress, next_steps, resume_command')
     .gte('session_date', cutoff)
-    .order('session_date', { ascending: false });
+    .order('session_date', { ascending: false }) as any);
 
   if (error) throw error;
-  return (data as HandoffSummary[]) ?? [];
+  return (data as unknown as HandoffSummary[]) ?? [];
 }
 
 export function useHandoffSummaries() {

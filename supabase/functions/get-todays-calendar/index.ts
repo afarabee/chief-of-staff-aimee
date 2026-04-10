@@ -78,6 +78,57 @@ async function getAccessToken(serviceKey: {
   return data.access_token;
 }
 
+interface CalendarEvent {
+  id: string;
+  summary: string;
+  start: string;
+  end: string;
+  htmlLink: string;
+  allDay: boolean;
+  source: string;
+}
+
+async function fetchCalendarEvents(
+  calendarId: string,
+  accessToken: string,
+  timeMin: string,
+  timeMax: string,
+  source: string
+): Promise<CalendarEvent[]> {
+  const params = new URLSearchParams({
+    timeMin,
+    timeMax,
+    singleEvents: "true",
+    orderBy: "startTime",
+    maxResults: "50",
+  });
+
+  const res = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${params}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error(`Calendar API error for ${source} (${calendarId}): ${res.status} ${errText}`);
+    return [];
+  }
+
+  const data = await res.json();
+
+  return (data.items || [])
+    .filter((e: any) => e.status !== "cancelled")
+    .map((e: any) => ({
+      id: e.id,
+      summary: e.summary || "(No title)",
+      start: e.start?.dateTime || e.start?.date || "",
+      end: e.end?.dateTime || e.end?.date || "",
+      htmlLink: e.htmlLink || "",
+      allDay: !!e.start?.date,
+      source,
+    }));
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -85,16 +136,16 @@ serve(async (req) => {
 
   try {
     const serviceKeyJson = Deno.env.get("GOOGLE_CALENDAR_SERVICE_KEY");
-    const calendarId = Deno.env.get("GOOGLE_CALENDAR_ID");
+    const appCalendarId = Deno.env.get("GOOGLE_CALENDAR_ID");
+    const personalCalendarId = Deno.env.get("GOOGLE_PERSONAL_CALENDAR_ID");
 
-    if (!serviceKeyJson || !calendarId) {
+    if (!serviceKeyJson || (!appCalendarId && !personalCalendarId)) {
       return new Response(
         JSON.stringify({ error: "Google Calendar not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Accept optional { days } param for multi-day lookahead (default: 1)
     let days = 1;
     try {
       const body = await req.json();
@@ -111,40 +162,34 @@ serve(async (req) => {
     const now = new Date();
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const endOfDay = new Date(startOfDay.getTime() + days * 24 * 60 * 60 * 1000);
+    const timeMin = startOfDay.toISOString();
+    const timeMax = endOfDay.toISOString();
 
-    const params = new URLSearchParams({
-      timeMin: startOfDay.toISOString(),
-      timeMax: endOfDay.toISOString(),
-      singleEvents: "true",
-      orderBy: "startTime",
-      maxResults: "50",
-    });
-
-    const res = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${params}`,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    );
-
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`Calendar API error: ${res.status} ${errText}`);
+    // Fetch from all configured calendars in parallel
+    const fetches: Promise<CalendarEvent[]>[] = [];
+    if (appCalendarId) {
+      fetches.push(fetchCalendarEvents(appCalendarId, accessToken, timeMin, timeMax, "app"));
+    }
+    if (personalCalendarId) {
+      fetches.push(fetchCalendarEvents(personalCalendarId, accessToken, timeMin, timeMax, "personal"));
     }
 
-    const data = await res.json();
+    const results = await Promise.all(fetches);
+    const allEvents = results.flat();
 
-    const events = (data.items || [])
-      .filter((e: any) => e.status !== "cancelled")
-      .map((e: any) => ({
-        id: e.id,
-        summary: e.summary || "(No title)",
-        start: e.start?.dateTime || e.start?.date || "",
-        end: e.end?.dateTime || e.end?.date || "",
-        htmlLink: e.htmlLink || "",
-        allDay: !!e.start?.date,
-      }));
+    // Deduplicate by event ID
+    const seen = new Set<string>();
+    const unique = allEvents.filter((e) => {
+      if (seen.has(e.id)) return false;
+      seen.add(e.id);
+      return true;
+    });
+
+    // Sort by start time
+    unique.sort((a, b) => a.start.localeCompare(b.start));
 
     return new Response(
-      JSON.stringify({ events }),
+      JSON.stringify({ events: unique }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {

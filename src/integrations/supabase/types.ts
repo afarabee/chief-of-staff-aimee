@@ -957,6 +957,45 @@ export type Database = {
           },
         ]
       }
+      handoff_summaries: {
+        Row: {
+          completed: string[] | null
+          created_at: string | null
+          id: string
+          in_progress: string[] | null
+          next_steps: string[] | null
+          project_name: string
+          raw_summary: string | null
+          resume_command: string | null
+          session_date: string
+          tools: string[] | null
+        }
+        Insert: {
+          completed?: string[] | null
+          created_at?: string | null
+          id?: string
+          in_progress?: string[] | null
+          next_steps?: string[] | null
+          project_name: string
+          raw_summary?: string | null
+          resume_command?: string | null
+          session_date: string
+          tools?: string[] | null
+        }
+        Update: {
+          completed?: string[] | null
+          created_at?: string | null
+          id?: string
+          in_progress?: string[] | null
+          next_steps?: string[] | null
+          project_name?: string
+          raw_summary?: string | null
+          resume_command?: string | null
+          session_date?: string
+          tools?: string[] | null
+        }
+        Relationships: []
+      }
       inventory: {
         Row: {
           category_id: string | null
