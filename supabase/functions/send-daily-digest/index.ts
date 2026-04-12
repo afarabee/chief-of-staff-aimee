@@ -346,12 +346,62 @@ function buildBriefingHtml(data: {
 
 // --- Main handler ---
 
+// DST-aware guard. The digest is scheduled via GitHub Actions at both
+// 10:15 UTC (5:15 AM CDT) and 11:15 UTC (5:15 AM CST) so it fires at the
+// right local time year-round. This check ensures only the slot that
+// corresponds to 5 AM in America/Chicago actually sends, so we don't get
+// duplicate emails during the half of the year where both slots would
+// otherwise both be "morning-ish". Callers can pass { force: true } or
+// ?force=1 to bypass (used by workflow_dispatch and manual/catch-up runs).
+function getChicagoHour(): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago",
+    hour: "numeric",
+    hour12: false,
+  }).formatToParts(new Date());
+  const hourPart = parts.find((p) => p.type === "hour")?.value ?? "0";
+  // Intl sometimes returns "24" for midnight; normalize to 0.
+  const hour = parseInt(hourPart, 10);
+  return hour === 24 ? 0 : hour;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
+    // Parse body/query for the `force` bypass flag before doing any work.
+    let force = new URL(req.url).searchParams.get("force") === "1";
+    if (!force && req.method === "POST") {
+      try {
+        const body = await req.clone().json();
+        if (body && body.force === true) force = true;
+      } catch {
+        // Empty or non-JSON body is fine; treat as force=false.
+      }
+    }
+
+    const chicagoHour = getChicagoHour();
+    const nowIso = new Date().toISOString();
+    console.log(
+      `send-daily-digest invoked: utc=${nowIso} chicagoHour=${chicagoHour} force=${force}`
+    );
+
+    if (!force && chicagoHour !== 5) {
+      console.log(
+        `send-daily-digest skipped: not 5am in America/Chicago (hour=${chicagoHour})`
+      );
+      return new Response(
+        JSON.stringify({
+          skipped: true,
+          reason: "not 5am in America/Chicago",
+          chicagoHour,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);

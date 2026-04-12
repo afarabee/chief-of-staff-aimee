@@ -1,0 +1,53 @@
+name: Daily Digest Email
+
+# Triggers the send-daily-digest Supabase edge function at ~5:15 AM Central
+# year-round. Two cron slots cover DST and standard time; the edge function
+# itself has a DST-aware guard that early-exits unless the current hour in
+# America/Chicago is 5 AM, so only one slot actually sends an email.
+#
+# Replaces the previous pg_cron approach (unscheduled in migration
+# 20260411120000_unschedule_daily_briefing.sql), which failed silently because
+# current_setting('app.settings.*') is not usable on Supabase hosted.
+
+on:
+  schedule:
+    # 10:15 UTC = 5:15 AM CDT (March-November, DST in effect)
+    - cron: "15 10 * * *"
+    # 11:15 UTC = 5:15 AM CST (November-March, standard time)
+    - cron: "15 11 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Bypass DST guard and send immediately (for manual/catch-up runs)"
+        type: boolean
+        default: true
+
+concurrency:
+  group: daily-digest
+  cancel-in-progress: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Invoke send-daily-digest edge function
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FORCE: ${{ github.event_name == 'workflow_dispatch' && inputs.force && 'true' || 'false' }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_SERVICE_ROLE_KEY}" ]; then
+            echo "::error::SUPABASE_SERVICE_ROLE_KEY repo secret is not set"
+            exit 1
+          fi
+          curl --fail-with-body \
+            --show-error \
+            --silent \
+            --max-time 120 \
+            -X POST \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "{\"force\": ${FORCE}}" \
+            "https://npngxiprlrsodvggbaqt.supabase.co/functions/v1/send-daily-digest"
+          echo
