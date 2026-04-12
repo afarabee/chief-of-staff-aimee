@@ -1,27 +1,21 @@
 
-# Fix: Multi-Calendar Support + Build Errors
 
-## Changes
+# Fix Asset Dialog Cutoff
 
-### 1. `supabase/functions/get-todays-calendar/index.ts` — Query multiple calendars
-- Read both `GOOGLE_CALENDAR_ID` and `GOOGLE_PERSONAL_CALENDAR_ID`
-- Fetch events from each configured calendar in parallel
-- Merge results, deduplicate by event ID, sort by start time
-- Tag each event with a `source` field ("personal" or "app") for potential future styling
+## Problem
+The asset edit dialog uses `max-w-lg` (32rem / 512px) with `overflow-x-hidden`, which clips the attachment rename UI. The inline rename input + confirm button can't be fully accessed.
 
-### 2. `src/hooks/useHandoffSummaries.ts` — Fix build error
-- The `handoff_summaries` table doesn't exist in the generated Supabase types
-- Use `.from('handoff_summaries' as any)` cast or switch to a raw RPC/fetch to silence the type error
-- Cast the response data through `unknown` to `HandoffSummary[]`
+## Solution
+Two changes to fix this:
 
-### 3. New secret: `GOOGLE_PERSONAL_CALENDAR_ID`
-- Add via the secrets tool (value = your Gmail address / personal calendar ID)
+1. **Widen the dialog for assets** — Change `ResponsiveFormDialog` desktop `max-w-lg` to `max-w-2xl` so the form has enough room for attachment rows with rename controls.
 
-## Manual prerequisite
-You need to share your personal Google Calendar with the service account email (read-only "See all event details"). The service account email is in your `GOOGLE_CALENDAR_SERVICE_KEY` JSON's `client_email` field.
+2. **Ensure attachment rename row doesn't overflow** — In `AssetAttachments.tsx`, add `overflow-hidden` and `min-w-0` to the editing container so the input shrinks to fit rather than pushing content off-screen.
+
+## Files to change
 
 | File | Change |
 |------|--------|
-| `supabase/functions/get-todays-calendar/index.ts` | Multi-calendar fetch, merge, dedup |
-| `src/hooks/useHandoffSummaries.ts` | Fix TS2769 type error |
-| Secret: `GOOGLE_PERSONAL_CALENDAR_ID` | New secret to add |
+| `src/components/ui/responsive-dialog.tsx` | Change `max-w-lg` to `max-w-2xl` on desktop `DialogContent` |
+| `src/components/assets/AssetAttachments.tsx` | Add `overflow-hidden` to the editing flex container to prevent overflow |
+
