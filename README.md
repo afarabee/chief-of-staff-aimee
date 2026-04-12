@@ -98,6 +98,14 @@ Tasks and maintenance events can be scheduled to Google Calendar with:
 - Timezone-aware scheduling
 - Direct links back to the calendar event from toast notifications
 
+### Scheduled Jobs
+
+The daily digest email is triggered by a GitHub Actions workflow (`.github/workflows/daily-digest.yml`), not Supabase pg_cron. Two cron slots (10:15 and 11:15 UTC) cover DST and standard time; a DST-aware guard inside `send-daily-digest` early-exits unless the current hour in `America/Chicago` is 5 AM, so exactly one email fires at 5:15 AM Central year-round.
+
+- **Required secret**: `SUPABASE_SERVICE_ROLE_KEY` (GitHub → Settings → Secrets and variables → Actions)
+- **Manual run**: Actions tab → _Daily Digest Email_ → **Run workflow** (leave `force` checked to bypass the 5 AM guard)
+- **Failures** surface as red ❌ in the Actions tab with full curl output — no silent cron failures
+
 ### Two Task Systems
 
 - **Kanban tasks** (`cos_tasks`): Ad-hoc tasks with status, priority, due dates, subtask support, and category organization
